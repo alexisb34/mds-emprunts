@@ -195,7 +195,8 @@ mds-emprunts/
 ├── admin.html              → coquille admin (sidebar + topbar + <main id="view">)
 ├── mobile.html             → coquille mobile (header + <main> + bottom nav)
 ├── kit.html                → page de démo des composants (vérification vs Figma)
-├── tests.html              → assertions navigateur pour store/rules/models
+├── package.json            → uniquement `"type": "module"` + script `npm test` (aucune dépendance, aucun npm install)
+├── tests/                  → tests Node (`node --test`), shim localStorage/sessionStorage, un fichier par module
 ├── manifest.json
 ├── css/
 │   ├── tokens.css          → variables CSS issues des variables Figma
@@ -227,7 +228,7 @@ mds-emprunts/
 ```
 
 ### Principes
-- **Aucun build, aucun npm.** Servir le dossier avec `python3 -m http.server 8000` (la caméra exige `localhost` ou HTTPS).
+- **Aucun build, aucune dépendance npm.** Les tests unitaires tournent sous Node (`node --test`, Node ≥ 22) ; l'utilisateur courant est stocké en `sessionStorage` (par onglet) pour permettre admin + mobile côte à côte. Servir le dossier avec `python3 -m http.server 8000` (la caméra exige `localhost` ou HTTPS).
 - **Modules ES natifs.** Une vue = `render(container, params)` qui produit du HTML par template literals, branche ses événements, et s'abonne au store.
 - **`store.js`** : `store.<collection>.list(filter)`, `.get(id)`, `.create(data)`, `.update(id, patch)`, `.remove(id)` ; `store.subscribe(fn)` ; `store.reset()` (recharge le seed). Persistance sous une clé unique `mds-emprunts:v1`. L'événement `storage` du navigateur déclenche les abonnés → synchronisation en direct entre fenêtres. En phase 2, seul ce fichier change pour Supabase.
 - **Mutations métier** dans `js/actions/` (un module par domaine : `items.js`, `loans.js`, `bookings.js`, `maintenance.js`, `users.js`) qui appliquent les règles, vérifient les transitions de `models.js`, et écrivent le journal — les vues n'écrivent jamais directement dans le store.
@@ -249,7 +250,7 @@ mds-emprunts/
 
 | Phase | Livrable | Vérification |
 |---|---|---|
-| 0. Fondations | Arborescence, `tokens.css`, `base.css`, `components.css`, `kit.html`, `store.js`, `seed.js`, `models.js`, `rules.js`, `tests.html` | `kit.html` fidèle au Figma ; `tests.html` vert (CRUD, subscribe, propagation entre onglets, règles temporelles) |
+| 0. Fondations | Arborescence, `tokens.css`, `base.css`, `components.css`, `kit.html`, `store.js`, `seed.js`, `models.js`, `rules.js`, tests Node | `kit.html` fidèle au Figma ; `npm test` vert (CRUD, subscribe, propagation entre onglets, règles temporelles) |
 | 1. Admin — inventaire & utilisateurs | Coquille admin, routing, dashboard (KPI + journal), matériel (table, ajout, fiche, QR), utilisateurs | Ajouter un objet, imprimer son QR, le passer HS, vérifier sa disparition des disponibles |
 | 2. Mobile — self-service | Coquille mobile, login, catalogue, fiche, scanner (caméra + simulé), photo, emprunt/retour avec mini-checklist | Deux fenêtres : scan → photo → emprunt visible côté admin en direct → retour avec problème → signalement admin. Règles « bureau fermé » et « déjà un exemplaire » via l'horloge |
 | 3. Matériel de valeur | Réservation mobile, QR de retrait, écran Emprunts admin (Remettre / Réceptionner / Refuser / Prolonger), checklist complète, expiration, retards | Réserver un R10 → remettre par scan → avancer l'horloge → retard → réceptionner avec problème → maintenance. Expiration : réserver, avancer 1h01, objet libre |
