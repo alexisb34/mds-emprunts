@@ -5,45 +5,45 @@ import { DEFAULT_SETTINGS, addDays, atHour, ymd, isWeekday } from './rules.js';
 import { buildChecklist, buildRoomChecklist } from './checklists.js';
 
 export const ELEVES = [
-  ["Léa", "Pezzetti"], ["Yann", "Guihard"], ["Camille", "Dubois"], ["Nathan", "Lefebvre"], ["Inès", "Moreau"],
-  ["Lucas", "Fontaine"], ["Chloé", "Martin"], ["Théo", "Garnier"], ["Manon", "Roux"], ["Hugo", "Bernard"],
-  ["Sarah", "Lambert"], ["Enzo", "Petit"], ["Jade", "Morel"], ["Louis", "Girard"], ["Emma", "Rousseau"],
-  ["Mathis", "Leroy"], ["Zoé", "Fournier"], ["Tom", "Mercier"], ["Lina", "Blanc"], ["Adam", "Guérin"],
-  ["Anaïs", "Muller"], ["Rayan", "Henry"], ["Clara", "Perrin"], ["Noah", "Faure"], ["Maëlle", "André"],
-  ["Sacha", "Lemoine"], ["Romane", "Chevalier"], ["Ethan", "Robin"], ["Lucie", "Gauthier"], ["Mehdi", "Benali"],
+  ['Léa', 'Pezzetti'], ['Yann', 'Guihard'], ['Camille', 'Dubois'], ['Nathan', 'Lefebvre'], ['Inès', 'Moreau'],
+  ['Lucas', 'Fontaine'], ['Chloé', 'Martin'], ['Théo', 'Garnier'], ['Manon', 'Roux'], ['Hugo', 'Bernard'],
+  ['Sarah', 'Lambert'], ['Enzo', 'Petit'], ['Jade', 'Morel'], ['Louis', 'Girard'], ['Emma', 'Rousseau'],
+  ['Mathis', 'Leroy'], ['Zoé', 'Fournier'], ['Tom', 'Mercier'], ['Lina', 'Blanc'], ['Adam', 'Guérin'],
+  ['Anaïs', 'Muller'], ['Rayan', 'Henry'], ['Clara', 'Perrin'], ['Noah', 'Faure'], ['Maëlle', 'André'],
+  ['Sacha', 'Lemoine'], ['Romane', 'Chevalier'], ['Ethan', 'Robin'], ['Lucie', 'Gauthier'], ['Mehdi', 'Benali'],
 ];
 
 export const INTERVENANTS = [
-  ["Sophie", "Marchand"], ["Julien", "Caron"], ["Nadia", "Ferreira"], ["Marc", "Delorme"], ["Aurélie", "Vidal"],
-  ["Karim", "Haddad"], ["Céline", "Baptiste"], ["Olivier", "Renard"], ["Isabelle", "Toussaint"], ["Frédéric", "Lacombe"],
+  ['Sophie', 'Marchand'], ['Julien', 'Caron'], ['Nadia', 'Ferreira'], ['Marc', 'Delorme'], ['Aurélie', 'Vidal'],
+  ['Karim', 'Haddad'], ['Céline', 'Baptiste'], ['Olivier', 'Renard'], ['Isabelle', 'Toussaint'], ['Frédéric', 'Lacombe'],
 ];
 
 export const PEDAGO = [
-  ["Alexis", "Bengel"], ["Amandine", "Leclerc"], ["Bastien", "Morin"], ["Élodie", "Rey"], ["Thomas", "Picard"],
+  ['Alexis', 'Bengel'], ['Amandine', 'Leclerc'], ['Bastien', 'Morin'], ['Élodie', 'Rey'], ['Thomas', 'Picard'],
 ];
 
 export const CATALOG = [
   // [reference, nom, categorie, circuit, exemplaires, valeurEstimee, localisation]
-  ["multiprise", "Multiprise", "Bureautique", "self", 6, 15, "Bureau pédago"],
-  ["kit-tableau", "Kit tableau blanc", "Bureautique", "self", 4, 40, "Bureau pédago"],
-  ["casque-audio", "Casque audio", "Audio", "self", 5, 35, "Bureau pédago"],
-  ["clavier", "Clavier", "Bureautique", "self", 4, 25, "Bureau pédago"],
-  ["souris", "Souris", "Bureautique", "self", 4, 15, "Bureau pédago"],
-  ["newer-eclairage", "Newer kit éclairage", "Lumière", "salle", 1, 180, "Salle photo"],
-  ["newer-led", "Newer pack LED + batteries", "Lumière", "salle", 1, 120, "Salle photo"],
-  ["leofoto-trepied", "Trépied et tête fluide LeoFoto", "Vidéo", "salle", 1, 350, "Salle photo"],
-  ["mini-studio", "Mini studio photo produit", "Photo", "salle", 1, 90, "Salle photo"],
-  ["sac-beschoi", "Sac à dos Beschoi", "Accessoire", "salle", 1, 60, "Salle photo"],
-  ["canon-r10", "Canon R10 + objectif 18-55 + bague", "Photo", "valeur", 1, 1100, "Armoire sécurisée"],
-  ["dji-rsc2", "DJI Ronin RSC2 stabilisateur", "Vidéo", "valeur", 1, 450, "Armoire sécurisée"],
-  ["tascam-dr70", "Tascam DR-70 enregistreur", "Audio", "valeur", 1, 280, "Armoire sécurisée"],
-  ["zoom-h5", "Zoom H5 enregistreur", "Audio", "valeur", 1, 300, "Armoire sécurisée"],
-  ["sd-256", "Carte SD 256 Go", "Stockage", "valeur", 3, 45, "Armoire sécurisée"],
-  ["sd-32", "Carte SD 32 Go", "Stockage", "valeur", 3, 15, "Armoire sécurisée"],
-  ["lpe17", "Batterie Canon LP-E17", "Accessoire", "valeur", 3, 60, "Armoire sécurisée"],
-  ["hoya-nd", "Filtre variable Hoya", "Photo", "valeur", 1, 80, "Armoire sécurisée"],
-  ["sennheiser", "Casque Sennheiser", "Audio", "valeur", 1, 120, "Armoire sécurisée"],
-  ["at-streaming", "Audio-Technica kit de streaming", "Audio", "valeur", 1, 250, "Armoire sécurisée"],
+  ['multiprise', 'Multiprise', 'Bureautique', 'self', 6, 15, 'Bureau pédago'],
+  ['kit-tableau', 'Kit tableau blanc', 'Bureautique', 'self', 4, 40, 'Bureau pédago'],
+  ['casque-audio', 'Casque audio', 'Audio', 'self', 5, 35, 'Bureau pédago'],
+  ['clavier', 'Clavier', 'Bureautique', 'self', 4, 25, 'Bureau pédago'],
+  ['souris', 'Souris', 'Bureautique', 'self', 4, 15, 'Bureau pédago'],
+  ['newer-eclairage', 'Newer kit éclairage', 'Lumière', 'salle', 1, 180, 'Salle photo'],
+  ['newer-led', 'Newer pack LED + batteries', 'Lumière', 'salle', 1, 120, 'Salle photo'],
+  ['leofoto-trepied', 'Trépied et tête fluide LeoFoto', 'Vidéo', 'salle', 1, 350, 'Salle photo'],
+  ['mini-studio', 'Mini studio photo produit', 'Photo', 'salle', 1, 90, 'Salle photo'],
+  ['sac-beschoi', 'Sac à dos Beschoi', 'Accessoire', 'salle', 1, 60, 'Salle photo'],
+  ['canon-r10', 'Canon R10 + objectif 18-55 + bague', 'Photo', 'valeur', 1, 1100, 'Armoire sécurisée'],
+  ['dji-rsc2', 'DJI Ronin RSC2 stabilisateur', 'Vidéo', 'valeur', 1, 450, 'Armoire sécurisée'],
+  ['tascam-dr70', 'Tascam DR-70 enregistreur', 'Audio', 'valeur', 1, 280, 'Armoire sécurisée'],
+  ['zoom-h5', 'Zoom H5 enregistreur', 'Audio', 'valeur', 1, 300, 'Armoire sécurisée'],
+  ['sd-256', 'Carte SD 256 Go', 'Stockage', 'valeur', 3, 45, 'Armoire sécurisée'],
+  ['sd-32', 'Carte SD 32 Go', 'Stockage', 'valeur', 3, 15, 'Armoire sécurisée'],
+  ['lpe17', 'Batterie Canon LP-E17', 'Accessoire', 'valeur', 3, 60, 'Armoire sécurisée'],
+  ['hoya-nd', 'Filtre variable Hoya', 'Photo', 'valeur', 1, 80, 'Armoire sécurisée'],
+  ['sennheiser', 'Casque Sennheiser', 'Audio', 'valeur', 1, 120, 'Armoire sécurisée'],
+  ['at-streaming', 'Audio-Technica kit de streaming', 'Audio', 'valeur', 1, 250, 'Armoire sécurisée'],
 ];
 
 const iso = (d) => d.toISOString();
@@ -162,7 +162,7 @@ export function buildSeed(now = new Date()) {
   }
 
   // 6 emprunts self en cours aujourd'hui
-  [["multiprise", 0], ["multiprise", 1], ["kit-tableau", 0], ["casque-audio", 0], ["clavier", 0], ["souris", 0]].forEach(([ref, k], i) => {
+  [['multiprise', 0], ['multiprise', 1], ['kit-tableau', 0], ['casque-audio', 0], ['clavier', 0], ['souris', 0]].forEach(([ref, k], i) => {
     const it = item(ref, k);
     const user = emprunteurs[i * 3];
     const start = atHour(base, 8 + (i % 4), 5 + i * 7);
@@ -175,7 +175,7 @@ export function buildSeed(now = new Date()) {
   });
 
   // 2 emprunts valeur en cours (dans les temps)
-  [["canon-r10", -1, 2, "Tournage projet MBA"], ["zoom-h5", -2, 1, "Interview podcast"]].forEach(([ref, dStart, dEnd, motif], i) => {
+  [['canon-r10', -1, 2, 'Tournage projet MBA'], ['zoom-h5', -2, 1, 'Interview podcast']].forEach(([ref, dStart, dEnd, motif], i) => {
     const it = item(ref);
     const user = emprunteurs[20 + i];
     const start = atHour(addDays(base, dStart), 10);
@@ -195,7 +195,7 @@ export function buildSeed(now = new Date()) {
     const user = emprunteurs[25];
     const start = atHour(addDays(base, -6), 9);
     const l = addLoan({
-      itemId: it.id, userId: user.id, statut: LOAN_STATES.EN_COURS, motif: "Clip vidéo association", codeRetrait: code6(),
+      itemId: it.id, userId: user.id, statut: LOAN_STATES.EN_COURS, motif: 'Clip vidéo association', codeRetrait: code6(),
       dateReservation: iso(addDays(start, -4)), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(base, -3), 17)),
       dateRetrait: iso(atHour(start, 9, 20)), remisPar: pedagos[1].id, createdAt: iso(addDays(start, -4)), updatedAt: iso(start),
     });
@@ -216,7 +216,7 @@ export function buildSeed(now = new Date()) {
   }
 
   // 2 réservations valeur à venir
-  [["tascam-dr70", 1, 2, "Captation conférence"], ["sennheiser", 2, 1, "Montage son"]].forEach(([ref, nStart, dLen, motif], i) => {
+  [['tascam-dr70', 1, 2, 'Captation conférence'], ['sennheiser', 2, 1, 'Montage son']].forEach(([ref, nStart, dLen, motif], i) => {
     const it = item(ref);
     const user = emprunteurs[10 + i];
     const start = atHour(nextWeekday(base, nStart), 9 + i);
@@ -245,7 +245,7 @@ export function buildSeed(now = new Date()) {
     const end = atHour(day, 15, 45);
     const checklist = buildChecklist('souris');
     checklist[0].ok = false;
-    checklist[0].commentaire = "Clic gauche ne répond plus";
+    checklist[0].commentaire = 'Clic gauche ne répond plus';
     const l = addLoan({
       itemId: it.id, userId: user.id, statut: LOAN_STATES.RETOURNEE, dateReservation: iso(start), debutPrevu: iso(start),
       finPrevue: iso(atHour(day, 17)), dateRetrait: iso(start), dateRetourReelle: iso(end), checklistRetour: checklist,
@@ -254,7 +254,7 @@ export function buildSeed(now = new Date()) {
     it.etat = ITEM_STATES.MAINTENANCE;
     const m = addMaint({
       itemId: it.id, type: MAINT_TYPES.SIGNALEMENT, auteurId: user.id, date: iso(end), statut: MAINT_STATES.OUVERT,
-      description: "Signalé au retour : Clic et molette OK → Clic gauche ne répond plus", loanId: l.id, createdAt: iso(end), updatedAt: iso(end),
+      description: 'Signalé au retour : Clic et molette OK → Clic gauche ne répond plus', loanId: l.id, createdAt: iso(end), updatedAt: iso(end),
     });
     addLog(start, user.id, 'loan.emprunt', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} — ${who(user)}`);
     addLog(end, user.id, 'loan.retour', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} rendu avec un problème`);
@@ -269,7 +269,7 @@ export function buildSeed(now = new Date()) {
     it.notes = 'Hors service : touches arrachées, non réparable.';
     const m = addMaint({
       itemId: it.id, type: MAINT_TYPES.SIGNALEMENT, auteurId: ped0.id, date: iso(d), statut: MAINT_STATES.CLOS,
-      description: "Touches arrachées, non réparable — passé hors service.", createdAt: iso(d), updatedAt: iso(d),
+      description: 'Touches arrachées, non réparable — passé hors service.', createdAt: iso(d), updatedAt: iso(d),
     });
     addLog(d, ped0.id, 'item.etat', { itemId: it.id }, `${it.nom} passé hors service`);
     addLog(d, ped0.id, 'maintenance.clos', { itemId: it.id }, m.description);
@@ -308,8 +308,8 @@ export function buildSeed(now = new Date()) {
       createdAt: iso(addDays(start, -2)), updatedAt: iso(end),
     });
     addLog(addDays(start, -2), user.id, 'booking.creee', { bookingId: b.id, userId: user.id }, `Salle photo ${creneaux[0]}h-${creneaux[creneaux.length - 1] + 1}h — ${who(user)}`);
-    addLog(atHour(day, creneaux[0], 3), user.id, 'booking.entree', { bookingId: b.id, userId: user.id }, "État des lieux d'entrée OK");
-    addLog(atHour(day, creneaux[creneaux.length - 1], 55), user.id, 'booking.sortie', { bookingId: b.id, userId: user.id }, "État des lieux de sortie OK");
+    addLog(atHour(day, creneaux[0], 3), user.id, 'booking.entree', { bookingId: b.id, userId: user.id }, 'État des lieux d’entrée OK');
+    addLog(atHour(day, creneaux[creneaux.length - 1], 55), user.id, 'booking.sortie', { bookingId: b.id, userId: user.id }, 'État des lieux de sortie OK');
   });
 
   // 1 réservation en cours maintenant (si jour ouvré et dans la plage)
@@ -323,7 +323,7 @@ export function buildSeed(now = new Date()) {
       etatEntree: etat(atHour(now, creneaux[0], 2)), createdAt: iso(addDays(start, -1)), updatedAt: iso(start),
     });
     addLog(addDays(start, -1), user.id, 'booking.creee', { bookingId: b.id, userId: user.id }, `Salle photo ${creneaux[0]}h-${creneaux[creneaux.length - 1] + 1}h — ${who(user)}`);
-    addLog(atHour(now, creneaux[0], 2), user.id, 'booking.entree', { bookingId: b.id, userId: user.id }, "État des lieux d'entrée OK");
+    addLog(atHour(now, creneaux[0], 2), user.id, 'booking.entree', { bookingId: b.id, userId: user.id }, 'État des lieux d’entrée OK');
   }
 
   // 3 réservations à venir

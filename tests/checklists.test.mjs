@@ -26,7 +26,7 @@ test('checklistFor renvoie [] pour une référence inconnue', () => {
 test('buildChecklist initialise toutes les lignes à OK', () => {
   const c = buildChecklist('multiprise');
   assert.equal(c.length, 3);
-  assert.deepEqual(c[0], { ligne: "Câble intact", ok: true, commentaire: '' });
+  assert.deepEqual(c[0], { ligne: 'Câble intact', ok: true, commentaire: '' });
   assert.equal(hasProblem(c), false);
 });
 
@@ -34,7 +34,7 @@ test('hasProblem et problemLines', () => {
   const c = buildChecklist('souris');
   c[0].ok = false; c[0].commentaire = 'clic gauche mort';
   assert.equal(hasProblem(c), true);
-  assert.deepEqual(problemLines(c).map((l) => l.ligne), ["Clic et molette OK"]);
+  assert.deepEqual(problemLines(c).map((l) => l.ligne), ['Clic et molette OK']);
 });
 
 test('buildRoomChecklist : une ligne par item salle + ligne globale', () => {

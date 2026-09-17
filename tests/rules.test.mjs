@@ -14,7 +14,7 @@ const jeudi10h = new Date(2026, 8, 17, 10, 0);
 const samedi10h = new Date(2026, 8, 19, 10, 0);
 const S = DEFAULT_SETTINGS;
 
-test("now() respecte l'horloge de démo", () => {
+test('now() respecte l’horloge de démo', () => {
   localStorage.clear();
   store.init();
   assert.ok(Math.abs(now() - Date.now()) < 1000);
@@ -23,7 +23,7 @@ test("now() respecte l'horloge de démo", () => {
   assert.equal(now({ horlogeDemo: null }).getFullYear(), new Date().getFullYear());
 });
 
-test("jours ouvrés et horaires d'ouverture", () => {
+test('jours ouvrés et horaires d’ouverture', () => {
   assert.equal(isWeekday(jeudi10h), true);
   assert.equal(isWeekday(samedi10h), false);
   assert.equal(isOfficeOpen(jeudi10h, S.horaires), true);
@@ -33,7 +33,7 @@ test("jours ouvrés et horaires d'ouverture", () => {
   assert.equal(isOfficeOpen(samedi10h, S.horaires), false);
 });
 
-test("utilitaires de dates", () => {
+test('utilitaires de dates', () => {
   assert.equal(ymd(jeudi10h), '2026-09-17');
   assert.equal(fromYmd('2026-09-17', 8).getHours(), 8);
   assert.equal(fromYmd('2026-09-17').getDate(), 17);
@@ -44,14 +44,14 @@ test("utilitaires de dates", () => {
   assert.equal(selfReturnDeadline('2026-09-17T08:00:00.000Z', 16).getHours(), 16);
 });
 
-test("retard = en_cours et date > finPrevue", () => {
+test('retard = en_cours et date > finPrevue', () => {
   const loan = { statut: 'en_cours', finPrevue: new Date(2026, 8, 17, 17, 0).toISOString() };
   assert.equal(isLate(loan, new Date(2026, 8, 17, 16, 59)), false);
   assert.equal(isLate(loan, new Date(2026, 8, 17, 17, 1)), true);
   assert.equal(isLate({ ...loan, statut: 'retournee' }, new Date(2026, 8, 18)), false);
 });
 
-test("fenêtre de retrait = [début, début + 60 min]", () => {
+test('fenêtre de retrait = [début, début + 60 min]', () => {
   const loan = { statut: 'reservee', debutPrevu: new Date(2026, 8, 17, 9, 0).toISOString() };
   const w = pickupWindow(loan, S.fenetreRetraitMinutes);
   assert.equal(w.start.getHours(), 9);
@@ -64,7 +64,7 @@ test("fenêtre de retrait = [début, début + 60 min]", () => {
   assert.equal(isExpired({ ...loan, statut: 'en_cours' }, new Date(2026, 8, 18), 60), false);
 });
 
-test("réservation salle : début, fin, active, sortie non faite", () => {
+test('réservation salle : début, fin, active, sortie non faite', () => {
   const b = { date: '2026-09-17', creneaux: [8, 9, 10, 11, 12], statut: 'a_venir', etatSortie: null };
   assert.equal(bookingStart(b).getHours(), 8);
   assert.equal(bookingEnd(b).getHours(), 13);
@@ -78,7 +78,7 @@ test("réservation salle : début, fin, active, sortie non faite", () => {
   assert.equal(isExitMissing({ ...b, statut: 'annulee' }, new Date(2026, 8, 18)), false);
 });
 
-test("créneaux : contiguïté, plage horaire, conflits", () => {
+test('créneaux : contiguïté, plage horaire, conflits', () => {
   assert.equal(slotsAreContiguous([8, 9, 10]), true);
   assert.equal(slotsAreContiguous([10, 8, 9]), true);
   assert.equal(slotsAreContiguous([8, 10]), false);
@@ -105,7 +105,7 @@ const items = [
 ];
 const user = { id: 'u1', actif: true };
 
-test("un exemplaire par référence et par personne", () => {
+test('un exemplaire par référence et par personne', () => {
   const loans = [{ userId: 'u1', itemId: 'i1', statut: 'en_cours' }];
   assert.equal(hasActiveLoanOfReference(loans, items, 'u1', 'multiprise'), true);
   assert.equal(hasActiveLoanOfReference(loans, items, 'u1', 'canon-r10'), false);
@@ -113,7 +113,7 @@ test("un exemplaire par référence et par personne", () => {
   assert.equal(hasActiveLoanOfReference([{ ...loans[0], statut: 'retournee' }], items, 'u1', 'multiprise'), false);
 });
 
-test("canBorrowSelf : cas passant et motifs de refus", () => {
+test('canBorrowSelf : cas passant et motifs de refus', () => {
   const base = { item: items[0], user, loans: [], items, settings: S, date: jeudi10h };
   assert.deepEqual(canBorrowSelf(base), { ok: true, reason: null });
   assert.equal(canBorrowSelf({ ...base, date: samedi10h }).reason, REASONS.BUREAU_FERME);
@@ -127,7 +127,7 @@ test("canBorrowSelf : cas passant et motifs de refus", () => {
   assert.equal(userHasLateLoan(late, 'u1', jeudi10h), true);
 });
 
-test("canReserveValeur : durée max et circuit", () => {
+test('canReserveValeur : durée max et circuit', () => {
   const debut = new Date(2026, 8, 18, 9);
   const base = { item: items[2], user, loans: [], items, settings: S, debutPrevu: debut, finPrevue: addDays(debut, 3), date: jeudi10h };
   assert.equal(canReserveValeur(base).ok, true);
@@ -138,6 +138,6 @@ test("canReserveValeur : durée max et circuit", () => {
   assert.equal(canReserveValeur({ ...base, item: { ...items[2], etat: 'reserve' } }).reason, REASONS.INDISPONIBLE);
 });
 
-test("chaque motif a un libellé français", () => {
+test('chaque motif a un libellé français', () => {
   for (const r of Object.values(REASONS)) assert.ok(REASON_LABELS[r], r);
 });

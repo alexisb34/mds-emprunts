@@ -24,13 +24,13 @@ export const REASONS = {
 };
 
 export const REASON_LABELS = {
-  bureau_ferme: "Le bureau des pédago est fermé : retrait possible uniquement aux heures d'ouverture.",
-  deja_un_exemplaire: "Vous avez déjà un exemplaire de ce matériel en cours.",
-  indisponible: "Ce matériel n'est pas disponible actuellement.",
-  retard_en_cours: "Vous avez un emprunt en retard : rendez-le avant d'emprunter à nouveau.",
-  mauvais_circuit: "Ce matériel ne s'emprunte pas de cette façon.",
-  duree_trop_longue: "La durée demandée dépasse le maximum autorisé.",
-  utilisateur_inactif: "Ce compte est désactivé.",
+  bureau_ferme: 'Le bureau des pédago est fermé : retrait possible uniquement aux heures d’ouverture.',
+  deja_un_exemplaire: 'Vous avez déjà un exemplaire de ce matériel en cours.',
+  indisponible: 'Ce matériel n’est pas disponible actuellement.',
+  retard_en_cours: 'Vous avez un emprunt en retard : rendez-le avant d’emprunter à nouveau.',
+  mauvais_circuit: 'Ce matériel ne s’emprunte pas de cette façon.',
+  duree_trop_longue: 'La durée demandée dépasse le maximum autorisé.',
+  utilisateur_inactif: 'Ce compte est désactivé.',
 };
 
 const MIN = 60 * 1000;
