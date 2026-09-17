@@ -13,7 +13,7 @@ test('les 9 promos sont définies', () => {
   assert.ok(PROMOS.includes('Bachelor 1'));
 });
 
-test('transitions d\'emprunt : reservee → en_cours autorisée, retournee → en_cours interdite', () => {
+test('transitions d’emprunt : reservee → en_cours autorisée, retournee → en_cours interdite', () => {
   assert.equal(canTransition(LOAN_TRANSITIONS, LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS), true);
   assert.equal(canTransition(LOAN_TRANSITIONS, LOAN_STATES.RETOURNEE, LOAN_STATES.EN_COURS), false);
   assert.equal(canTransition(LOAN_TRANSITIONS, 'inconnu', LOAN_STATES.EN_COURS), false);
