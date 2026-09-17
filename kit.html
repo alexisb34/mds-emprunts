@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MDS Emprunts — Kit de composants</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    main { max-width: 1100px; margin: 0 auto; padding: var(--space-3xl) var(--space-2xl); display: flex; flex-direction: column; gap: var(--space-3xl); }
+    section > h2 { margin-bottom: var(--space-lg); }
+    .swatches { display: flex; flex-wrap: wrap; gap: var(--space-md); }
+    .swatch { width: 120px; padding: var(--space-sm); border-radius: var(--radius-md); background: var(--bg-surface); box-shadow: var(--shadow-card); font-size: 11px; }
+    .swatch i { display: block; height: 40px; border-radius: var(--radius-xs); margin-bottom: var(--space-xs); }
+    .sidebar-demo { width: 260px; background: var(--brand-primary); padding: var(--space-lg); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: var(--space-xs); }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="label-caps text-secondary">Kit de composants</p>
+    <h1 class="h5">MDS Emprunts — vérification vs Figma</h1>
+  </header>
+
+  <section>
+    <h2 class="h6">Couleurs</h2>
+    <div class="swatches">
+      <div class="swatch"><i style="background:var(--brand-primary)"></i>brand/primary</div>
+      <div class="swatch"><i style="background:var(--brand-secondary)"></i>brand/secondary</div>
+      <div class="swatch"><i style="background:var(--brand-accent)"></i>brand/accent</div>
+      <div class="swatch"><i style="background:var(--brand-primary-subtle)"></i>primary-subtle</div>
+      <div class="swatch"><i style="background:var(--brand-secondary-subtle)"></i>secondary-subtle</div>
+      <div class="swatch"><i style="background:var(--bg-canvas)"></i>bg/canvas</div>
+      <div class="swatch"><i style="background:var(--feedback-success)"></i>success</div>
+      <div class="swatch"><i style="background:var(--feedback-warning)"></i>warning</div>
+      <div class="swatch"><i style="background:var(--feedback-error)"></i>error</div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">Typographie</h2>
+    <div class="stack">
+      <p class="h5">Heading H5 — Tableau de bord</p>
+      <p class="h6">Heading H6 — Emprunts en cours</p>
+      <p class="kpi-number">128</p>
+      <p class="body">Body Regular — Le matériel est disponible au bureau des pédago.</p>
+      <p class="body-sm">Body Small — Retour attendu aujourd'hui avant 17h.</p>
+      <p class="label-caps">Label Caps — Matériel</p>
+      <p class="body-tiny text-secondary">Body Tiny — Mercredi 17 septembre 2026</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">Boutons</h2>
+    <div class="row row--wrap">
+      <button class="btn btn--primary">+ Nouvelle demande</button>
+      <button class="btn btn--secondary">Exporter</button>
+      <button class="btn btn--ghost">Voir tout →</button>
+      <button class="btn btn--danger">Refuser</button>
+      <button class="btn btn--primary btn--sm">Valider</button>
+      <button class="btn btn--secondary btn--sm">Emprunter →</button>
+      <button class="btn btn--primary" disabled>Désactivé</button>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">Badges et chips</h2>
+    <div class="row row--wrap">
+      <span class="badge badge--available">Disponible</span>
+      <span class="badge badge--borrowed">Emprunté</span>
+      <span class="badge badge--reserved">Réservé</span>
+      <span class="badge badge--late">En retard</span>
+      <span class="badge badge--maintenance">Maintenance</span>
+      <span class="badge badge--hs">Hors service</span>
+    </div>
+    <div class="row row--wrap" style="margin-top: var(--space-md)">
+      <button class="chip chip--active">Tout</button>
+      <button class="chip">Photo</button>
+      <button class="chip">Audio</button>
+      <button class="chip">Bureautique</button>
+      <button class="chip">Lumière</button>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">KPI</h2>
+    <div class="grid-4">
+      <div class="kpi"><span class="kpi__label">Matériel disponible</span><span class="kpi__value">128</span><span class="kpi__delta">↑ +12 % vs semaine dernière</span></div>
+      <div class="kpi kpi--brand"><span class="kpi__label">Emprunts en cours</span><span class="kpi__value">42</span><span class="kpi__delta">↑ +5 vs semaine dernière</span></div>
+      <div class="kpi"><span class="kpi__label">Retards</span><span class="kpi__value">3</span><span class="kpi__delta">↓ -1 vs semaine dernière</span></div>
+      <div class="kpi kpi--teal"><span class="kpi__label">Réservations à venir</span><span class="kpi__value">17</span><span class="kpi__delta">↑ +8 vs semaine dernière</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">Cartes</h2>
+    <div class="grid-4">
+      <div class="card card--item">
+        <div class="card__media">📷</div>
+        <div class="card__body">
+          <span class="badge badge--available">Disponible</span>
+          <span class="label-mini-caps text-secondary">Photo</span>
+          <strong class="label-md">Canon R10 + 18-55</strong>
+          <span class="body-tiny text-secondary">Réf. MDS-0029 · Armoire sécurisée</span>
+          <button class="btn btn--secondary btn--sm">Réserver →</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__header"><h3 class="card__title">À valider</h3><a href="#" class="body-sm">Tout voir →</a></div>
+        <p class="body-sm text-secondary">Contenu de carte standard.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">Table</h2>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th data-sortable>Matériel</th><th>Emprunteur</th><th>Retour</th><th>Statut</th><th></th></tr></thead>
+        <tbody>
+          <tr data-href="#"><td>Canon R10</td><td><span class="row"><span class="avatar avatar--sm">LP</span>Léa Pezzetti</span></td><td>19/09</td><td><span class="badge badge--borrowed">Emprunté</span></td><td class="table__actions"><button class="btn btn--ghost btn--sm">Réceptionner</button></td></tr>
+          <tr><td>DJI Ronin RSC2</td><td><span class="row"><span class="avatar avatar--sm">YG</span>Yann Guihard</span></td><td>14/09</td><td><span class="badge badge--late">En retard</span></td><td class="table__actions"><button class="btn btn--ghost btn--sm">Relancer</button></td></tr>
+          <tr><td>Multiprise #2</td><td><span class="row"><span class="avatar avatar--sm">CD</span>Camille Dubois</span></td><td>Aujourd'hui</td><td><span class="badge badge--available">Retourné</span></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">Formulaires</h2>
+    <div class="card grid-2">
+      <label class="field"><span class="field__label">Nom</span><input class="input" placeholder="Canon R10"></label>
+      <label class="field"><span class="field__label">Recherche</span><input class="input input--search" placeholder="Rechercher un matériel…"></label>
+      <label class="field"><span class="field__label">Catégorie</span><select class="select"><option>Photo</option><option>Audio</option></select></label>
+      <label class="field"><span class="field__label">Erreur</span><input class="input" aria-invalid="true" value="MDS-"><span class="field__error">Code déjà utilisé</span></label>
+      <label class="field" style="grid-column: 1 / -1"><span class="field__label">Motif</span><textarea class="textarea" placeholder="Tournage projet MBA"></textarea></label>
+      <label class="checkbox"><input type="checkbox" checked> Câble intact</label>
+      <label class="toggle"><input type="checkbox" checked><span class="toggle__track"></span> Bloquer si retard</label>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">Navigation et onglets</h2>
+    <div class="row" style="align-items: flex-start">
+      <nav class="sidebar-demo">
+        <a class="nav-item nav-item--active" href="#">Tableau de bord</a>
+        <a class="nav-item" href="#">Matériel</a>
+        <a class="nav-item" href="#">Emprunts <span class="nav-item__count">3</span></a>
+        <a class="nav-item" href="#">Utilisateurs</a>
+      </nav>
+      <div class="card" style="flex: 1">
+        <div class="tabs">
+          <button class="tab tab--active">Tous <span class="tab__count">42</span></button>
+          <button class="tab">En retard <span class="tab__count">3</span></button>
+          <button class="tab">Historique</button>
+        </div>
+        <div class="empty-state">Aucun emprunt pour ce filtre.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h6">Modale, toasts, alertes</h2>
+    <div class="row row--wrap">
+      <button class="btn btn--primary" id="demo-modal">Ouvrir une modale</button>
+      <button class="btn btn--secondary" id="demo-toast">Toast succès</button>
+      <button class="btn btn--danger" id="demo-toast-err">Toast erreur</button>
+    </div>
+    <div class="stack" style="margin-top: var(--space-lg)">
+      <div class="alert alert--warning">⚠ 3 retours en retard — relance automatique envoyée aux étudiants.</div>
+      <div class="alert alert--error">Le bureau des pédago est fermé.</div>
+      <div class="alert alert--info">Réservation à retirer dans l'heure suivant le début.</div>
+    </div>
+  </section>
+</main>
+
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script type="module">
+  import { openModal, toast } from './js/ui.js';
+  document.getElementById('demo-modal').addEventListener('click', () => openModal({
+    title: 'Refuser la réservation',
+    body: '<label class="field"><span class="field__label">Motif</span><textarea class="textarea" id="motif"></textarea></label>',
+    actions: [
+      { label: 'Annuler', variant: 'ghost' },
+      { label: 'Refuser', variant: 'danger', onClick: (m) => { if (!m.querySelector('#motif').value.trim()) { toast('Le motif est obligatoire', 'error'); return false; } toast('Réservation refusée', 'success'); } },
+    ],
+  }));
+  document.getElementById('demo-toast').addEventListener('click', () => toast('Emprunt enregistré', 'success'));
+  document.getElementById('demo-toast-err').addEventListener('click', () => toast('Vous avez déjà un exemplaire', 'error'));
+</script>
+</body>
+</html>
