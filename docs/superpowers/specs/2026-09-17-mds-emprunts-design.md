@@ -100,7 +100,7 @@ Toutes les entités ont un `id` (string unique), `createdAt`, `updatedAt`.
 - Refus : objet `maintenance`/`hs`, objet `emprunte` par quelqu'un d'autre, déjà un exemplaire de cette référence, bureau fermé (retrait), utilisateur bloqué pour retard (si `bloquerSiRetard`).
 
 ### 5.2 Matériel de valeur
-- Réservation depuis la fiche objet : `debutPrevu`, `finPrevue` (≤ `dureeMaxReservationJours`), `motif`. L'`Item` passe `reserve` immédiatement ; d'autres utilisateurs ne peuvent plus le réserver sur la période.
+- Réservation depuis la fiche objet : `debutPrevu`, `finPrevue` (≤ `dureeMaxReservationJours`, comptés en **jours calendaires** entre les dates de début et de fin), `motif`. L'`Item` passe `reserve` immédiatement ; d'autres utilisateurs ne peuvent plus le réserver sur la période.
 - Il n'y a pas d'étape de validation séparée : **la validation est la remise physique**.
 - Fenêtre de retrait : `[debutPrevu, debutPrevu + fenetreRetraitMinutes]`. Avant `debutPrevu`, le QR de retrait n'est pas actif. Après la fenêtre sans retrait → `expiree`, `Item` `disponible`, notification à l'emprunteur, badge « non retiré » côté admin.
 - Remise : l'emprunteur affiche son QR de retrait (`LOAN-<id>-<code6>`) ; la pédago clique **Remettre** et scanne (ou saisit le code court) → `en_cours`, `dateRetrait`, `remisPar`.

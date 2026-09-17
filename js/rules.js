@@ -17,6 +17,10 @@ export const REASONS = {
   BUREAU_FERME: 'bureau_ferme',
   DEJA_UN_EXEMPLAIRE: 'deja_un_exemplaire',
   INDISPONIBLE: 'indisponible',
+  EMPRUNTE_PAR_AUTRE: 'emprunte_par_autre',
+  RESERVE_PAR_AUTRE: 'reserve_par_autre',
+  EN_MAINTENANCE: 'en_maintenance',
+  HORS_SERVICE: 'hors_service',
   RETARD_EN_COURS: 'retard_en_cours',
   MAUVAIS_CIRCUIT: 'mauvais_circuit',
   DUREE_TROP_LONGUE: 'duree_trop_longue',
@@ -27,18 +31,35 @@ export const REASON_LABELS = {
   bureau_ferme: 'Le bureau des pédago est fermé : retrait possible uniquement aux heures d’ouverture.',
   deja_un_exemplaire: 'Vous avez déjà un exemplaire de ce matériel en cours.',
   indisponible: 'Ce matériel n’est pas disponible actuellement.',
+  emprunte_par_autre: 'Ce matériel est déjà emprunté par quelqu’un d’autre.',
+  reserve_par_autre: 'Ce matériel est réservé par quelqu’un d’autre.',
+  en_maintenance: 'Ce matériel est en maintenance.',
+  hors_service: 'Ce matériel est hors service.',
   retard_en_cours: 'Vous avez un emprunt en retard : rendez-le avant d’emprunter à nouveau.',
   mauvais_circuit: 'Ce matériel ne s’emprunte pas de cette façon.',
   duree_trop_longue: 'La durée demandée dépasse le maximum autorisé.',
   utilisateur_inactif: 'Ce compte est désactivé.',
 };
 
+const UNAVAILABLE_REASON = {
+  emprunte: REASONS.EMPRUNTE_PAR_AUTRE,
+  reserve: REASONS.RESERVE_PAR_AUTRE,
+  maintenance: REASONS.EN_MAINTENANCE,
+  hs: REASONS.HORS_SERVICE,
+};
+
+// Fusionne des settings partiels avec les défauts : toute fonction qui reçoit des
+// `settings` incomplets (formulaire en cours, tests) reste utilisable sans planter.
+export function withDefaults(settings) {
+  return { ...DEFAULT_SETTINGS, ...(settings || {}) };
+}
+
 const MIN = 60 * 1000;
 const DAY = 24 * 60 * MIN;
 const toDate = (d) => (d instanceof Date ? d : new Date(d));
 
 export function now(settings) {
-  const s = settings || store.settings.get();
+  const s = withDefaults(settings || store.settings.get());
   return s.horlogeDemo ? new Date(s.horlogeDemo) : new Date();
 }
 
@@ -47,11 +68,12 @@ export function isWeekday(date) {
   return w >= 1 && w <= 5;
 }
 
-export function isOfficeOpen(date, horaires = DEFAULT_SETTINGS.horaires) {
+export function isOfficeOpen(date, horaires) {
+  const h0 = horaires ?? DEFAULT_SETTINGS.horaires;
   const d = toDate(date);
   if (!isWeekday(d)) return false;
   const h = d.getHours() + d.getMinutes() / 60;
-  return horaires.some((r) => h >= r.debut && h < r.fin);
+  return h0.some((r) => h >= r.debut && h < r.fin);
 }
 
 export function atHour(date, hour, minute = 0) {
@@ -161,12 +183,13 @@ export function userHasLateLoan(loans, userId, date) {
 }
 
 function commonChecks({ item, user, loans, items, settings, date, circuit }) {
+  const S = withDefaults(settings);
   if (!user || user.actif === false) return REASONS.UTILISATEUR_INACTIF;
   if (item.circuit !== circuit) return REASONS.MAUVAIS_CIRCUIT;
-  if (item.etat !== ITEM_STATES.DISPONIBLE) return REASONS.INDISPONIBLE;
-  if (circuit === CIRCUITS.SELF && !isOfficeOpen(date, settings.horaires)) return REASONS.BUREAU_FERME;
+  if (item.etat !== ITEM_STATES.DISPONIBLE) return UNAVAILABLE_REASON[item.etat] || REASONS.INDISPONIBLE;
+  if (circuit === CIRCUITS.SELF && !isOfficeOpen(date, S.horaires)) return REASONS.BUREAU_FERME;
   if (hasActiveLoanOfReference(loans, items, user.id, item.reference)) return REASONS.DEJA_UN_EXEMPLAIRE;
-  if (settings.bloquerSiRetard && userHasLateLoan(loans, user.id, date)) return REASONS.RETARD_EN_COURS;
+  if (S.bloquerSiRetard && userHasLateLoan(loans, user.id, date)) return REASONS.RETARD_EN_COURS;
   return null;
 }
 
@@ -177,10 +200,11 @@ export function canBorrowSelf(ctx) {
 
 export function canReserveValeur(ctx) {
   const { debutPrevu, finPrevue, settings } = ctx;
-  const days = (toDate(finPrevue) - toDate(debutPrevu)) / DAY;
-  if (days < 0 || days > settings.dureeMaxReservationJours) {
+  const S = withDefaults(settings);
+  const days = Math.round((fromYmd(ymd(finPrevue)) - fromYmd(ymd(debutPrevu))) / DAY);
+  if (days < 0 || days > S.dureeMaxReservationJours) {
     return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };
   }
-  const reason = commonChecks({ ...ctx, circuit: CIRCUITS.VALEUR });
+  const reason = commonChecks({ ...ctx, settings: S, circuit: CIRCUITS.VALEUR });
   return { ok: reason === null, reason };
 }

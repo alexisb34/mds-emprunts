@@ -7,7 +7,7 @@ import {
   selfReturnDeadline, isLate, pickupWindow, isInPickupWindow, isExpired,
   bookingStart, bookingEnd, isBookingActive, isExitMissing,
   slotsAreContiguous, slotsInRoomHours, slotsConflict,
-  hasActiveLoanOfReference, userHasLateLoan, canBorrowSelf, canReserveValeur,
+  hasActiveLoanOfReference, userHasLateLoan, canBorrowSelf, canReserveValeur, withDefaults,
 } from '../js/rules.js';
 
 const jeudi10h = new Date(2026, 8, 17, 10, 0);
@@ -118,7 +118,9 @@ test('canBorrowSelf : cas passant et motifs de refus', () => {
   assert.deepEqual(canBorrowSelf(base), { ok: true, reason: null });
   assert.equal(canBorrowSelf({ ...base, date: samedi10h }).reason, REASONS.BUREAU_FERME);
   assert.equal(canBorrowSelf({ ...base, item: items[2] }).reason, REASONS.MAUVAIS_CIRCUIT);
-  assert.equal(canBorrowSelf({ ...base, item: { ...items[0], etat: 'maintenance' } }).reason, REASONS.INDISPONIBLE);
+  assert.equal(canBorrowSelf({ ...base, item: { ...items[0], etat: 'maintenance' } }).reason, REASONS.EN_MAINTENANCE);
+  assert.equal(canBorrowSelf({ ...base, item: { ...items[0], etat: 'emprunte' } }).reason, REASONS.EMPRUNTE_PAR_AUTRE);
+  assert.equal(canBorrowSelf({ ...base, item: { ...items[0], etat: 'hs' } }).reason, REASONS.HORS_SERVICE);
   assert.equal(canBorrowSelf({ ...base, loans: [{ userId: 'u1', itemId: 'i2', statut: 'en_cours' }] }).reason, REASONS.DEJA_UN_EXEMPLAIRE);
   const late = [{ userId: 'u1', itemId: 'i3', statut: 'en_cours', finPrevue: new Date(2026, 8, 10).toISOString() }];
   assert.equal(canBorrowSelf({ ...base, loans: late }).reason, REASONS.RETARD_EN_COURS);
@@ -135,9 +137,46 @@ test('canReserveValeur : durée max et circuit', () => {
   assert.equal(canReserveValeur({ ...base, finPrevue: addDays(debut, -1) }).reason, REASONS.DUREE_TROP_LONGUE);
   assert.equal(canReserveValeur({ ...base, item: items[0] }).reason, REASONS.MAUVAIS_CIRCUIT);
   assert.equal(canReserveValeur({ ...base, item: items[3] }).reason, REASONS.MAUVAIS_CIRCUIT);
-  assert.equal(canReserveValeur({ ...base, item: { ...items[2], etat: 'reserve' } }).reason, REASONS.INDISPONIBLE);
+  assert.equal(canReserveValeur({ ...base, item: { ...items[2], etat: 'reserve' } }).reason, REASONS.RESERVE_PAR_AUTRE);
+});
+
+test('canReserveValeur : durée max et circuit (jours calendaires)', () => {
+  // (a) lundi 9h → samedi 17h = 5 jours calendaires (fractionnaire donnerait ~4,33) → ok
+  const lundi9h = new Date(2026, 8, 14, 9);
+  const samedi17h = new Date(2026, 8, 19, 17);
+  const base = { item: items[2], user, loans: [], items, settings: S, debutPrevu: lundi9h, finPrevue: samedi17h, date: jeudi10h };
+  assert.equal(canReserveValeur(base).ok, true);
+  // (b) exactement dureeMaxReservationJours jours → ok
+  const debut = new Date(2026, 8, 14, 9);
+  const finExacte = fromYmd(ymd(addDays(debut, S.dureeMaxReservationJours)), 8);
+  assert.equal(canReserveValeur({ ...base, debutPrevu: debut, finPrevue: finExacte }).ok, true);
+  // (c) dureeMax + 1 jour → DUREE_TROP_LONGUE
+  const finTropLongue = fromYmd(ymd(addDays(debut, S.dureeMaxReservationJours + 1)), 8);
+  assert.equal(canReserveValeur({ ...base, debutPrevu: debut, finPrevue: finTropLongue }).reason, REASONS.DUREE_TROP_LONGUE);
+  // (d) traversée de DST (passage heure d’hiver fin octobre en France) : 5 jours calendaires → ok
+  const debutDst = new Date(2026, 9, 22, 9);
+  const finDst = new Date(2026, 9, 27, 9);
+  assert.equal(canReserveValeur({ ...base, debutPrevu: debutDst, finPrevue: finDst }).ok, true);
 });
 
 test('chaque motif a un libellé français', () => {
   for (const r of Object.values(REASONS)) assert.ok(REASON_LABELS[r], r);
+});
+
+test('withDefaults : fusionne des settings partiels avec les défauts', () => {
+  assert.deepEqual(withDefaults(undefined), DEFAULT_SETTINGS);
+  assert.deepEqual(withDefaults({}), DEFAULT_SETTINGS);
+  assert.equal(withDefaults({ dureeMaxReservationJours: 2 }).dureeMaxReservationJours, 2);
+  assert.equal(withDefaults({ dureeMaxReservationJours: 2 }).fenetreRetraitMinutes, DEFAULT_SETTINGS.fenetreRetraitMinutes);
+});
+
+test('canBorrowSelf avec des settings vides se comporte comme DEFAULT_SETTINGS', () => {
+  const base = { item: items[0], user, loans: [], items, settings: {}, date: jeudi10h };
+  assert.deepEqual(canBorrowSelf(base), { ok: true, reason: null });
+  assert.equal(canBorrowSelf({ ...base, date: samedi10h }).reason, REASONS.BUREAU_FERME);
+});
+
+test('isOfficeOpen(date, null) utilise les horaires par défaut', () => {
+  assert.equal(isOfficeOpen(jeudi10h, null), true);
+  assert.equal(isOfficeOpen(jeudi10h, undefined), true);
 });
