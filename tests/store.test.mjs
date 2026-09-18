@@ -105,3 +105,21 @@ test('genId préfixe et unicité', () => {
   assert.match(a, /^loan_/);
   assert.notEqual(a, b);
 });
+
+test('les enregistrements renvoyés par get/list sont gelés', () => {
+  const u = store.users.create({ nom: 'Dupont' });
+  assert.throws(() => { store.users.get(u.id).nom = 'X'; }, TypeError);
+  assert.equal(store.users.get(u.id).nom, 'Dupont');
+});
+
+test('settings.get() renvoie un objet gelé', () => {
+  store.settings.update({ horaires: [{ debut: 8, fin: 12 }] });
+  assert.throws(() => { store.settings.get().horaires[0].debut = 99; }, TypeError);
+});
+
+test('un seedFn qui renvoie des objets mutables est gelé après init', () => {
+  localStorage.clear();
+  const seedFn = () => ({ settings: {}, users: [{ id: 'u1', nom: 'X' }], items: [], loans: [], bookings: [], maintenance: [], log: [] });
+  store.init(seedFn);
+  assert.ok(Object.isFrozen(store.users.get('u1')));
+});
