@@ -12,6 +12,8 @@ export const CIRCUITS = { SELF: 'self', SALLE: 'salle', VALEUR: 'valeur' };
 
 export const CATEGORIES = ['Bureautique', 'Audio', 'Photo', 'Vidéo', 'Lumière', 'Stockage', 'Accessoire'];
 
+export const ITEM_CODE_RE = /^MDS-(\d{4})$/;
+
 export const ITEM_STATES = {
   DISPONIBLE: 'disponible', EMPRUNTE: 'emprunte', RESERVE: 'reserve', MAINTENANCE: 'maintenance', HS: 'hs',
 };
