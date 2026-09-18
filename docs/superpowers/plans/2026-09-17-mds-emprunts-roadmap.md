@@ -30,7 +30,7 @@
 | Phase | Plan détaillé | Livrable démontrable |
 |---|---|---|
 | 0. Fondations | `2026-09-17-phase-0-fondations.md` (rédigé) | `kit.html` fidèle au Figma, `npm test` vert, seed complet |
-| 1. Admin — inventaire & utilisateurs | à rédiger fin phase 0 | Admin navigable : dashboard, matériel, fiche, QR, utilisateurs |
+| 1. Admin — inventaire & utilisateurs | `2026-09-18-phase-1-admin-inventaire.md` (exécuté) | Admin navigable : dashboard, matériel, fiche, QR, utilisateurs |
 | 2. Mobile — self-service | à rédiger fin phase 1 | Scan → photo → emprunt → retour, visible en direct côté admin |
 | 3. Matériel de valeur | à rédiger fin phase 2 | Réservation → remise par QR → retard → réception avec checklist |
 | 4. Salle photo | à rédiger fin phase 3 | Réservation multi-créneaux, états des lieux, planning admin |
