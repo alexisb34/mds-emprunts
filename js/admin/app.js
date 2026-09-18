@@ -12,8 +12,8 @@ import { aVenirView } from './views/aVenir.js';
 import { dashboardView } from './views/dashboard.js';
 import { materielView } from './views/materiel.js';
 import { materielFicheView } from './views/materielFiche.js';
-// import { utilisateursView } from './views/utilisateurs.js';    (Task 7)
-// import { utilisateurFicheView } from './views/utilisateurFiche.js'; (Task 7)
+import { utilisateursView } from './views/utilisateurs.js';
+import { utilisateurFicheView } from './views/utilisateurFiche.js';
 
 store.init(buildSeed);
 
@@ -53,8 +53,8 @@ const routes = [
   { path: '/emprunts', view: guard(aVenirView('Emprunts', 3)) },
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
   { path: '/maintenance', view: guard(aVenirView('Maintenance', 5)) },
-  { path: '/utilisateurs', view: guard(aVenirView('Utilisateurs', 1)) },   // remplacé en Task 7
-  { path: '/utilisateurs/:id', view: guard(aVenirView('Fiche utilisateur', 1)) }, // remplacé en Task 7
+  { path: '/utilisateurs', view: guard(utilisateursView) },
+  { path: '/utilisateurs/:id', view: guard(utilisateurFicheView) },
   { path: '/parametres', view: guard(aVenirView('Paramètres', 5)) },
 ];
 
