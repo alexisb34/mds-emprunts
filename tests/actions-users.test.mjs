@@ -80,6 +80,13 @@ test('setUserActive : désactivation journalisée, idempotente', () => {
   assert.match(store.log.list().at(-1).detail, /réactivé/);
 });
 
+test('setUserActive : garde le dernier compte pédagogie actif', () => {
+  const pedagos = store.users.list((u) => u.role === 'pedago').map((u) => u.id);
+  assert.equal(pedagos.length, 5);
+  for (const id of pedagos.slice(0, 4)) setUserActive(id, false, PEDAGO);
+  assert.throws(() => setUserActive(pedagos[4], false, PEDAGO), /Impossible de désactiver le dernier compte pédagogie actif\./);
+});
+
 test('userStats : retards et emprunts en cours', () => {
   const lateLoan = store.loans.list((l) => l.statut === 'en_cours' && new Date(l.finPrevue) < NOW)[0];
   const s = userStats(lateLoan.userId, NOW);

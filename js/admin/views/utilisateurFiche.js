@@ -42,7 +42,7 @@ function journal(entries, date) {
     </div>`).join('')}</div>`;
 }
 
-export function userFicheHtml({ user, stats, history, items, date }) {
+export function userFicheHtml({ user, stats, history, items, date, isSelf = false }) {
   const active = user.actif !== false;
   return `
     <div class="page-header">
@@ -75,7 +75,7 @@ export function userFicheHtml({ user, stats, history, items, date }) {
         <div class="card">
           <div class="card__header"><h3 class="card__title">Compte</h3></div>
           <p class="body-sm text-secondary">${active ? 'Ce compte peut emprunter et réserver.' : 'Ce compte est désactivé : aucune connexion ni emprunt possible.'}</p>
-          <div class="form-actions"><button type="button" class="btn ${active ? 'btn--danger' : 'btn--primary'} btn--sm" data-action="toggle-active">${active ? 'Désactiver le compte' : 'Réactiver le compte'}</button></div>
+          <div class="form-actions"><button type="button" class="btn ${active ? 'btn--danger' : 'btn--primary'} btn--sm" data-action="toggle-active"${isSelf ? ' disabled title="Vous ne pouvez pas désactiver votre propre compte."' : ''}>${active ? 'Désactiver le compte' : 'Réactiver le compte'}</button></div>
         </div>
       </div>
     </div>`;
@@ -99,7 +99,7 @@ export function utilisateurFicheView(container, { id }) {
     }
     const date = now();
     setTopbar({ title: fullName(user), subtitle: `${LABELS.role[user.role]}${user.promo ? ` · ${user.promo}` : ''}` });
-    container.innerHTML = userFicheHtml({ user, stats: userStats(id, date), history: userHistory(id), items: store.items.list(), date });
+    container.innerHTML = userFicheHtml({ user, stats: userStats(id, date), history: userHistory(id), items: store.items.list(), date, isSelf: id === auth.currentUserId() });
     const form = container.querySelector('[data-role="user-form"]');
     bindUserForm(form);
     form.addEventListener('input', () => { dirty = true; });

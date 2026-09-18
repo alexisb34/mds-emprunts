@@ -65,6 +65,10 @@ export function updateUser(id, patch, auteurId) {
 export function setUserActive(id, actif, auteurId) {
   const current = requireUser(id);
   if (current.actif === actif) return current;
+  if (!actif && current.role === ROLES.PEDAGO) {
+    const autresPedagosActifs = store.users.list((u) => u.id !== id && u.role === ROLES.PEDAGO && u.actif !== false).length;
+    if (!autresPedagosActifs) throw new Error('Impossible de désactiver le dernier compte pédagogie actif.');
+  }
   const user = store.users.update(id, { actif });
   const name = `${user.prenom} ${user.nom}`;
   if (actif) logAction({ auteurId, action: ACTIONS.USER_MODIFIE, userId: id, detail: `${name} : compte réactivé` });

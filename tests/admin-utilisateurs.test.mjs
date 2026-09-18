@@ -67,3 +67,11 @@ test('userFicheHtml : identité, statistiques, historique, bouton d’activation
   assert.match(inactive, /data-action="toggle-active">Réactiver le compte/);
   assert.match(inactive, /badge--hs">Désactivé/);
 });
+
+test('userFicheHtml : isSelf désactive le bouton d’activation', () => {
+  const user = store.users.get('user_001');
+  const html = userFicheHtml({ user, stats: userStats(user.id, NOW), history: userHistory(user.id), items: store.items.list(), date: NOW, isSelf: true });
+  assert.match(html, /data-action="toggle-active" disabled title="Vous ne pouvez pas désactiver votre propre compte\."/);
+  const other = userFicheHtml({ user, stats: userStats(user.id, NOW), history: userHistory(user.id), items: store.items.list(), date: NOW });
+  assert.doesNotMatch(other, /disabled/);
+});
