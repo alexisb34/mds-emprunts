@@ -17,6 +17,7 @@ function normalize(data) {
   };
 }
 
+// Dépend du store (unicité de l’email), contrairement à validateItem.
 export function validateUser(data, existingId = null) {
   const errors = [];
   const d = normalize(data);

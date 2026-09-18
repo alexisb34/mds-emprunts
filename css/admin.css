@@ -2,6 +2,7 @@
 .admin-shell { display: grid; grid-template-columns: var(--size-sidebar) 1fr; min-height: 100vh; }
 .is-login .admin-shell { grid-template-columns: 1fr; }
 .is-login .sidebar, .is-login .topbar { display: none; }
+.is-login .view { padding: 0; }
 
 /* Sidebar */
 .sidebar { background: var(--brand-primary); color: var(--text-on-brand); padding: var(--space-2xl) var(--space-lg); display: flex; flex-direction: column; gap: var(--space-lg); position: sticky; top: 0; height: 100vh; }

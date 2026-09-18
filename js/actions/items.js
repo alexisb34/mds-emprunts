@@ -15,6 +15,7 @@ export function slugify(s) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+// Les codes ne sont jamais réutilisés : le matériel n’est jamais supprimé (HS reste dans l’inventaire).
 export function nextItemCode() {
   const max = store.items.list().reduce((m, i) => {
     const n = Number((ITEM_CODE_RE.exec(i.code) || [])[1] || 0);
