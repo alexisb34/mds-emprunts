@@ -25,9 +25,15 @@ test('relativeDay', () => {
   assert.equal(relativeDay(new Date(2026, 8, 20), ref), '20 sept. 2026');
 });
 
+test('relativeDay exige une référence explicite', () => {
+  assert.throws(() => relativeDay(d), /relativeDay/);
+  assert.throws(() => relativeDay(d, undefined), /relativeDay/);
+});
+
 test('formatSlots', () => {
   assert.equal(formatSlots([8, 9, 10, 11, 12]), '8h-13h');
   assert.equal(formatSlots([14]), '14h-15h');
+  assert.equal(formatSlots([]), '');
 });
 
 test('initials et fullName', () => {
@@ -36,10 +42,18 @@ test('initials et fullName', () => {
   assert.equal(fullName(u), 'Léa Pezzetti');
 });
 
+test('initials tolère un prénom ou nom manquant', () => {
+  assert.equal(initials({ prenom: undefined, nom: 'X' }), 'X');
+});
+
 test('badge : variante et libellé', () => {
   assert.equal(badge('item', 'disponible'), '<span class="badge badge--available">Disponible</span>');
   assert.equal(badge('loan', 'en_retard'), '<span class="badge badge--late">En retard</span>');
   assert.equal(badge('circuit', 'valeur'), '<span class="badge badge--borrowed">Sur réservation</span>');
   assert.equal(badge('maint', 'ouvert'), '<span class="badge badge--late">Ouvert</span>');
   assert.equal(badge('item', 'inconnu'), '<span class="badge badge--hs">inconnu</span>');
+});
+
+test('badge : libellé dérivé « sortie non faite » via LABELS.derived', () => {
+  assert.equal(badge('booking', 'sortie_non_faite'), '<span class="badge badge--hs">Sortie non faite</span>');
 });

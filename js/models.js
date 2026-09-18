@@ -74,4 +74,6 @@ export const LABELS = {
   bookingState: { a_venir: 'À venir', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' },
   maintType: { signalement: 'Signalement', intervention_interne: 'Intervention interne', intervention_externe: 'Intervention externe', remise_en_service: 'Remise en service' },
   maintState: { ouvert: 'Ouvert', en_cours: 'En cours', clos: 'Clos' },
+  // Valeurs calculées (pas un statut stocké) affichées via `ui.badge`.
+  derived: { en_retard: 'En retard', sortie_non_faite: 'Sortie non faite' },
 };

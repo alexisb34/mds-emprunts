@@ -42,3 +42,14 @@ test('logForItem et logForUser filtrent', () => {
   assert.ok(u.length > 0);
   assert.ok(u.every((e) => e.userId === 'user_001' || e.auteurId === 'user_001'));
 });
+
+test('à `date` égale (horloge de démo figée), tri secondaire sur createdAt décroissant', async () => {
+  store.settings.update({ horlogeDemo: '2026-09-18T09:00:00.000Z' });
+  const e1 = logAction({ auteurId: 'user_041', action: ACTIONS.ITEM_ETAT, itemId: 'item_001', detail: 'premier' });
+  await new Promise((r) => setTimeout(r, 5));
+  const e2 = logAction({ auteurId: 'user_041', action: ACTIONS.ITEM_ETAT, itemId: 'item_001', detail: 'second' });
+  assert.equal(e1.date, e2.date); // même horloge de démo
+  assert.notEqual(e1.createdAt, e2.createdAt); // horloge réelle, distincte
+  const [first] = recentLog(1);
+  assert.equal(first.detail, 'second'); // le plus récemment créé en premier
+});

@@ -34,7 +34,9 @@ export function logAction({ auteurId, action, itemId = null, loanId = null, book
   return store.log.create({ date: now().toISOString(), auteurId, action, itemId, loanId, bookingId, userId, detail });
 }
 
-const byDateDesc = (a, b) => b.date.localeCompare(a.date);
+// Tri par `date` (horloge de démo, peut être identique pour plusieurs entrées) puis,
+// à égalité, par `createdAt` décroissant : la dernière entrée créée apparaît en premier.
+const byDateDesc = (a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt);
 
 export function recentLog(limit = 20) {
   return store.log.list().sort(byDateDesc).slice(0, limit);

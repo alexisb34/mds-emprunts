@@ -1,4 +1,5 @@
-// js/ui.js — helpers d'affichage. Partie pure (formatage, badges) + partie DOM (modale, toast).
+// js/ui.js — helpers d’affichage. Partie pure (formatage, badges) + partie DOM (modale, toast).
+// Ce module ne lit jamais le store ni l’horloge : les vues lui passent `now()` explicitement.
 import { LABELS } from './models.js';
 
 const toDate = (d) => (d instanceof Date ? d : new Date(d));
@@ -22,7 +23,8 @@ export function formatDateTime(d) {
   return `${formatDate(d)} à ${formatTime(d)}`;
 }
 
-export function relativeDay(d, ref = new Date()) {
+export function relativeDay(d, ref) {
+  if (ref === undefined) throw new Error('relativeDay : passer now() en date de référence (horloge de démo)');
   const a = toDate(d); const b = toDate(ref);
   const dayA = new Date(a.getFullYear(), a.getMonth(), a.getDate());
   const dayB = new Date(b.getFullYear(), b.getMonth(), b.getDate());
@@ -34,6 +36,7 @@ export function relativeDay(d, ref = new Date()) {
 }
 
 export function formatSlots(creneaux) {
+  if (!creneaux || creneaux.length === 0) return '';
   const s = [...creneaux].sort((a, b) => a - b);
   return `${s[0]}h-${s[s.length - 1] + 1}h`;
 }
@@ -43,7 +46,7 @@ export function fullName(user) {
 }
 
 export function initials(user) {
-  return `${user.prenom[0] || ''}${user.nom[0] || ''}`.toUpperCase();
+  return `${(user.prenom || '')[0] || ''}${(user.nom || '')[0] || ''}`.toUpperCase();
 }
 
 // Variante visuelle (tokens --status-*) par famille et valeur
@@ -58,7 +61,7 @@ const LABEL_FAMILY = { item: 'itemState', loan: 'loanState', booking: 'bookingSt
 
 export function badge(kind, value) {
   const variant = VARIANTS[kind]?.[value] || 'hs';
-  const label = value === 'en_retard' ? 'En retard' : (LABELS[LABEL_FAMILY[kind]]?.[value] || value);
+  const label = LABELS.derived[value] || LABELS[LABEL_FAMILY[kind]]?.[value] || value;
   return `<span class="badge badge--${variant}">${escapeHtml(label)}</span>`;
 }
 
@@ -74,6 +77,8 @@ export function closeModal() {
   document.body.classList.remove('has-modal');
 }
 
+// `title` et les libellés d’actions sont échappés ; `body` est du HTML brut fourni par
+// l’appelant, qui doit échapper lui-même les données utilisateur via `escapeHtml`.
 export function openModal({ title, body, actions = [] }) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `
@@ -106,6 +111,6 @@ export function toast(message, variant = 'info', ms = 3000) {
   el.setAttribute('role', 'status');
   el.textContent = message;
   root.appendChild(el);
-  setTimeout(() => el.classList.add('toast--leaving'), ms - 300);
+  setTimeout(() => el.classList.add('toast--leaving'), Math.max(0, ms - 300));
   setTimeout(() => el.remove(), ms);
 }
