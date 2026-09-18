@@ -55,8 +55,10 @@ export function updateUser(id, patch, auteurId) {
   const safe = Object.fromEntries(Object.entries(patch).filter(([k]) => !PROTECTED_FIELDS.includes(k)));
   const merged = normalize({ ...current, ...safe });
   assertValid(merged, id);
-  const user = store.users.update(id, merged);
-  logAction({ auteurId, action: ACTIONS.USER_MODIFIE, userId: id, detail: `${user.prenom} ${user.nom} : ${Object.keys(safe).join(', ')}` });
+  const changed = Object.keys(merged).filter((k) => merged[k] !== current[k]);
+  if (!changed.length) return current;
+  const user = store.users.update(id, Object.fromEntries(changed.map((k) => [k, merged[k]])));
+  logAction({ auteurId, action: ACTIONS.USER_MODIFIE, userId: id, detail: `${user.prenom} ${user.nom} : ${changed.join(', ')}` });
   return user;
 }
 

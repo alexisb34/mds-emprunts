@@ -53,6 +53,20 @@ test('updateUser : champs protégés ignorés, changement de rôle efface la pro
   assert.throws(() => updateUser('nope', { nom: 'x' }, PEDAGO), /introuvable/);
 });
 
+test('updateUser : patch identique → aucune écriture, aucun journal', () => {
+  const current = store.users.get('user_001');
+  const before = store.log.list().length;
+  const same = updateUser('user_001', { prenom: current.prenom, nom: current.nom, email: current.email, role: current.role, promo: current.promo }, PEDAGO);
+  assert.equal(same.updatedAt, current.updatedAt);
+  assert.equal(store.log.list().length, before);
+});
+
+test('updateUser : detail ne cite que le champ réellement modifié', () => {
+  const current = store.users.get('user_001');
+  updateUser('user_001', { prenom: current.prenom, nom: 'Pezzetti-Martin', email: current.email, role: current.role, promo: current.promo }, PEDAGO);
+  assert.equal(store.log.list().at(-1).detail, `${current.prenom} Pezzetti-Martin : nom`);
+});
+
 test('setUserActive : désactivation journalisée, idempotente', () => {
   const before = store.log.list().length;
   const u = setUserActive('user_002', false, PEDAGO);

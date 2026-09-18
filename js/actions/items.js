@@ -71,8 +71,10 @@ export function updateItem(id, patch, auteurId) {
   if (safe.reference !== undefined) safe.reference = slugify(safe.reference);
   if (safe.valeurEstimee !== undefined) safe.valeurEstimee = Number(safe.valeurEstimee);
   assertValid({ ...current, ...safe });
-  const item = store.items.update(id, safe);
-  logAction({ auteurId, action: ACTIONS.ITEM_MODIFIE, itemId: id, detail: `${item.nom} : ${Object.keys(safe).join(', ')}` });
+  const changed = Object.keys(safe).filter((k) => safe[k] !== current[k]);
+  if (!changed.length) return current;
+  const item = store.items.update(id, Object.fromEntries(changed.map((k) => [k, safe[k]])));
+  logAction({ auteurId, action: ACTIONS.ITEM_MODIFIE, itemId: id, detail: `${item.nom} : ${changed.join(', ')}` });
   return item;
 }
 

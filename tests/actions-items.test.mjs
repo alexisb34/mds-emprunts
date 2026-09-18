@@ -70,6 +70,20 @@ test('updateItem : champs protégés ignorés, validation, journal', () => {
   assert.throws(() => updateItem('nope', { nom: 'x' }, PEDAGO), /introuvable/);
 });
 
+test('updateItem : patch identique → aucune écriture, aucun journal', () => {
+  const current = store.items.get('item_001');
+  const before = store.log.list().length;
+  const same = updateItem('item_001', { nom: current.nom, localisation: current.localisation }, PEDAGO);
+  assert.equal(same.updatedAt, current.updatedAt);
+  assert.equal(store.log.list().length, before);
+});
+
+test('updateItem : detail ne cite que le champ réellement modifié', () => {
+  const current = store.items.get('item_001');
+  updateItem('item_001', { nom: current.nom, localisation: 'Nouvelle armoire' }, PEDAGO);
+  assert.equal(store.log.list().at(-1).detail, `${current.nom} : localisation`);
+});
+
 test('setItemState : transition autorisée, journal, disponibles décrémentés', () => {
   const dispoAvant = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE).length;
   const free = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0];
