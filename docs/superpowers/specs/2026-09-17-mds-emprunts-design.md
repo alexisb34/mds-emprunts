@@ -138,7 +138,7 @@ Basée sur l'UI kit Figma : sidebar violette 260 px, topbar 72 px, canvas `#f2f4
 | `#/utilisateurs` | Table (nom, rôle, promo, emprunts en cours, retards) · ajouter / modifier / désactiver · `#/utilisateurs/:id` → historique complet de la personne |
 | `#/parametres` | Horaires d'ouverture, durée max réservation, fenêtre de retrait, règle anti-retard, **horloge de démo**, compteur d'espace `localStorage`/photos, **Réinitialiser les données de démo** |
 
-Recherche globale dans la topbar (objets, utilisateurs, emprunts). Modales et toasts conformes à la page *Modal & Feedback* du kit.
+Recherche matériel dans la topbar (objets) ; les écrans Utilisateurs et Emprunts ont leurs propres filtres. En phase 3, un code `LOAN-…`/code court saisi dans cette recherche ouvrira l’emprunt correspondant. Modales et toasts conformes à la page *Modal & Feedback* du kit.
 
 ## 7. Interface mobile (emprunteurs)
 
