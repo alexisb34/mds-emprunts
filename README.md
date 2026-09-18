@@ -8,7 +8,9 @@ Prototype de gestion des emprunts de matériel (école MDS). HTML/CSS/JS vanilla
 python3 -m http.server 8000
 ```
 
-Puis ouvrir http://localhost:8000 — `admin.html` (pédagogie, desktop) et `mobile.html` (emprunteurs, téléphone). La caméra (scan QR, photo) exige `localhost` ou HTTPS.
+Puis ouvrir http://localhost:8000 — `admin.html` (pédagogie, desktop) et `mobile.html` (emprunteurs, téléphone) arrivent en phases 1 et 2 ; les liens de `index.html` sont pour l’instant des cibles. La caméra (scan QR, photo) exige `localhost` ou HTTPS.
+
+Les données de démo supposent un jour ouvré ; un week-end, régler l’horloge de démo (Paramètres) sur un jour de semaine.
 
 ## Tester
 
