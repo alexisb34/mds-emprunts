@@ -15,7 +15,7 @@ const nameOf = (users, id) => { const u = users.find((x) => x.id === id); return
 
 function loansTable(loans, users, date) {
   if (!loans.length) return '<div class="empty-state">Aucun emprunt enregistré.</div>';
-  const photo = (src, alt) => (src ? `<img class="thumb" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">` : '');
+  const photo = (src, alt) => (src ? `<img class="thumb" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" data-lightbox>` : '');
   const rows = loans.map((l) => `
     <tr data-href="/utilisateurs/${escapeHtml(l.userId)}">
       <td>${escapeHtml(nameOf(users, l.userId))}</td>
@@ -150,6 +150,11 @@ export function materielFicheView(container, { id }) {
       }
     });
     container.querySelectorAll('[data-state]').forEach((btn) => btn.addEventListener('click', () => askStateChange(item, btn.dataset.state)));
+    container.querySelectorAll('[data-lightbox]').forEach((img) => img.addEventListener('click', () => openModal({
+      title: img.alt,
+      body: `<img src="${escapeHtml(img.src)}" alt="${escapeHtml(img.alt)}" class="lightbox">`,
+      actions: [{ label: 'Fermer', variant: 'ghost' }],
+    })));
     container.querySelectorAll('[data-href]').forEach((el) => el.addEventListener('click', (e) => {
       if (e.target.closest('a, button, img')) return;
       navigate(el.dataset.href);

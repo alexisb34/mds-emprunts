@@ -43,5 +43,5 @@ test('ficheHtml : retard affiché et photos d’emprunt', () => {
   const loan = store.loans.list((l) => l.itemId === dji.id && l.statut === 'en_cours')[0];
   store.loans.update(loan.id, { photoEmprunt: 'data:image/jpeg;base64,AAAA' });
   const withPhoto = build(store.items.get(dji.id));
-  assert.match(withPhoto, /<img class="thumb" src="data:image\/jpeg;base64,AAAA" alt="Photo à l’emprunt">/);
+  assert.match(withPhoto, /<img class="thumb" src="data:image\/jpeg;base64,AAAA" alt="Photo à l’emprunt" data-lightbox>/);
 });

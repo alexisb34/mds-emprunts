@@ -56,6 +56,7 @@
 .list__item[data-href] { cursor: pointer; }
 .list__grow { flex: 1; min-width: 0; }
 .thumb { width: 48px; height: 36px; object-fit: cover; border-radius: var(--radius-xs); border: var(--stroke-thin) solid var(--border-default); }
+.lightbox { width: 100%; height: auto; border-radius: var(--radius-md); }
 .error-card { border-left: 4px solid var(--feedback-error); }
 .kpi--alert .kpi__value { color: var(--feedback-error); }
 
