@@ -88,7 +88,7 @@ export function buildSeed(now = new Date()) {
     users: [], items: [], loans: [], bookings: [], maintenance: [], log: [] };
 
   const t0 = iso(addDays(now, -90));
-  const base = lastWeekday(now); // jour ouvré de référence pour « aujourd'hui »
+  const base = lastWeekday(now); // jour ouvré de référence pour « aujourd’hui »
 
   const addLog = (date, auteurId, action, refs, detail) => {
     db.log.push({
@@ -161,11 +161,16 @@ export function buildSeed(now = new Date()) {
     addLog(end, isSelf ? user.id : ped.id, 'loan.retour', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} rendu`);
   }
 
-  // 6 emprunts self en cours aujourd'hui
+  // 6 emprunts self en cours aujourd’hui
   [['multiprise', 0], ['multiprise', 1], ['kit-tableau', 0], ['casque-audio', 0], ['clavier', 0], ['souris', 0]].forEach(([ref, k], i) => {
     const it = item(ref, k);
     const user = emprunteurs[i * 3];
-    const start = atHour(base, 8 + (i % 4), 5 + i * 7);
+    // `base` est le dernier jour ouvré ≤ now, mais si c’est aujourd’hui l’heure calculée
+    // peut dépasser now (ex. now = 8h05) : on la borne pour qu’un emprunt « en cours »
+    // ne soit jamais daté dans le futur.
+    const start = ymd(base) === ymd(now)
+      ? new Date(Math.min(atHour(base, 8 + (i % 4), 5 + i * 7).getTime(), now.getTime() - (i + 1) * 10 * 60 * 1000))
+      : atHour(base, 8 + (i % 4), 5 + i * 7);
     const l = addLoan({
       itemId: it.id, userId: user.id, statut: LOAN_STATES.EN_COURS, dateReservation: iso(start), debutPrevu: iso(start),
       finPrevue: iso(atHour(base, 17)), dateRetrait: iso(start), createdAt: iso(start), updatedAt: iso(start),
@@ -318,12 +323,15 @@ export function buildSeed(now = new Date()) {
     const creneaux = h > db.settings.salle.heureDebut ? [h - 1, h] : [h];
     const user = emprunteurs[3];
     const start = atHour(now, creneaux[0]);
+    // Si now est juste après l’heure pile (ex. H:01), l’état des lieux calculé à H:02
+    // tomberait dans le futur : on le borne à `now - 1 min`.
+    const entree = new Date(Math.min(atHour(now, creneaux[0], 2).getTime(), now.getTime() - 60 * 1000));
     const b = addBooking({
       userId: user.id, date: ymd(now), creneaux, statut: BOOKING_STATES.EN_COURS,
-      etatEntree: etat(atHour(now, creneaux[0], 2)), createdAt: iso(addDays(start, -1)), updatedAt: iso(start),
+      etatEntree: etat(entree), createdAt: iso(addDays(start, -1)), updatedAt: iso(start),
     });
     addLog(addDays(start, -1), user.id, 'booking.creee', { bookingId: b.id, userId: user.id }, `Salle photo ${creneaux[0]}h-${creneaux[creneaux.length - 1] + 1}h — ${who(user)}`);
-    addLog(atHour(now, creneaux[0], 2), user.id, 'booking.entree', { bookingId: b.id, userId: user.id }, 'État des lieux d’entrée OK');
+    addLog(entree, user.id, 'booking.entree', { bookingId: b.id, userId: user.id }, 'État des lieux d’entrée OK');
   }
 
   // 3 réservations à venir

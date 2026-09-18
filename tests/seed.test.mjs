@@ -93,3 +93,20 @@ test('journal non vide, entrées datées et référencées ; settings = défauts
 test('buildSeed est déterministe pour un même now', () => {
   assert.equal(JSON.stringify(buildSeed(NOW)), JSON.stringify(db));
 });
+
+test('aucun emprunt « en cours » ni état des lieux d’entrée n’est daté dans le futur', () => {
+  for (const l of db.loans.filter((l) => l.statut === LOAN_STATES.EN_COURS)) {
+    assert.ok(new Date(l.dateRetrait).getTime() <= NOW.getTime(), l.id);
+  }
+  const enCours = db.bookings.find((b) => b.statut === BOOKING_STATES.EN_COURS);
+  if (enCours) assert.ok(new Date(enCours.etatEntree.date).getTime() <= NOW.getTime());
+});
+
+test('buildSeed(lundi 8h00) : aucun dateRetrait futur, seed déterministe', () => {
+  const lundi8h = new Date(2026, 8, 21, 8, 0);
+  const seedLundi = buildSeed(lundi8h);
+  for (const l of seedLundi.loans.filter((l) => l.statut === LOAN_STATES.EN_COURS)) {
+    assert.ok(new Date(l.dateRetrait).getTime() <= lundi8h.getTime(), l.id);
+  }
+  assert.equal(JSON.stringify(buildSeed(lundi8h)), JSON.stringify(seedLundi));
+});
