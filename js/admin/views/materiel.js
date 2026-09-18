@@ -64,6 +64,7 @@ export function itemFormHtml(item = {}, references = []) {
       ${field('Valeur estimée (€)', 'valeurEstimee', `<input class="input" name="valeurEstimee" type="number" min="0" step="1" value="${escapeHtml(item.valeurEstimee ?? 0)}">`)}
       ${field('Localisation', 'localisation', `<input class="input" name="localisation" value="${escapeHtml(item.localisation || '')}" placeholder="Armoire sécurisée">`)}
       ${field('Date d’achat', 'dateAchat', `<input class="input" name="dateAchat" type="date" value="${escapeHtml(item.dateAchat || '')}">`)}
+      ${field('Illustration (URL, optionnel)', 'photoUrl', `<input class="input" name="photoUrl" type="url" value="${escapeHtml(item.photoUrl || '')}" placeholder="https://…">`)}
       <label class="field field--full"><span class="field__label">Notes</span><textarea class="textarea" name="notes">${escapeHtml(item.notes || '')}</textarea></label>
     </div>
     <datalist id="ref-list">${references.map((r) => `<option value="${escapeHtml(r)}">`).join('')}</datalist>`;
@@ -73,7 +74,7 @@ export function readItemForm(root) {
   const value = (name) => root.querySelector(`[name="${name}"]`).value;
   return {
     nom: value('nom'), reference: value('reference'), categorie: value('categorie'), circuit: value('circuit'),
-    valeurEstimee: value('valeurEstimee'), localisation: value('localisation'), dateAchat: value('dateAchat'), notes: value('notes'),
+    valeurEstimee: value('valeurEstimee'), localisation: value('localisation'), dateAchat: value('dateAchat'), photoUrl: value('photoUrl'), notes: value('notes'),
   };
 }
 

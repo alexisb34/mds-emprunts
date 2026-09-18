@@ -41,12 +41,18 @@ test('materielHtml : compteurs, filtres, table triée', () => {
 
 test('itemFormHtml : champs nommés, datalist des références, valeurs pré-remplies', () => {
   const html = itemFormHtml({ nom: 'Canon "R10"', reference: 'canon-r10', categorie: 'Photo', circuit: 'valeur', valeurEstimee: 1100, localisation: 'Armoire', dateAchat: '2025-09-01', notes: '' }, ['canon-r10', 'zoom-h5']);
-  for (const name of ['nom', 'reference', 'categorie', 'circuit', 'valeurEstimee', 'localisation', 'dateAchat', 'notes']) assert.match(html, new RegExp(`name="${name}"`));
+  for (const name of ['nom', 'reference', 'categorie', 'circuit', 'valeurEstimee', 'localisation', 'dateAchat', 'photoUrl', 'notes']) assert.match(html, new RegExp(`name="${name}"`));
   assert.match(html, /value="Canon &quot;R10&quot;"/);
   assert.match(html, /<option value="Photo" selected>/);
   assert.match(html, /<option value="valeur" selected>/);
   assert.match(html, /<datalist id="ref-list"><option value="canon-r10"><option value="zoom-h5"><\/datalist>/);
   assert.match(itemFormHtml(), /<option value="self" selected>/);
+});
+
+test('itemFormHtml : illustration (photoUrl) optionnelle', () => {
+  const html = itemFormHtml({ photoUrl: 'https://x/y.jpg' });
+  assert.match(html, /name="photoUrl"/);
+  assert.match(html, /value="https:\/\/x\/y\.jpg"/);
 });
 
 test('SELECT_COLUMN : case à cocher portant le code', () => {
