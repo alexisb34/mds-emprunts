@@ -20,13 +20,13 @@
 }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn--primary { background: var(--brand-primary); color: var(--text-on-brand); }
-.btn--primary:hover:not(:disabled) { background: #521d69; }
+.btn--primary:hover:not(:disabled) { background: var(--brand-primary-hover); }
 .btn--secondary { background: var(--bg-surface); color: var(--text-brand); border-color: var(--border-brand); }
 .btn--secondary:hover:not(:disabled) { background: var(--brand-primary-subtle); }
 .btn--ghost { background: transparent; color: var(--text-brand); }
 .btn--ghost:hover:not(:disabled) { background: var(--brand-primary-subtle); }
 .btn--danger { background: var(--feedback-error); color: var(--text-inverse); }
-.btn--danger:hover:not(:disabled) { background: #c8253a; }
+.btn--danger:hover:not(:disabled) { background: var(--feedback-error-hover); }
 .btn--sm { height: var(--size-control-sm); padding: 0 var(--space-lg); font-size: 12px; }
 .btn--icon { width: var(--size-control-md); padding: 0; }
 .btn--block { width: 100%; }
@@ -68,9 +68,9 @@
 .kpi__value { font-family: var(--font-heading); font-weight: 800; font-size: 40px; line-height: 44px; letter-spacing: -1px; }
 .kpi__delta { font-size: 11px; line-height: 16px; color: var(--text-secondary); }
 .kpi--brand { background: var(--brand-primary); color: var(--text-on-brand); }
-.kpi--brand .kpi__label, .kpi--brand .kpi__delta { color: rgba(255, 255, 255, .8); }
+.kpi--brand .kpi__label, .kpi--brand .kpi__delta { color: var(--alpha-white-80); }
 .kpi--teal { background: var(--brand-secondary); color: var(--text-on-brand); }
-.kpi--teal .kpi__label, .kpi--teal .kpi__delta { color: rgba(255, 255, 255, .85); }
+.kpi--teal .kpi__label, .kpi--teal .kpi__delta { color: var(--alpha-white-85); }
 
 /* ---- Table ---- */
 .table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 21px; }
@@ -111,7 +111,7 @@
 .avatar--md { width: 44px; height: 44px; font-size: 14px; }
 
 /* ---- Navigation (sidebar) ---- */
-.nav-item { display: flex; align-items: center; gap: var(--space-md); height: 40px; padding: 0 var(--space-md); border-radius: var(--radius-md); color: rgba(255, 255, 255, .8); font-size: 14px; font-weight: 700; }
+.nav-item { display: flex; align-items: center; gap: var(--space-md); height: 40px; padding: 0 var(--space-md); border-radius: var(--radius-md); color: var(--alpha-white-80); font-size: 14px; font-weight: 700; }
 .nav-item:hover { background: var(--alpha-white-10); color: var(--text-inverse); }
 .nav-item--active { background: var(--bg-surface); color: var(--text-brand); }
 .nav-item__count { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius-full); background: var(--brand-accent); color: var(--text-inverse); font-size: 11px; display: grid; place-items: center; }
@@ -127,7 +127,7 @@
 
 /* ---- Modale ---- */
 .has-modal { overflow: hidden; }
-.modal-backdrop { position: fixed; inset: 0; background: rgba(60, 60, 59, .5); display: grid; place-items: center; padding: var(--space-lg); z-index: 100; }
+.modal-backdrop { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; padding: var(--space-lg); z-index: 100; }
 .modal { width: min(560px, 100%); max-height: 90vh; overflow: auto; background: var(--bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); display: flex; flex-direction: column; }
 .modal__header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2xl) var(--space-2xl) var(--space-lg); }
 .modal__close { width: 32px; height: 32px; border-radius: 50%; font-size: 22px; line-height: 1; color: var(--text-secondary); }
@@ -146,6 +146,6 @@
 
 /* ---- Alerte inline ---- */
 .alert { display: flex; gap: var(--space-md); padding: var(--space-md) var(--space-lg); border-radius: var(--radius-md); font-size: 14px; line-height: 21px; }
-.alert--warning { background: var(--status-maintenance-bg); color: #7a5300; }
+.alert--warning { background: var(--status-maintenance-bg); color: var(--status-maintenance-text); }
 .alert--error { background: var(--status-late-bg); color: var(--status-late-fg); }
 .alert--info { background: var(--brand-secondary-subtle); color: var(--status-reserved-fg); }

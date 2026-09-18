@@ -34,7 +34,12 @@ export function createRouter({ routes, container, defaultPath = '/', notFound })
       const params = matchRoute(route.path, path);
       if (params) {
         container.innerHTML = '';
-        cleanup = route.view(container, params) || null;
+        try {
+          cleanup = route.view(container, params) || null;
+        } catch (err) {
+          console.error(err);
+          container.innerHTML = `<div class="card error-card"><h2 class="h6">Erreur d’affichage</h2><p class="body-sm text-secondary">${String(err && err.message ? err.message : err).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</p></div>`;
+        }
         window.scrollTo(0, 0);
         return;
       }
