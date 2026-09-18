@@ -1,4 +1,4 @@
-// js/rules.js — règles temporelles et d'éligibilité. Fonctions pures : elles reçoivent
+// js/rules.js — règles temporelles et d’éligibilité. Fonctions pures : elles reçoivent
 // les données et la date en paramètres. Seule now() lit les settings du store.
 import { store } from './store.js';
 import { CIRCUITS, ITEM_STATES, LOAN_STATES, BOOKING_STATES } from './models.js';

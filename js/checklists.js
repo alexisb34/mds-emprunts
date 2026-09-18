@@ -1,4 +1,4 @@
-// js/checklists.js — checklists de retour / état des lieux, indexées par référence d'objet.
+// js/checklists.js — checklists de retour / état des lieux, indexées par référence d’objet.
 // Modifiable sans toucher aux vues. En phase 2 produit : éditable depuis Paramètres.
 
 export const CHECKLISTS = {
