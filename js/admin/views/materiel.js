@@ -26,6 +26,12 @@ export const COLUMNS = [
   { key: 'valeurEstimee', label: 'Valeur', sortable: true, align: 'right', render: (i) => `${escapeHtml(i.valeurEstimee)} €` },
 ];
 
+// Colonne de sélection (impression d’étiquettes) — hors COLUMNS pour ne pas être triable.
+export const SELECT_COLUMN = {
+  key: 'select', label: '',
+  render: (i) => `<input type="checkbox" data-select="${escapeHtml(i.code)}" aria-label="Sélectionner ${escapeHtml(i.code)}">`,
+};
+
 const options = (values, labelOf, selected, emptyLabel) => `<option value="">${escapeHtml(emptyLabel)}</option>${values.map((v) => `<option value="${escapeHtml(v)}"${v === selected ? ' selected' : ''}>${escapeHtml(labelOf(v))}</option>`).join('')}`;
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 
@@ -42,8 +48,8 @@ export function materielHtml({ items, total, disponibles, filters, sort }) {
         <select class="select" name="circuit" aria-label="Circuit">${options(Object.values(CIRCUITS), (v) => LABELS.circuit[v], filters.circuit, 'Tous les circuits')}</select>
         <select class="select" name="etat" aria-label="État">${options(Object.values(ITEM_STATES), (v) => LABELS.itemState[v], filters.etat, 'Tous les états')}</select>
       </div>
-      <div class="toolbar" data-role="toolbar"></div>
-      <div data-role="table">${renderTable({ columns: COLUMNS, rows: items, sort, rowHref: (i) => `/materiel/${i.id}`, emptyText: 'Aucun matériel ne correspond à ces filtres.' })}</div>
+      <div class="toolbar"><button type="button" class="btn btn--secondary btn--sm" data-action="print-selected" disabled>Imprimer les QR sélectionnés (0)</button></div>
+      <div data-role="table">${renderTable({ columns: [SELECT_COLUMN, ...COLUMNS], rows: items, sort, rowHref: (i) => `/materiel/${i.id}`, emptyText: 'Aucun matériel ne correspond à ces filtres.' })}</div>
     </div>`;
 }
 
@@ -78,12 +84,30 @@ export function materielView(container) {
   const currentRows = () => sortRows(filterItems(store.items.list(), filters), sort, COLUMNS);
   const references = () => [...new Set(store.items.list().map((i) => i.reference))].sort();
 
+  const selected = new Set();
+  const syncSelection = () => {
+    container.querySelectorAll('[data-select]').forEach((cb) => {
+      cb.checked = selected.has(cb.dataset.select);
+      cb.addEventListener('change', () => {
+        if (cb.checked) selected.add(cb.dataset.select); else selected.delete(cb.dataset.select);
+        syncPrintButton();
+      });
+    });
+    syncPrintButton();
+  };
+  const syncPrintButton = () => {
+    const btn = container.querySelector('[data-action="print-selected"]');
+    btn.disabled = selected.size === 0;
+    btn.textContent = `Imprimer les QR sélectionnés (${selected.size})`;
+  };
+
   // Ne re-rend que la table (et le compteur) pour garder le focus dans les filtres.
   const renderTableOnly = () => {
     const rows = currentRows();
-    container.querySelector('[data-role="table"]').innerHTML = renderTable({ columns: COLUMNS, rows, sort, rowHref: (i) => `/materiel/${i.id}`, emptyText: 'Aucun matériel ne correspond à ces filtres.' });
+    container.querySelector('[data-role="table"]').innerHTML = renderTable({ columns: [SELECT_COLUMN, ...COLUMNS], rows, sort, rowHref: (i) => `/materiel/${i.id}`, emptyText: 'Aucun matériel ne correspond à ces filtres.' });
     container.querySelector('[data-role="count"]').textContent = plural(rows.length, 'résultat', 'résultats');
     bindTable(container, { onSort: (key) => { sort = toggleSort(sort, key); renderTableOnly(); }, onRow: navigate });
+    syncSelection();
   };
 
   const render = () => {
@@ -97,6 +121,10 @@ export function materielView(container) {
       container.querySelector(`[name="${name}"]`).addEventListener('change', (e) => { filters[name] = e.target.value; renderTableOnly(); });
     }
     bindTable(container, { onSort: (key) => { sort = toggleSort(sort, key); renderTableOnly(); }, onRow: navigate });
+    container.querySelector('[data-action="print-selected"]').addEventListener('click', () => {
+      window.open(`etiquettes.html?codes=${encodeURIComponent([...selected].join(','))}`, '_blank', 'noopener');
+    });
+    syncSelection();
   };
 
   const openAddModal = () => openModal({

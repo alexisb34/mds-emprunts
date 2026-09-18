@@ -11,7 +11,7 @@ import { aVenirView } from './views/aVenir.js';
 // Les tâches suivantes ajoutent leurs imports ici :
 import { dashboardView } from './views/dashboard.js';
 import { materielView } from './views/materiel.js';
-// import { materielFicheView } from './views/materielFiche.js';  (Task 6)
+import { materielFicheView } from './views/materielFiche.js';
 // import { utilisateursView } from './views/utilisateurs.js';    (Task 7)
 // import { utilisateurFicheView } from './views/utilisateurFiche.js'; (Task 7)
 
@@ -49,7 +49,7 @@ const routes = [
   { path: '/login', view: (c) => { document.body.classList.add('is-login'); return loginView(c); } },
   { path: '/dashboard', view: guard(dashboardView) },
   { path: '/materiel', view: guard(materielView) },
-  { path: '/materiel/:id', view: guard(aVenirView('Fiche matériel', 1)) }, // remplacé en Task 6
+  { path: '/materiel/:id', view: guard(materielFicheView) },
   { path: '/emprunts', view: guard(aVenirView('Emprunts', 3)) },
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
   { path: '/maintenance', view: guard(aVenirView('Maintenance', 5)) },

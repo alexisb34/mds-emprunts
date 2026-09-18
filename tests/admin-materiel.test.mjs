@@ -2,7 +2,7 @@ import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeed } from '../js/seed.js';
-import { filterItems, COLUMNS, materielHtml, itemFormHtml } from '../js/admin/views/materiel.js';
+import { filterItems, COLUMNS, materielHtml, itemFormHtml, SELECT_COLUMN } from '../js/admin/views/materiel.js';
 import { sortRows } from '../js/admin/table.js';
 
 const db = buildSeed(new Date(2026, 8, 17, 10, 0));
@@ -47,4 +47,9 @@ test('itemFormHtml : champs nommés, datalist des références, valeurs pré-rem
   assert.match(html, /<option value="valeur" selected>/);
   assert.match(html, /<datalist id="ref-list"><option value="canon-r10"><option value="zoom-h5"><\/datalist>/);
   assert.match(itemFormHtml(), /<option value="self" selected>/);
+});
+
+test('SELECT_COLUMN : case à cocher portant le code', () => {
+  assert.equal(SELECT_COLUMN.key, 'select');
+  assert.match(SELECT_COLUMN.render({ code: 'MDS-0007' }), /<input type="checkbox" data-select="MDS-0007"/);
 });
