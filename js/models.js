@@ -12,6 +12,8 @@ export const CIRCUITS = { SELF: 'self', SALLE: 'salle', VALEUR: 'valeur' };
 
 export const CATEGORIES = ['Bureautique', 'Audio', 'Photo', 'Vidéo', 'Lumière', 'Stockage', 'Accessoire'];
 
+export const ITEM_CODE_RE = /^MDS-(\d{4})$/;
+
 export const ITEM_STATES = {
   DISPONIBLE: 'disponible', EMPRUNTE: 'emprunte', RESERVE: 'reserve', MAINTENANCE: 'maintenance', HS: 'hs',
 };
@@ -75,5 +77,5 @@ export const LABELS = {
   maintType: { signalement: 'Signalement', intervention_interne: 'Intervention interne', intervention_externe: 'Intervention externe', remise_en_service: 'Remise en service' },
   maintState: { ouvert: 'Ouvert', en_cours: 'En cours', clos: 'Clos' },
   // Valeurs calculées (pas un statut stocké) affichées via `ui.badge`.
-  derived: { en_retard: 'En retard', sortie_non_faite: 'Sortie non faite' },
+  derived: { en_retard: 'En retard', sortie_non_faite: 'Sortie non faite', actif: 'Actif', desactive: 'Désactivé' },
 };

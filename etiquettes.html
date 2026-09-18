@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MDS Emprunts — Étiquettes QR</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    .labels { max-width: 1100px; margin: 0 auto; padding: var(--space-2xl); }
+    .labels__toolbar { display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-2xl); }
+    .labels__toolbar h1 { flex: 1; }
+    .labels__grid { display: grid; grid-template-columns: repeat(auto-fill, 62mm); gap: 6mm; }
+    .label { width: 62mm; height: 48mm; border: 1px dashed var(--border-strong); border-radius: var(--radius-xs); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5mm; background: var(--bg-surface); page-break-inside: avoid; break-inside: avoid; }
+    .label__code { font-size: 14px; line-height: 18px; font-weight: 700; }
+    .label__name { font-size: 11px; line-height: 14px; color: var(--text-secondary); max-width: 56mm; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .label__brand { font-size: 9px; line-height: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-brand); }
+    @media print {
+      body { background: var(--bg-surface); }
+      .no-print { display: none; }
+      .labels { padding: 0; max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="labels">
+    <header class="labels__toolbar no-print">
+      <h1 class="h6">Étiquettes QR</h1>
+      <a class="btn btn--ghost btn--sm" href="admin.html#/materiel">← Retour au matériel</a>
+      <button type="button" class="btn btn--primary btn--sm" id="print">Imprimer</button>
+    </header>
+    <div id="grid" class="labels__grid"></div>
+  </main>
+  <script src="vendor/qrcode.min.js"></script>
+  <script type="module">
+    import { store } from './js/store.js';
+    import { buildSeed } from './js/seed.js';
+    import { renderQr } from './js/qr.js';
+    import { escapeHtml } from './js/ui.js';
+
+    store.init(buildSeed);
+    const codes = (new URLSearchParams(window.location.search).get('codes') || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const items = codes.map((code) => store.items.list((i) => i.code === code)[0]).filter(Boolean);
+    const codesInconnus = codes.filter((code) => !items.some((i) => i.code === code));
+    const grid = document.getElementById('grid');
+    if (!codes.length) {
+      grid.innerHTML = '<p class="empty-state">Aucun code fourni (paramètre <code>?codes=MDS-0001,MDS-0002</code>).</p>';
+    } else if (!items.length) {
+      grid.innerHTML = `<p class="empty-state">Codes inconnus : ${escapeHtml(codesInconnus.join(', '))}</p>`;
+    } else {
+      const labels = items.map((i) => `<div class="label"><div class="label__qr" data-code="${escapeHtml(i.code)}"></div><strong class="label__code">${escapeHtml(i.code)}</strong><span class="label__name">${escapeHtml(i.nom)}</span><span class="label__brand">MDS Emprunts</span></div>`).join('');
+      const avertissement = codesInconnus.length
+        ? `<p class="body-tiny text-secondary no-print">Codes inconnus ignorés : ${escapeHtml(codesInconnus.join(', '))}</p>`
+        : '';
+      grid.innerHTML = labels + avertissement;
+    }
+    grid.querySelectorAll('[data-code]').forEach((el) => renderQr(el, el.dataset.code, 96));
+    document.getElementById('print').addEventListener('click', () => window.print());
+  </script>
+</body>
+</html>

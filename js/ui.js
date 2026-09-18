@@ -56,8 +56,10 @@ const VARIANTS = {
   booking: { a_venir: 'reserved', en_cours: 'borrowed', terminee: 'available', annulee: 'hs' },
   maint: { ouvert: 'late', en_cours: 'maintenance', clos: 'available' },
   circuit: { self: 'available', salle: 'reserved', valeur: 'borrowed' },
+  role: { eleve: 'reserved', intervenant: 'borrowed', pedago: 'available' },
+  derived: { en_retard: 'late', sortie_non_faite: 'late', actif: 'available', desactive: 'hs' },
 };
-const LABEL_FAMILY = { item: 'itemState', loan: 'loanState', booking: 'bookingState', maint: 'maintState', circuit: 'circuit' };
+const LABEL_FAMILY = { item: 'itemState', loan: 'loanState', booking: 'bookingState', maint: 'maintState', circuit: 'circuit', role: 'role' };
 
 export function badge(kind, value) {
   const variant = VARIANTS[kind]?.[value] || 'hs';

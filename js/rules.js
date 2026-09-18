@@ -165,6 +165,14 @@ export function slotsConflict(bookings, date, creneaux, ignoreId = null) {
   );
 }
 
+// ---- Tri ----
+
+// Tri décroissant par une date métier (ISO), avec createdAt en départage ; jamais createdAt seul
+// (horloge réelle) pour ordonner ce que l’utilisateur voit (horloge de démo).
+export function sortByDateDesc(rows, pick) {
+  return [...rows].sort((a, b) => (String(pick(b) || '').localeCompare(String(pick(a) || ''))) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+}
+
 // ---- Éligibilité ----
 
 const ACTIVE_LOAN_STATES = [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS];

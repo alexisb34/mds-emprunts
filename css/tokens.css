@@ -76,4 +76,12 @@
   /* Typographie */
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Bricolage Grotesque', var(--font-body);
+
+  /* Dérivés (hover, overlays) — introduits en phase 1 */
+  --brand-primary-hover: #521d69;
+  --feedback-error-hover: #c8253a;
+  --overlay: rgba(60, 60, 59, 0.5);
+  --alpha-white-80: rgba(255, 255, 255, 0.8);
+  --alpha-white-85: rgba(255, 255, 255, 0.85);
+  --status-maintenance-text: #7a5300;
 }

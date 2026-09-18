@@ -7,7 +7,7 @@ import {
   selfReturnDeadline, isLate, pickupWindow, isInPickupWindow, isExpired,
   bookingStart, bookingEnd, isBookingActive, isExitMissing,
   slotsAreContiguous, slotsInRoomHours, slotsConflict,
-  hasActiveLoanOfReference, userHasLateLoan, canBorrowSelf, canReserveValeur, withDefaults,
+  hasActiveLoanOfReference, userHasLateLoan, canBorrowSelf, canReserveValeur, withDefaults, sortByDateDesc,
 } from '../js/rules.js';
 
 const jeudi10h = new Date(2026, 8, 17, 10, 0);
@@ -161,6 +161,20 @@ test('canReserveValeur : durée max et circuit (jours calendaires)', () => {
 
 test('chaque motif a un libellé français', () => {
   for (const r of Object.values(REASONS)) assert.ok(REASON_LABELS[r], r);
+});
+
+test('sortByDateDesc : tri par date métier, createdAt en départage', () => {
+  const rows = [
+    { d: '2026-09-10', createdAt: '2026-09-18T10:00:00Z' },
+    { d: '2026-09-16', createdAt: '2026-09-01T00:00:00Z' },
+    { d: null, createdAt: '2026-09-19T00:00:00Z' },
+  ];
+  assert.deepEqual(sortByDateDesc(rows, (r) => r.d).map((r) => r.d), ['2026-09-16', '2026-09-10', null]);
+  const tie = [
+    { d: '2026-09-10', createdAt: '2026-09-01T00:00:00Z' },
+    { d: '2026-09-10', createdAt: '2026-09-05T00:00:00Z' },
+  ];
+  assert.deepEqual(sortByDateDesc(tie, (r) => r.d).map((r) => r.createdAt), ['2026-09-05T00:00:00Z', '2026-09-01T00:00:00Z']);
 });
 
 test('withDefaults : fusionne des settings partiels avec les défauts', () => {

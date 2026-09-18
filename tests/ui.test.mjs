@@ -52,6 +52,8 @@ test('badge : variante et libellé', () => {
   assert.equal(badge('circuit', 'valeur'), '<span class="badge badge--borrowed">Sur réservation</span>');
   assert.equal(badge('maint', 'ouvert'), '<span class="badge badge--late">Ouvert</span>');
   assert.equal(badge('item', 'inconnu'), '<span class="badge badge--hs">inconnu</span>');
+  assert.equal(badge('role', 'eleve'), '<span class="badge badge--reserved">Élève</span>');
+  assert.equal(badge('role', 'pedago'), '<span class="badge badge--available">Pédagogie</span>');
 });
 
 test('badge : libellé dérivé « sortie non faite » via LABELS.derived', () => {

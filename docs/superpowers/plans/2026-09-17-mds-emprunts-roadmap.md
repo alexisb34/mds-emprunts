@@ -30,7 +30,7 @@
 | Phase | Plan détaillé | Livrable démontrable |
 |---|---|---|
 | 0. Fondations | `2026-09-17-phase-0-fondations.md` (rédigé) | `kit.html` fidèle au Figma, `npm test` vert, seed complet |
-| 1. Admin — inventaire & utilisateurs | à rédiger fin phase 0 | Admin navigable : dashboard, matériel, fiche, QR, utilisateurs |
+| 1. Admin — inventaire & utilisateurs | `2026-09-18-phase-1-admin-inventaire.md` (exécuté) | Admin navigable : dashboard, matériel, fiche, QR, utilisateurs |
 | 2. Mobile — self-service | à rédiger fin phase 1 | Scan → photo → emprunt → retour, visible en direct côté admin |
 | 3. Matériel de valeur | à rédiger fin phase 2 | Réservation → remise par QR → retard → réception avec checklist |
 | 4. Salle photo | à rédiger fin phase 3 | Réservation multi-créneaux, états des lieux, planning admin |
@@ -46,10 +46,10 @@
 | # | Tâche | Fichiers | Produit (interfaces) | Vérification |
 |---|---|---|---|---|
 | 1.1 | Coquille admin | `admin.html`, `css/admin.css`, `js/admin/app.js` | Sidebar (7 entrées), topbar (recherche, action principale, avatar), `<main id="view">`, `<div id="modal-root">`, `<div id="toast-root">` ; `app.js` : `store.init(buildSeed)`, login pédago (sélecteur des 5 pédago si aucun `auth.currentUser()`), `createRouter(routes)` | Ouvrir `admin.html`, naviguer entre routes vides, sidebar active |
-| 1.2 | Actions matériel | `js/actions/items.js`, `tests/actions-items.test.mjs` | `createItem(data, auteurId)` (génère `code` `MDS-NNNN` unique), `updateItem(id, patch, auteurId)`, `setItemState(id, etat, auteurId, detail)` (vérifie `ITEM_TRANSITIONS`), `nextItemCode()` | Tests : code auto-incrémenté, transition interdite lève, log écrit |
-| 1.3 | Actions utilisateurs | `js/actions/users.js`, `tests/actions-users.test.mjs` | `createUser`, `updateUser`, `deactivateUser`, `userStats(userId)` → `{ enCours, retards, total }` | Tests : désactivation, stats |
-| 1.4 | Vue tableau de bord | `js/admin/views/dashboard.js`, `js/admin/kpi.js`, `tests/kpi.test.mjs` | `computeKpis(db, now)` → `{ disponibles, enCours, retards, reservationsSalle }` ; widgets Retards, À remettre aujourd'hui, Signalements, Dernières activités (20 dernières `LogEntry`) | Test `computeKpis` sur le seed ; visuel vs Figma `2:117` |
-| 1.5 | Vue matériel | `js/admin/views/materiel.js`, `js/admin/table.js` | `renderTable({ columns, rows, sort, onSort })` réutilisable ; filtres catégorie/circuit/état + recherche ; modale *Ajouter* | Ajouter un objet → apparaît dans la table et le journal |
+| 1.2 | Actions matériel | `js/actions/items.js`, `tests/actions-items.test.mjs` | `createItem(data, auteurId)` (génère `code` `MDS-NNNN` unique), `updateItem(id, patch, auteurId)`, `setItemState(id, etat, auteurId, detail)` (vérifie `ITEM_TRANSITIONS`), `applyItemState(id, etat)` (sans journal), `nextItemCode()` | Tests : code auto-incrémenté, transition interdite lève, log écrit |
+| 1.3 | Actions utilisateurs | `js/actions/users.js`, `tests/actions-users.test.mjs` | `createUser`, `updateUser`, `setUserActive`, `userStats(userId, date)` → `{ enCours, retards, reservations, total }` | Tests : désactivation, stats |
+| 1.4 | Vue tableau de bord | `js/admin/views/dashboard.js`, `js/admin/kpi.js`, `tests/kpi.test.mjs` | `computeKpis(db, now)` → `{ disponibles, enCours, retards, reservationsSalle }` ; widgets Retards, À remettre aujourd'hui, Signalements, Dernières activités (15 dernières `LogEntry`) | Test `computeKpis` sur le seed ; visuel vs Figma `2:117` |
+| 1.5 | Vue matériel | `js/admin/views/materiel.js`, `js/admin/table.js` | `renderTable({ columns, rows, sort, rowHref, emptyText })` + `bindTable(root, { onSort, onRow })` réutilisables ; filtres catégorie/circuit/état + recherche ; modale *Ajouter* | Ajouter un objet → apparaît dans la table et le journal |
 | 1.6 | Fiche matériel + QR | `js/admin/views/materielFiche.js`, `js/qr.js`, `vendor/qrcode.min.js`, `etiquettes.html` | `renderQr(container, text, size)` ; fiche : infos éditables, changement d'état, historique emprunts/interventions, photos ; `etiquettes.html?codes=MDS-0001,MDS-0002` page d'impression | Imprimer une étiquette (aperçu impression), passer un objet HS → disparaît des disponibles |
 | 1.7 | Vues utilisateurs | `js/admin/views/utilisateurs.js`, `js/admin/views/utilisateurFiche.js` | Table + filtres rôle/promo, ajout/modif/désactivation, fiche avec historique complet | Scénario : ajouter un intervenant, le désactiver |
 
