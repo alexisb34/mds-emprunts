@@ -82,7 +82,15 @@ export function userFicheHtml({ user, stats, history, items, date }) {
 }
 
 export function utilisateurFicheView(container, { id }) {
+  // Une saisie en cours dans le formulaire ne doit jamais être écrasée par un re-rendu
+  // déclenché ailleurs (autre onglet, autre action) : on avertit et on ne touche à rien.
+  let dirty = false;
+
   const render = () => {
+    if (dirty && container.querySelector('[data-role="user-form"]')) {
+      toast('Données mises à jour ailleurs — enregistrez ou rechargez la fiche', 'warning');
+      return;
+    }
     const user = store.users.get(id);
     if (!user) {
       setTopbar({ title: 'Utilisateur introuvable' });
@@ -94,12 +102,15 @@ export function utilisateurFicheView(container, { id }) {
     container.innerHTML = userFicheHtml({ user, stats: userStats(id, date), history: userHistory(id), items: store.items.list(), date });
     const form = container.querySelector('[data-role="user-form"]');
     bindUserForm(form);
+    form.addEventListener('input', () => { dirty = true; });
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      dirty = false;
       try {
         updateUser(id, readUserForm(form), auth.currentUserId());
         toast('Modifications enregistrées', 'success');
       } catch (err) {
+        dirty = true;
         toast(err.message, 'error');
       }
     });

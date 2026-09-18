@@ -52,6 +52,11 @@ test('topbarHtml : titre, sous-titre, action optionnelle, recherche', () => {
   assert.doesNotMatch(without, /<p>/);
 });
 
+test('topbarHtml : la valeur de recherche en cours est préservée et échappée', () => {
+  const html = topbarHtml({ title: 'x', searchValue: 'ro"nin' });
+  assert.match(html, /value="ro&quot;nin"/);
+});
+
 test('loginHtml : un bouton par pédago actif, emails affichés', () => {
   const pedagos = store.users.list((u) => u.role === 'pedago');
   const html = loginHtml(pedagos);

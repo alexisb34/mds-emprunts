@@ -95,6 +95,10 @@ export function ficheHtml({ item, history, users, transitions, references, date 
 }
 
 export function materielFicheView(container, { id }) {
+  // Une saisie en cours dans le formulaire ne doit jamais être écrasée par un re-rendu
+  // déclenché ailleurs (autre onglet, autre action) : on avertit et on ne touche à rien.
+  let dirty = false;
+
   const askStateChange = (item, etat) => openModal({
     title: `Passer « ${item.nom} » en ${LABELS.itemState[etat]}`,
     body: '<label class="field"><span class="field__label">Motif (optionnel)</span><textarea class="textarea" name="motif" placeholder="Ex. : câble sectionné, envoyé chez le prestataire…"></textarea></label>',
@@ -116,6 +120,10 @@ export function materielFicheView(container, { id }) {
   });
 
   const render = () => {
+    if (dirty && container.querySelector('[data-role="item-form"]')) {
+      toast('Données mises à jour ailleurs — enregistrez ou rechargez la fiche', 'warning');
+      return;
+    }
     const item = store.items.get(id);
     if (!item) {
       setTopbar({ title: 'Matériel introuvable' });
@@ -128,12 +136,16 @@ export function materielFicheView(container, { id }) {
     setTopbar({ title: item.nom, subtitle: `${item.code} · ${LABELS.itemState[item.etat]}` });
     container.innerHTML = ficheHtml({ item, history: itemHistory(id), users, transitions: manualTransitions(item), references, date });
     renderQr(container.querySelector('#qr'), item.code, 160);
-    container.querySelector('[data-role="item-form"]').addEventListener('submit', (e) => {
+    const form = container.querySelector('[data-role="item-form"]');
+    form.addEventListener('input', () => { dirty = true; });
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
+      dirty = false;
       try {
         updateItem(id, readItemForm(e.target), auth.currentUserId());
         toast('Modifications enregistrées', 'success');
       } catch (err) {
+        dirty = true;
         toast(err.message, 'error');
       }
     });

@@ -57,9 +57,12 @@ export function mountSidebar({ el, currentPath: path, counts, user, onLogout }) 
 }
 
 // Appelé par chaque vue au montage. La recherche globale envoie vers la liste du matériel.
+// La saisie en cours dans le champ de recherche est préservée d’un re-rendu à l’autre
+// (le store peut redéclencher setTopbar pendant que l’utilisateur tape).
 export function setTopbar({ title, subtitle = '', action = null }) {
   const el = document.getElementById('topbar');
-  el.innerHTML = topbarHtml({ title, subtitle, action });
+  const current = el.querySelector('[data-role="global-search"]')?.value ?? '';
+  el.innerHTML = topbarHtml({ title, subtitle, action, searchValue: current });
   if (action) el.querySelector('[data-action="primary"]').addEventListener('click', action.onClick);
   el.querySelector('[data-role="global-search"]').addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
