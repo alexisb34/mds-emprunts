@@ -5,7 +5,7 @@ import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { ITEM_STATES } from '../js/models.js';
 import { ACTIONS } from '../js/log.js';
-import { slugify, nextItemCode, validateItem, createItem, updateItem, setItemState, manualTransitions, itemHistory } from '../js/actions/items.js';
+import { slugify, nextItemCode, validateItem, createItem, updateItem, setItemState, applyItemState, manualTransitions, itemHistory } from '../js/actions/items.js';
 
 const PEDAGO = 'user_041';
 const valid = { nom: 'Multiprise', reference: 'multiprise', categorie: 'Bureautique', circuit: 'self', valeurEstimee: 15, localisation: 'Bureau pédago' };
@@ -85,6 +85,16 @@ test('setItemState refuse une transition interdite', () => {
   const hs = store.items.list((i) => i.etat === ITEM_STATES.HS)[0];
   assert.throws(() => setItemState(hs.id, ITEM_STATES.EMPRUNTE, PEDAGO), /Transition matériel interdite : hs → emprunte/);
   assert.throws(() => setItemState('nope', ITEM_STATES.HS, PEDAGO), /introuvable/);
+});
+
+test('applyItemState : change l’état sans journaliser', () => {
+  const before = store.log.list().length;
+  const free = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0];
+  const up = applyItemState(free.id, ITEM_STATES.MAINTENANCE);
+  assert.equal(up.etat, ITEM_STATES.MAINTENANCE);
+  assert.equal(store.log.list().length, before);
+  const hs = store.items.list((i) => i.etat === ITEM_STATES.HS)[0];
+  assert.throws(() => applyItemState(hs.id, ITEM_STATES.EMPRUNTE), /Transition matériel interdite : hs → emprunte/);
 });
 
 test('manualTransitions : seulement les états pilotés à la main', () => {

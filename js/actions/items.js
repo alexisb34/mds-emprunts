@@ -76,10 +76,17 @@ export function updateItem(id, patch, auteurId) {
   return item;
 }
 
-export function setItemState(id, etat, auteurId, detail = '') {
+// Change l’état sans journaliser : réservé aux actions (emprunts, maintenance) qui écrivent
+// leur propre entrée de journal. Les vues utilisent setItemState.
+export function applyItemState(id, etat) {
   const item = requireItem(id);
   assertTransition(ITEM_TRANSITIONS, item.etat, etat, 'matériel');
-  const updated = store.items.update(id, { etat });
+  return store.items.update(id, { etat });
+}
+
+export function setItemState(id, etat, auteurId, detail = '') {
+  const item = requireItem(id);
+  const updated = applyItemState(id, etat);
   const suffix = detail ? ` — ${detail}` : '';
   logAction({
     auteurId, action: ACTIONS.ITEM_ETAT, itemId: id,
