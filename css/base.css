@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Bricolage+Grotesque:wght@800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 25px;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+img, svg, video, canvas { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+a { color: var(--text-brand); text-decoration: none; }
+ul { list-style: none; margin: 0; padding: 0; }
+h1, h2, h3, h4, h5, h6, p { margin: 0; }
+
+/* Échelle typographique du kit */
+.h5 { font-family: var(--font-heading); font-weight: 800; font-size: 24px; line-height: 30px; letter-spacing: -0.5px; }
+.h6 { font-family: var(--font-heading); font-weight: 800; font-size: 18px; line-height: 26px; letter-spacing: -0.2px; }
+.kpi-number { font-family: var(--font-heading); font-weight: 800; font-size: 40px; line-height: 44px; letter-spacing: -1px; }
+.body { font-size: 16px; line-height: 25px; }
+.body-bold { font-size: 16px; line-height: 25px; font-weight: 700; }
+.body-sm { font-size: 14px; line-height: 21px; }
+.body-sm-bold { font-size: 14px; line-height: 21px; font-weight: 700; }
+.body-tiny { font-size: 11px; line-height: 16px; }
+.label-lg { font-size: 16px; line-height: 20px; font-weight: 700; }
+.label-md { font-size: 14px; line-height: 18px; font-weight: 700; }
+.label-sm { font-size: 12px; line-height: 16px; font-weight: 700; }
+.label-caps { font-size: 11px; line-height: 14px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
+.label-mini-caps { font-size: 10px; line-height: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+
+.text-secondary { color: var(--text-secondary); }
+.text-brand { color: var(--text-brand); }
+.text-error { color: var(--feedback-error); }
+.text-success { color: var(--feedback-success); }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
