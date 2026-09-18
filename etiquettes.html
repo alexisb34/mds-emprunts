@@ -42,10 +42,19 @@
     store.init(buildSeed);
     const codes = (new URLSearchParams(window.location.search).get('codes') || '').split(',').map((s) => s.trim()).filter(Boolean);
     const items = codes.map((code) => store.items.list((i) => i.code === code)[0]).filter(Boolean);
+    const codesInconnus = codes.filter((code) => !items.some((i) => i.code === code));
     const grid = document.getElementById('grid');
-    grid.innerHTML = items.length
-      ? items.map((i) => `<div class="label"><div class="label__qr" data-code="${escapeHtml(i.code)}"></div><strong class="label__code">${escapeHtml(i.code)}</strong><span class="label__name">${escapeHtml(i.nom)}</span><span class="label__brand">MDS Emprunts</span></div>`).join('')
-      : '<p class="empty-state">Aucun code fourni (paramètre <code>?codes=MDS-0001,MDS-0002</code>).</p>';
+    if (!codes.length) {
+      grid.innerHTML = '<p class="empty-state">Aucun code fourni (paramètre <code>?codes=MDS-0001,MDS-0002</code>).</p>';
+    } else if (!items.length) {
+      grid.innerHTML = `<p class="empty-state">Codes inconnus : ${escapeHtml(codesInconnus.join(', '))}</p>`;
+    } else {
+      const labels = items.map((i) => `<div class="label"><div class="label__qr" data-code="${escapeHtml(i.code)}"></div><strong class="label__code">${escapeHtml(i.code)}</strong><span class="label__name">${escapeHtml(i.nom)}</span><span class="label__brand">MDS Emprunts</span></div>`).join('');
+      const avertissement = codesInconnus.length
+        ? `<p class="body-tiny text-secondary no-print">Codes inconnus ignorés : ${escapeHtml(codesInconnus.join(', '))}</p>`
+        : '';
+      grid.innerHTML = labels + avertissement;
+    }
     grid.querySelectorAll('[data-code]').forEach((el) => renderQr(el, el.dataset.code, 96));
     document.getElementById('print').addEventListener('click', () => window.print());
   </script>
