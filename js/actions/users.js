@@ -1,7 +1,7 @@
 // js/actions/users.js — mutations métier sur les utilisateurs (gestion par la pédago).
 import { store } from '../store.js';
 import { ROLES, PROMOS, LABELS, LOAN_STATES } from '../models.js';
-import { isLate } from '../rules.js';
+import { isLate, sortByDateDesc } from '../rules.js';
 import { logAction, ACTIONS, logForUser } from '../log.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -80,12 +80,10 @@ export function userStats(userId, date) {
   };
 }
 
-const byCreatedDesc = (a, b) => (b.createdAt || '').localeCompare(a.createdAt || '');
-
 export function userHistory(userId) {
   return {
-    loans: store.loans.list((l) => l.userId === userId).sort(byCreatedDesc),
-    bookings: store.bookings.list((b) => b.userId === userId).sort((a, b) => b.date.localeCompare(a.date)),
+    loans: sortByDateDesc(store.loans.list((l) => l.userId === userId), (l) => l.dateRetrait || l.debutPrevu || l.dateReservation),
+    bookings: sortByDateDesc(store.bookings.list((b) => b.userId === userId), (b) => b.date),
     log: logForUser(userId),
   };
 }

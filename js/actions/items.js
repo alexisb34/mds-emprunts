@@ -3,6 +3,7 @@
 import { store } from '../store.js';
 import { ITEM_STATES, ITEM_TRANSITIONS, ITEM_CODE_RE, CIRCUITS, CATEGORIES, LABELS, assertTransition } from '../models.js';
 import { logAction, ACTIONS, logForItem } from '../log.js';
+import { sortByDateDesc } from '../rules.js';
 
 const PROTECTED_FIELDS = ['id', 'code', 'etat', 'createdAt', 'updatedAt'];
 
@@ -92,12 +93,10 @@ export function manualTransitions(item) {
   return (ITEM_TRANSITIONS[item.etat] || []).filter((s) => MANUAL_STATES.includes(s));
 }
 
-const byCreatedDesc = (a, b) => (b.createdAt || '').localeCompare(a.createdAt || '');
-
 export function itemHistory(id) {
   return {
-    loans: store.loans.list((l) => l.itemId === id).sort(byCreatedDesc),
-    maintenance: store.maintenance.list((m) => m.itemId === id).sort(byCreatedDesc),
+    loans: sortByDateDesc(store.loans.list((l) => l.itemId === id), (l) => l.dateRetrait || l.debutPrevu || l.dateReservation),
+    maintenance: sortByDateDesc(store.maintenance.list((m) => m.itemId === id), (m) => m.date),
     log: logForItem(id),
   };
 }

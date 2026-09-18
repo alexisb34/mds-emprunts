@@ -95,14 +95,30 @@ test('manualTransitions : seulement les états pilotés à la main', () => {
   assert.deepEqual(manualTransitions({ etat: 'reserve' }), []);
 });
 
-test('itemHistory : emprunts, maintenance et journal du plus récent au plus ancien', () => {
+test('itemHistory : emprunts, maintenance et journal triés par date métier (pas createdAt seul)', () => {
   const canon = store.items.list((i) => i.reference === 'canon-r10')[0];
   const h = itemHistory(canon.id);
   assert.ok(h.loans.length >= 1);
   assert.ok(h.loans.every((l) => l.itemId === canon.id));
-  assert.ok(h.loans.every((l, i, a) => i === 0 || a[i - 1].createdAt >= l.createdAt));
+  const dateOf = (l) => l.dateRetrait || l.debutPrevu || l.dateReservation;
+  assert.ok(h.loans.every((l, i, a) => i === 0 || dateOf(a[i - 1]) >= dateOf(l)));
   assert.equal(h.maintenance.length, 1);
   assert.equal(h.maintenance[0].prestataire, 'Optic Services');
   assert.ok(h.log.length >= 2);
   assert.ok(h.log.every((e) => e.itemId === canon.id));
+
+  // L’emprunt en cours (retiré le 16, mais créé le 13) doit rester avant un emprunt
+  // rendu ultérieurement (créé après coup, mais avec une date métier antérieure au 16) :
+  // on trie sur la date métier, jamais sur createdAt (horloge réelle) seul.
+  store.settings.update({ horlogeDemo: '2026-09-10T09:00:00.000Z' });
+  const enCours = store.loans.list((l) => l.itemId === canon.id && l.statut === 'en_cours')[0];
+  const ancien = store.loans.create({
+    itemId: canon.id, userId: enCours.userId, statut: 'retournee',
+    dateReservation: '2026-09-08T09:00:00.000Z', debutPrevu: '2026-09-10T09:00:00.000Z',
+    finPrevue: '2026-09-10T17:00:00.000Z', dateRetrait: '2026-09-10T09:00:00.000Z', dateRetourReelle: '2026-09-10T17:00:00.000Z',
+  });
+  const h2 = itemHistory(canon.id);
+  const idxEnCours = h2.loans.findIndex((l) => l.id === enCours.id);
+  const idxAncien = h2.loans.findIndex((l) => l.id === ancien.id);
+  assert.ok(idxEnCours < idxAncien, 'l’emprunt en cours (retiré le 16) doit précéder celui retiré le 10');
 });
