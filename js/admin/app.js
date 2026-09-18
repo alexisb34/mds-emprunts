@@ -10,7 +10,7 @@ import { loginView } from './views/login.js';
 import { aVenirView } from './views/aVenir.js';
 // Les tâches suivantes ajoutent leurs imports ici :
 import { dashboardView } from './views/dashboard.js';
-// import { materielView } from './views/materiel.js';            (Task 5)
+import { materielView } from './views/materiel.js';
 // import { materielFicheView } from './views/materielFiche.js';  (Task 6)
 // import { utilisateursView } from './views/utilisateurs.js';    (Task 7)
 // import { utilisateurFicheView } from './views/utilisateurFiche.js'; (Task 7)
@@ -48,7 +48,7 @@ const guard = (view) => (container, params) => {
 const routes = [
   { path: '/login', view: (c) => { document.body.classList.add('is-login'); return loginView(c); } },
   { path: '/dashboard', view: guard(dashboardView) },
-  { path: '/materiel', view: guard(aVenirView('Matériel', 1)) },           // remplacé en Task 5
+  { path: '/materiel', view: guard(materielView) },
   { path: '/materiel/:id', view: guard(aVenirView('Fiche matériel', 1)) }, // remplacé en Task 6
   { path: '/emprunts', view: guard(aVenirView('Emprunts', 3)) },
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
