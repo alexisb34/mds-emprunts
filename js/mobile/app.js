@@ -8,10 +8,10 @@ import { mountNav } from './layout.js';
 import { loginView } from './views/login.js';
 import { profilView } from './views/profil.js';
 import { aVenirView } from './views/aVenir.js';
+import { accueilView } from './views/accueil.js';
+import { catalogueView } from './views/catalogue.js';
+import { ficheView } from './views/fiche.js';
 // Les tâches suivantes ajoutent leurs imports ici :
-// import { accueilView } from './views/accueil.js';      (Task 4)
-// import { catalogueView } from './views/catalogue.js';  (Task 4)
-// import { ficheView } from './views/fiche.js';          (Task 4)
 // import { scanView } from './views/scan.js';            (Task 5)
 // import { empruntsView } from './views/emprunts.js';    (Task 6)
 
@@ -31,9 +31,9 @@ const guard = (view) => (container, params) => {
 
 const routes = [
   { path: '/login', view: (c) => { document.body.classList.add('is-login'); return loginView(c); } },
-  { path: '/accueil', view: guard(aVenirView('Accueil', 2)) },                    // remplacé en Task 4
-  { path: '/catalogue', view: guard(aVenirView('Catalogue', 2)) },                // remplacé en Task 4
-  { path: '/catalogue/:reference', view: guard(aVenirView('Fiche', 2)) },         // remplacé en Task 4
+  { path: '/accueil', view: guard(accueilView) },
+  { path: '/catalogue', view: guard(catalogueView) },
+  { path: '/catalogue/:reference', view: guard(ficheView) },
   { path: '/scan', view: guard(aVenirView('Scanner', 2)) },                       // remplacé en Task 5
   { path: '/emprunts', view: guard(aVenirView('Mes emprunts', 2)) },              // remplacé en Task 6
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
