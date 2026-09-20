@@ -137,6 +137,35 @@ test('returnSelf : retour possible bureau fermé ; refus si mauvais utilisateur 
   assert.throws(() => returnSelf({ loanId: 'nope', userId: LEA, photo: PHOTO }), /introuvable/);
 });
 
+test('borrowSelf : une écriture qui échoue n’écrit rien (item toujours disponible, aucun emprunt créé)', () => {
+  const kit = freeSelf('kit-tableau');
+  const loansBefore = store.loans.list().length;
+  const orig = store.log.create;
+  store.log.create = () => { throw new Error('quota'); };
+  try {
+    assert.throws(() => borrowSelf({ itemCode: kit.code, userId: 'user_010', photo: PHOTO }), /quota/);
+  } finally {
+    store.log.create = orig;
+  }
+  assert.equal(store.items.get(kit.id).etat, ITEM_STATES.DISPONIBLE);
+  assert.equal(store.loans.list().length, loansBefore);
+});
+
+test('returnSelf avec problème : une écriture qui échoue n’écrit rien (emprunt toujours en cours, item toujours emprunté)', () => {
+  const loan = store.loans.get('loan_041');
+  const item = store.items.get(loan.itemId);
+  const checklist = [{ ligne: 'Câble intact', ok: false, commentaire: 'gaine coupée' }, { ligne: 'Toutes les prises fonctionnent', ok: true, commentaire: '' }, { ligne: 'Interrupteur OK', ok: true, commentaire: '' }];
+  const orig = store.maintenance.create;
+  store.maintenance.create = () => { throw new Error('quota'); };
+  try {
+    assert.throws(() => returnSelf({ loanId: loan.id, userId: LEA, photo: PHOTO, checklist }), /quota/);
+  } finally {
+    store.maintenance.create = orig;
+  }
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.EN_COURS);
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.EMPRUNTE);
+});
+
 test('userLoans : en cours avec retard, réservations, historique trié', () => {
   const lateLoan = store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS && new Date(l.finPrevue) < NOW)[0];
   const u = userLoans(lateLoan.userId, NOW);

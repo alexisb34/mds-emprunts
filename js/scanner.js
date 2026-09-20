@@ -64,6 +64,7 @@ export async function hasCamera() {
 let stream = null;
 
 export async function startCamera(videoEl) {
+  stopCamera();
   stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
   videoEl.srcObject = stream;
   await videoEl.play();

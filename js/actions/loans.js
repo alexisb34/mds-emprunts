@@ -41,15 +41,17 @@ export function borrowSelf({ itemCode, userId, photo = null }) {
   const { item } = r;
   const user = store.users.get(userId);
   const heure = withDefaults(store.settings.get()).heureRetourSelf;
-  applyItemState(item.id, ITEM_STATES.EMPRUNTE);
-  const loan = store.loans.create({
-    itemId: item.id, userId, statut: LOAN_STATES.EN_COURS, motif: '', motifRefus: '', codeRetrait: null,
-    dateReservation: date.toISOString(), debutPrevu: date.toISOString(), finPrevue: selfReturnDeadline(date, heure).toISOString(),
-    dateRetrait: date.toISOString(), dateRetourReelle: null, remisPar: null, receptionnePar: null,
-    photoEmprunt: photo, photoRetour: null, checklistRetour: null, commentaire: '',
+  return store.transaction(() => {
+    const loan = store.loans.create({
+      itemId: item.id, userId, statut: LOAN_STATES.EN_COURS, motif: '', motifRefus: '', codeRetrait: null,
+      dateReservation: date.toISOString(), debutPrevu: date.toISOString(), finPrevue: selfReturnDeadline(date, heure).toISOString(),
+      dateRetrait: date.toISOString(), dateRetourReelle: null, remisPar: null, receptionnePar: null,
+      photoEmprunt: photo, photoRetour: null, checklistRetour: null, commentaire: '',
+    });
+    applyItemState(item.id, ITEM_STATES.EMPRUNTE);
+    logAction({ auteurId: userId, action: ACTIONS.LOAN_EMPRUNT, itemId: item.id, loanId: loan.id, userId, detail: `${item.nom} — ${fullName(user)}` });
+    return loan;
   });
-  logAction({ auteurId: userId, action: ACTIONS.LOAN_EMPRUNT, itemId: item.id, loanId: loan.id, userId, detail: `${item.nom} — ${fullName(user)}` });
-  return loan;
 }
 
 // Le retour est toujours possible (pas de contrôle d’horaires) ; un problème coché crée un signalement.
@@ -62,17 +64,19 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
   const date = now();
   const lines = checklist || buildChecklist(item.reference);
   const problem = hasProblem(lines);
-  const updated = store.loans.update(loanId, { statut: LOAN_STATES.RETOURNEE, dateRetourReelle: date.toISOString(), photoRetour: photo, checklistRetour: lines });
-  applyItemState(item.id, problem ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
-  logAction({ auteurId: userId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId, detail: `${item.nom} rendu${problem ? ' avec un problème' : ''}` });
-  if (!problem) return { loan: updated, maintenance: null };
-  const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
-  const maintenance = store.maintenance.create({
-    itemId: item.id, type: MAINT_TYPES.SIGNALEMENT, auteurId: userId, date: date.toISOString(), statut: MAINT_STATES.OUVERT,
-    description: `Signalé au retour : ${detail}`, prestataire: '', cout: 0, loanId, bookingId: null,
+  return store.transaction(() => {
+    const updated = store.loans.update(loanId, { statut: LOAN_STATES.RETOURNEE, dateRetourReelle: date.toISOString(), photoRetour: photo, checklistRetour: lines });
+    applyItemState(item.id, problem ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
+    logAction({ auteurId: userId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId, detail: `${item.nom} rendu${problem ? ' avec un problème' : ''}` });
+    if (!problem) return { loan: updated, maintenance: null };
+    const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
+    const maintenance = store.maintenance.create({
+      itemId: item.id, type: MAINT_TYPES.SIGNALEMENT, auteurId: userId, date: date.toISOString(), statut: MAINT_STATES.OUVERT,
+      description: `Signalé au retour : ${detail}`, prestataire: '', cout: 0, loanId, bookingId: null,
+    });
+    logAction({ auteurId: userId, action: ACTIONS.MAINT_SIGNALEMENT, itemId: item.id, loanId, detail: maintenance.description });
+    return { loan: updated, maintenance };
   });
-  logAction({ auteurId: userId, action: ACTIONS.MAINT_SIGNALEMENT, itemId: item.id, loanId, detail: maintenance.description });
-  return { loan: updated, maintenance };
 }
 
 export function userLoans(userId, date = now()) {
