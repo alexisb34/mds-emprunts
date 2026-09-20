@@ -25,6 +25,7 @@ export const REASONS = {
   MAUVAIS_CIRCUIT: 'mauvais_circuit',
   DUREE_TROP_LONGUE: 'duree_trop_longue',
   UTILISATEUR_INACTIF: 'utilisateur_inactif',
+  CODE_INCONNU: 'code_inconnu',
 };
 
 export const REASON_LABELS = {
@@ -39,6 +40,7 @@ export const REASON_LABELS = {
   mauvais_circuit: 'Ce matériel ne s’emprunte pas de cette façon.',
   duree_trop_longue: 'La durée demandée dépasse le maximum autorisé.',
   utilisateur_inactif: 'Ce compte est désactivé.',
+  code_inconnu: 'Code non reconnu : scannez l’étiquette MDS-XXXX collée sur l’objet.',
 };
 
 const UNAVAILABLE_REASON = {
