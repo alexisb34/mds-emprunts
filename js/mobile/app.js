@@ -12,8 +12,7 @@ import { accueilView } from './views/accueil.js';
 import { catalogueView } from './views/catalogue.js';
 import { ficheView } from './views/fiche.js';
 import { scanView } from './views/scan.js';
-// Les tâches suivantes ajoutent leurs imports ici :
-// import { empruntsView } from './views/emprunts.js';    (Task 6)
+import { empruntsView } from './views/emprunts.js';
 
 store.init(buildSeed);
 
@@ -35,7 +34,7 @@ const routes = [
   { path: '/catalogue', view: guard(catalogueView) },
   { path: '/catalogue/:reference', view: guard(ficheView) },
   { path: '/scan', view: guard(scanView) },
-  { path: '/emprunts', view: guard(aVenirView('Mes emprunts', 2)) },              // remplacé en Task 6
+  { path: '/emprunts', view: guard(empruntsView) },
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
   { path: '/reserver/:id', view: guard(aVenirView('Réserver', 3, '/catalogue')) },
   { path: '/profil', view: guard(profilView) },
