@@ -1,0 +1,53 @@
+// js/mobile/app.js — point d’entrée de l’interface mobile (emprunteurs).
+import { store } from '../store.js';
+import { buildSeed } from '../seed.js';
+import { auth } from '../auth.js';
+import { createRouter, navigate, currentPath } from '../router.js';
+import { escapeHtml } from '../ui.js';
+import { mountNav } from './layout.js';
+import { loginView } from './views/login.js';
+import { profilView } from './views/profil.js';
+import { aVenirView } from './views/aVenir.js';
+// Les tâches suivantes ajoutent leurs imports ici :
+// import { accueilView } from './views/accueil.js';      (Task 4)
+// import { catalogueView } from './views/catalogue.js';  (Task 4)
+// import { ficheView } from './views/fiche.js';          (Task 4)
+// import { scanView } from './views/scan.js';            (Task 5)
+// import { empruntsView } from './views/emprunts.js';    (Task 6)
+
+store.init(buildSeed);
+
+const navEl = document.getElementById('nav');
+const viewEl = document.getElementById('view');
+
+// Toute route sauf /login exige un compte actif (élève, intervenant ou pédago).
+const guard = (view) => (container, params) => {
+  const user = auth.currentUser();
+  if (!user || user.actif === false) { auth.logout(); navigate('/login'); return undefined; }
+  document.body.classList.remove('is-login');
+  mountNav(navEl, currentPath());
+  return view(container, params);
+};
+
+const routes = [
+  { path: '/login', view: (c) => { document.body.classList.add('is-login'); return loginView(c); } },
+  { path: '/accueil', view: guard(aVenirView('Accueil', 2)) },                    // remplacé en Task 4
+  { path: '/catalogue', view: guard(aVenirView('Catalogue', 2)) },                // remplacé en Task 4
+  { path: '/catalogue/:reference', view: guard(aVenirView('Fiche', 2)) },         // remplacé en Task 4
+  { path: '/scan', view: guard(aVenirView('Scanner', 2)) },                       // remplacé en Task 5
+  { path: '/emprunts', view: guard(aVenirView('Mes emprunts', 2)) },              // remplacé en Task 6
+  { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
+  { path: '/reserver/:id', view: guard(aVenirView('Réserver', 3, '/catalogue')) },
+  { path: '/profil', view: guard(profilView) },
+];
+
+const router = createRouter({
+  routes,
+  container: viewEl,
+  defaultPath: '/accueil',
+  notFound: (c, path) => {
+    c.innerHTML = `<div class="card error-card"><h2 class="h6">Page introuvable</h2><p class="body-sm text-secondary">${escapeHtml(path)}</p></div>`;
+  },
+});
+
+router.start();
