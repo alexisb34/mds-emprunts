@@ -116,6 +116,8 @@ export function scanView(container) {
   const codes = () => store.items.list((i) => i.etat !== ITEM_STATES.HS).sort((a, b) => a.code.localeCompare(b.code)).map((i) => ({ code: i.code, nom: i.nom }));
   const set = (next) => { state = next; render(); };
   const on = (selector, fn) => { const el = container.querySelector(selector); if (el) el.addEventListener('click', fn); };
+  // stopScanner() ci-dessous n’est pas attendu : il annule la référence du module de manière
+  // synchrone, donc le flux peut avancer sans dépendre de la résolution de la promesse.
   const handleCode = (text) => { stopScanner(); set(onScanResolved(state, resolveScan(normalizeScanText(text), user.id, now()))); };
 
   const bindScan = async () => {
@@ -127,22 +129,30 @@ export function scanView(container) {
       await startScanner('reader', (text) => handleCode(text));
       if (!alive) stopScanner();
     } catch (e) {
+      stopScanner();
       const hint = container.querySelector('.reader__hint');
       if (hint) hint.textContent = 'Caméra indisponible — utilisez la simulation.';
     }
   };
 
   const bindPhoto = async () => {
-    await stopScanner();
     on('[data-action="cancel"]', () => { stopCamera(); set(initialState()); });
     on('[data-action="placeholder"]', () => { stopCamera(); set(onPhoto(state, placeholderPhoto(state.item.code))); });
     const capture = container.querySelector('[data-action="capture"]');
-    if (!capture) return;
     const video = container.querySelector('#video');
+    if (capture) {
+      capture.addEventListener('click', () => {
+        if (!video.srcObject) { toast('La caméra démarre…', 'info'); return; }
+        const photo = capturePhoto(video);
+        stopCamera();
+        set(onPhoto(state, photo));
+      });
+    }
+    await stopScanner();
+    if (!capture) return;
     try {
       await startCamera(video);
-      if (!alive) { stopCamera(); return; }
-      capture.addEventListener('click', () => { const photo = capturePhoto(video); stopCamera(); set(onPhoto(state, photo)); });
+      if (!alive) stopCamera();
     } catch (e) {
       capture.disabled = true;
       container.querySelector('.video-box').hidden = true;
