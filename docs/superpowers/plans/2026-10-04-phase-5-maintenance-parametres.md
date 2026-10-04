@@ -16,6 +16,8 @@
 
 ## Contraintes globales
 
+- **Les identifiants créés ne sont pas ordonnés.** `genId` (`js/store.js`) concatène un horodatage et six caractères aléatoires : seuls les identifiants du *seed* sont séquentiels. Aucun tri ne doit départager sur un identifiant ; l’ordre d’insertion dans `store.x.list()` est en revanche l’ordre de création.
+
 - **Aucune dépendance npm, aucune étape de build.** Toute bibliothèque tierce est une copie locale dans `vendor/`.
 - Tests : `node --test "tests/**/*.test.mjs"` (glob entre guillemets — `node --test tests/` ne fonctionne pas ici). Node ≥ 22. La suite doit passer aussi sous `TZ=America/New_York`.
 - **Toute chaîne destinée à l’utilisateur est en français et utilise l’apostrophe typographique `’` (U+2019), jamais `'` (U+0027).** Les commentaires français aussi. Vérification : `grep -rn "[a-zA-Zàéèêçûô]'[a-zA-Zàéèêçûô]" js/ tests/ --include='*.js' --include='*.mjs'` ne doit rien afficher.
