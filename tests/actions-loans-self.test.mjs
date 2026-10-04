@@ -209,3 +209,27 @@ test('returnSelf sans photo : refus, emprunt toujours en cours', () => {
   assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.EN_COURS);
   assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE);
 });
+
+test('returnSelf : objet passé en maintenance pendant l’emprunt → le retour ne force pas l’état', () => {
+  const loan = store.loans.get('loan_041');
+  store.items.update(loan.itemId, { etat: ITEM_STATES.MAINTENANCE });
+  const r = returnSelf({ loanId: loan.id, userId: LEA, photo: PHOTO });
+  assert.equal(r.loan.statut, LOAN_STATES.RETOURNEE);
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.MAINTENANCE);
+});
+
+test('userLoans : une réservation annulée à finPrevue future ne passe pas devant les retours récents', () => {
+  const before = userLoans('user_011', NOW).historique;
+  assert.ok(before.length > 1);
+  const item = store.items.list()[0];
+  const day = 24 * 60 * 60 * 1000;
+  const cancelled = store.loans.create({
+    itemId: item.id, userId: 'user_011', statut: LOAN_STATES.ANNULEE, motif: '', motifRefus: '', codeRetrait: null,
+    dateReservation: new Date(NOW.getTime() - 61 * day).toISOString(), debutPrevu: new Date(NOW.getTime() - 60 * day).toISOString(),
+    finPrevue: new Date(NOW.getTime() + 10 * day).toISOString(), dateRetrait: null, dateRetourReelle: null, remisPar: null, receptionnePar: null,
+    photoEmprunt: null, photoRetour: null, checklistRetour: null, commentaire: '',
+  });
+  const hist = userLoans('user_011', NOW).historique;
+  assert.equal(hist.length, before.length + 1);
+  assert.equal(hist.at(-1).loan.id, cancelled.id);
+});

@@ -78,7 +78,9 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
   const problem = hasProblem(lines);
   return store.transaction(() => {
     const updated = store.loans.update(loanId, { statut: LOAN_STATES.RETOURNEE, dateRetourReelle: date.toISOString(), photoRetour: photo, checklistRetour: lines });
-    applyItemState(item.id, problem ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
+    // L’objet peut déjà être en maintenance (intervention pédago pendant l’emprunt) : on ne force l’état
+    // que s’il est encore « emprunté ».
+    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, problem ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
     logAction({ auteurId: userId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId, detail: `${item.nom} rendu${problem ? ' avec un problème' : ''}` });
     if (!problem) return { loan: updated, maintenance: null };
     const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
@@ -98,6 +100,6 @@ export function userLoans(userId, date = now()) {
   return {
     enCours: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.EN_COURS), (l) => l.dateRetrait).map((loan) => ({ loan, item: itemOf(loan), late: isLate(loan, date) })),
     reservations: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.RESERVEE), (l) => l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
-    historique: sortByDateDesc(mine.filter((l) => !ACTIVE.includes(l.statut)), (l) => l.dateRetourReelle || l.finPrevue).map((loan) => ({ loan, item: itemOf(loan) })),
+    historique: sortByDateDesc(mine.filter((l) => !ACTIVE.includes(l.statut)), (l) => l.dateRetourReelle || l.dateRetrait || l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
   };
 }
