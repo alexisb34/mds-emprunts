@@ -762,7 +762,7 @@ git commit -m "feat(actions): réservations de la salle photo, états des lieux 
 
 **Interfaces:**
 - Consumes : `buildWeekGrid`, `toggleSlot`, `selectionIsValid`, `startOfWeek`, `weekDays` (`js/weekGrid.js`) ; `createBooking`, `cancelBooking`, `recordEntry`, `recordExit`, `roomChecklist`, `userBookings`, `weekBookings`, `sweepBookings` ; `now`, `addDays`, `ymd`, `REASON_LABELS` ; `setHeader`, helpers `ui`.
-- Produces : `gridHtml({ grid, selection })`, `selectionBarHtml({ selection, check })`, `myBookingsHtml({ active, aVenir }, date)`, `etatHtml({ booking, moment, lignes })`, `salleHtml({ grid, selection, check, mine, date })`, `salleView(container)`.
+- Produces : `gridHtml({ grid, selection })`, `selectionBarHtml({ selection, check })`, `myBookingsHtml({ active, aVenir }, date)`, `etatHtml({ booking, moment, lignes })`, `salleHtml({ grid, selection, check, mine, semaine, date })`, `salleView(container)`.
 
 - [ ] **Step 1 : Écrire le test**
 
@@ -954,12 +954,12 @@ const weekLabel = (date) => {
   return `${new Intl.DateTimeFormat('fr-FR', { day: 'numeric' }).format(jours[0].date)} – ${fmt.format(jours[4].date)}`;
 };
 
-export function salleHtml({ grid, selection, check, mine, date }) {
+export function salleHtml({ grid, selection, check, mine, semaine, date }) {
   return `
     <section class="card">
       <div class="card__header">
         <button type="button" class="btn btn--ghost btn--sm" data-action="prev-week" aria-label="Semaine précédente">←</button>
-        <h2 class="card__title">${escapeHtml(weekLabel(date))}</h2>
+        <h2 class="card__title">${escapeHtml(weekLabel(semaine))}</h2>
         <button type="button" class="btn btn--ghost btn--sm" data-action="next-week" aria-label="Semaine suivante">→</button>
       </div>
       ${gridHtml({ grid, selection })}
@@ -1013,7 +1013,7 @@ export function salleView(container) {
     const grid = buildWeekGrid({ date: semaine, bookings, settings, userId: user.id, now: date });
     const check = selectionIsValid(selection, { bookings, settings, date });
     setHeader({ title: 'Salle photo' });
-    container.innerHTML = salleHtml({ grid, selection, check, mine: userBookings(user.id, date), date: semaine });
+    container.innerHTML = salleHtml({ grid, selection, check, mine: userBookings(user.id, date), semaine, date });
     container.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => {
       const [jour, heure] = b.dataset.slot.split(':');
       selection = toggleSlot(selection, { ymd: jour, heure: Number(heure) });
@@ -1109,7 +1109,7 @@ git commit -m "feat(mobile): réservation de la salle photo par créneaux et ét
 
 **Interfaces:**
 - Consumes : `buildWeekGrid`, `startOfWeek`, `weekDays` ; `weekBookings`, `cancelBooking`, `sweepBookings`, `roomItems` ; `isExitMissing`, `now`, `addDays`, `ymd` ; `setTopbar`, `openModal`, `toast`, `badge`, `avatar`, `fullName`, `formatDate`, `formatSlots`, `formatDateTime`.
-- Produces : `planningHtml({ grid, users, date })`, `exitMissingRows(bookings, users, date)`, `bookingDetailHtml({ booking, user })`, `salleHtml({ grid, users, missing, date })`, `salleView(container)` ; dans `dashboard.js`, `exitMissingHtml(rows)`.
+- Produces : `planningHtml({ grid, users })`, `exitMissingRows(bookings, users, date)`, `bookingDetailHtml({ booking, user })`, `salleHtml({ grid, users, missing, semaine })`, `salleView(container)` ; dans `dashboard.js`, `exitMissingHtml(rows)`.
 
 - [ ] **Step 1 : Écrire le test**
 
@@ -1131,7 +1131,7 @@ beforeEach(() => { localStorage.clear(); store.init(() => buildSeed(NOW)); store
 const grid = () => buildWeekGrid({ date: NOW, bookings: weekBookings(NOW), settings: store.settings.get(), userId: null, now: NOW });
 
 test('planningHtml : 5 colonnes, initiales de l’occupant, créneau cliquable', () => {
-  const html = planningHtml({ grid: grid(), users: store.users.list(), date: NOW });
+  const html = planningHtml({ grid: grid(), users: store.users.list() });
   assert.equal((html.match(/<th data-day=/g) || []).length, 5);
   const actif = store.bookings.list((b) => b.statut === 'en_cours')[0];
   const user = store.users.get(actif.userId);
@@ -1165,13 +1165,13 @@ test('bookingDetailHtml : créneaux, états des lieux, bouton d’annulation', (
 test('salleHtml : navigation de semaine, planning et bandeau des sorties manquantes', () => {
   const tard = new Date(2026, 8, 17, 13, 0);
   const missing = exitMissingRows(store.bookings.list(), store.users.list(), tard);
-  const html = salleHtml({ grid: grid(), users: store.users.list(), missing, date: NOW });
+  const html = salleHtml({ grid: grid(), users: store.users.list(), missing, semaine: NOW });
   assert.match(html, /data-action="prev-week"/);
   assert.match(html, /data-action="next-week"/);
   assert.match(html, /Sorties non faites/);
   assert.match(html, /alert--warning/);
   assert.match(html, /data-action="force-close" data-booking="book_/);
-  const sans = salleHtml({ grid: grid(), users: store.users.list(), missing: [], date: NOW });
+  const sans = salleHtml({ grid: grid(), users: store.users.list(), missing: [], semaine: NOW });
   assert.doesNotMatch(sans, /Sorties non faites/);
 });
 ```
@@ -1217,7 +1217,7 @@ import { setTopbar } from '../layout.js';
 
 const initials = (user) => (user ? `${(user.prenom || '')[0] || ''}${(user.nom || '')[0] || ''}`.toUpperCase() : '?');
 
-export function planningHtml({ grid, users, date }) {
+export function planningHtml({ grid, users }) {
   const entetes = grid.days.map((d) => `<th data-day="${escapeHtml(d.ymd)}"${d.isToday ? ' class="is-today"' : ''}>${escapeHtml(d.label)}</th>`).join('');
   const lignes = grid.hours.map((heure) => {
     const cases = grid.days.map((d) => {
@@ -1268,7 +1268,7 @@ const weekLabel = (date) => {
   return `${new Intl.DateTimeFormat('fr-FR', { day: 'numeric' }).format(jours[0].date)} – ${fmt.format(jours[4].date)}`;
 };
 
-export function salleHtml({ grid, users, missing, date }) {
+export function salleHtml({ grid, users, missing, semaine }) {
   const bandeau = missing.length
     ? `<div class="card"><div class="card__header"><h2 class="card__title">Sorties non faites</h2><span class="body-sm text-secondary">${missing.length}</span></div>
         ${missing.map(({ booking, user }) => `<div class="alert alert--warning"><span>${escapeHtml(formatDate(booking.date))} · ${escapeHtml(formatSlots(booking.creneaux))} — ${escapeHtml(user ? fullName(user) : booking.userId)} n’a pas fait l’état des lieux de sortie.</span><button type="button" class="btn btn--secondary btn--sm" data-action="force-close" data-booking="${escapeHtml(booking.id)}">Clore le créneau</button></div>`).join('')}
@@ -1279,10 +1279,10 @@ export function salleHtml({ grid, users, missing, date }) {
     <div class="card">
       <div class="card__header">
         <button type="button" class="btn btn--ghost btn--sm" data-action="prev-week">← Semaine précédente</button>
-        <h2 class="card__title">${escapeHtml(weekLabel(date))}</h2>
+        <h2 class="card__title">${escapeHtml(weekLabel(semaine))}</h2>
         <button type="button" class="btn btn--ghost btn--sm" data-action="next-week">Semaine suivante →</button>
       </div>
-      ${planningHtml({ grid, users, date })}
+      ${planningHtml({ grid, users })}
       <p class="body-tiny text-secondary">Cliquez sur un créneau occupé pour voir le détail et les états des lieux.</p>
     </div>`;
 }
@@ -1296,7 +1296,7 @@ export function salleView(container) {
     const grid = buildWeekGrid({ date: semaine, bookings: weekBookings(semaine), settings: store.settings.get(), userId: null, now: date });
     const missing = exitMissingRows(store.bookings.list(), users, date);
     setTopbar({ title: 'Salle photo', subtitle: 'Planning et états des lieux' });
-    container.innerHTML = salleHtml({ grid, users, missing, date: semaine });
+    container.innerHTML = salleHtml({ grid, users, missing, semaine });
     container.querySelector('[data-action="prev-week"]').addEventListener('click', () => { semaine = addDays(startOfWeek(semaine), -7); render(); });
     container.querySelector('[data-action="next-week"]').addEventListener('click', () => { semaine = addDays(startOfWeek(semaine), 7); render(); });
     container.querySelectorAll('[data-action="force-close"]').forEach((b) => b.addEventListener('click', (e) => {
