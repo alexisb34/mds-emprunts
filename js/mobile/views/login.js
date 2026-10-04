@@ -18,7 +18,7 @@ export function groupUsersByRole(users, q = '') {
   })).filter((g) => g.users.length > 0);
 }
 
-export function loginHtml(groups, q = '') {
+export function resultsHtml(groups) {
   const groupHtml = (g) => `
     <section class="m-section">
       <h2 class="label-caps text-secondary">${escapeHtml(g.label)} (${g.users.length})</h2>
@@ -28,23 +28,24 @@ export function loginHtml(groups, q = '') {
           <span class="m-item__body"><strong>${escapeHtml(fullName(u))}</strong>${u.promo ? `<span class="body-tiny text-secondary">${escapeHtml(u.promo)}</span>` : ''}</span>
         </button>`).join('')}</div>
     </section>`;
+  return groups.length ? groups.map(groupHtml).join('') : '<div class="empty-state">Aucun compte ne correspond.</div>';
+}
+
+export function loginHtml(groups, q = '') {
   return `
     <div class="m-login">
       <p class="label-caps text-secondary">MDS Emprunts</p>
       <h1 class="h5">Qui êtes-vous ?</h1>
       <p class="body-sm text-secondary">Comptes de démonstration — aucun mot de passe.</p>
       <input class="input input--search" type="search" name="q" placeholder="Nom, prénom, promo…" value="${escapeHtml(q)}" aria-label="Rechercher un compte">
-      ${groups.length ? groups.map(groupHtml).join('') : '<div class="empty-state">Aucun compte ne correspond.</div>'}
+      <div data-role="results">${resultsHtml(groups)}</div>
       <p class="body-tiny text-secondary"><a href="index.html">← Retour à l’accueil</a></p>
     </div>`;
 }
 
 export function loginView(container) {
   let q = '';
-  const render = () => {
-    container.innerHTML = loginHtml(groupUsersByRole(store.users.list(), q), q);
-    const input = container.querySelector('[name="q"]');
-    input.addEventListener('input', (e) => { q = e.target.value; render(); input.focus(); });
+  const bindUsers = () => {
     container.querySelectorAll('[data-user]').forEach((b) => b.addEventListener('click', () => {
       try {
         auth.login(b.dataset.user);
@@ -54,5 +55,12 @@ export function loginView(container) {
       }
     }));
   };
-  render();
+  container.innerHTML = loginHtml(groupUsersByRole(store.users.list(), q), q);
+  // Seule la liste est re-rendue : le champ de recherche garde le focus (le clavier reste ouvert).
+  container.querySelector('[name="q"]').addEventListener('input', (e) => {
+    q = e.target.value;
+    container.querySelector('[data-role="results"]').innerHTML = resultsHtml(groupUsersByRole(store.users.list(), q));
+    bindUsers();
+  });
+  bindUsers();
 }

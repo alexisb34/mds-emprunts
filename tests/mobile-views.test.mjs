@@ -6,7 +6,7 @@ import { buildSeed } from '../js/seed.js';
 import { userLoans } from '../js/actions/loans.js';
 import { groupByReference } from '../js/mobile/catalog.js';
 import { accueilHtml } from '../js/mobile/views/accueil.js';
-import { catalogueHtml } from '../js/mobile/views/catalogue.js';
+import { catalogueHtml, catalogueResultsHtml } from '../js/mobile/views/catalogue.js';
 import { ficheHtml } from '../js/mobile/views/fiche.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
@@ -38,6 +38,9 @@ test('catalogueHtml : chips, cartes par référence, badge et pastille circuit',
   assert.match(html, /badge--available">Self-service/);
   const empty = catalogueHtml({ groups: [], filters: { q: 'zzz', categorie: '' }, categories: [] });
   assert.match(empty, /Aucun matériel ne correspond/);
+  assert.match(html, /data-role="results"/);
+  assert.match(empty, /data-role="results"/);
+  assert.equal((catalogueResultsHtml(groups).match(/class="m-card"/g) || []).length, groups.length);
 });
 
 test('ficheHtml : exemplaires et bouton selon le circuit', () => {

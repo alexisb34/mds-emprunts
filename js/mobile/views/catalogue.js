@@ -20,12 +20,16 @@ function cardHtml(g) {
     </a>`;
 }
 
+export function catalogueResultsHtml(groups) {
+  return groups.length ? `<div class="m-grid">${groups.map(cardHtml).join('')}</div>` : '<div class="empty-state">Aucun matériel ne correspond à votre recherche.</div>';
+}
+
 export function catalogueHtml({ groups, filters, categories }) {
   const chip = (value, label) => `<button type="button" class="chip${filters.categorie === value ? ' chip--active' : ''}" data-categorie="${escapeHtml(value)}">${escapeHtml(label)}</button>`;
   return `
     <input class="input input--search" type="search" name="q" placeholder="Rechercher un matériel…" value="${escapeHtml(filters.q)}" aria-label="Rechercher">
     <div class="chips">${chip('', 'Tout')}${categories.map((c) => chip(c, c)).join('')}</div>
-    ${groups.length ? `<div class="m-grid">${groups.map(cardHtml).join('')}</div>` : '<div class="empty-state">Aucun matériel ne correspond à votre recherche.</div>'}`;
+    <div data-role="results">${catalogueResultsHtml(groups)}</div>`;
 }
 
 export function catalogueView(container) {
@@ -34,8 +38,11 @@ export function catalogueView(container) {
     const groups = filterCatalog(groupByReference(store.items.list()), filters);
     setHeader({ title: 'Catalogue' });
     container.innerHTML = catalogueHtml({ groups, filters, categories: CATEGORIES });
-    const input = container.querySelector('[name="q"]');
-    input.addEventListener('input', (e) => { filters.q = e.target.value; render(); container.querySelector('[name="q"]').focus(); });
+    // La saisie ne re-rend que la grille : le champ de recherche garde le focus (le clavier reste ouvert).
+    container.querySelector('[name="q"]').addEventListener('input', (e) => {
+      filters.q = e.target.value;
+      container.querySelector('[data-role="results"]').innerHTML = catalogueResultsHtml(filterCatalog(groupByReference(store.items.list()), filters));
+    });
     container.querySelectorAll('[data-categorie]').forEach((b) => b.addEventListener('click', () => { filters.categorie = b.dataset.categorie; render(); }));
   };
   render();

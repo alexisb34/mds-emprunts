@@ -59,6 +59,8 @@ test('groupUsersByRole et loginHtml : groupes, filtre, comptes inactifs exclus',
   assert.equal((filtered.match(/data-user="/g) || []).length, 1);
   assert.match(filtered, /Yann Guihard/);
   assert.match(filtered, /value="guih"/);
+  assert.match(html, /data-role="results"/);
+  assert.match(loginHtml([], 'zzz'), /data-role="results"[^>]*>\s*<div class="empty-state">/);
 });
 
 test('profilHtml : identité, promo, actions', () => {
