@@ -52,7 +52,7 @@ Chaque tâche se termine par un livrable testable indépendamment.
 
 **Interfaces :**
 - Consomme : `store` (`js/store.js`) ; `MAINT_TYPES`, `MAINT_STATES`, `MAINT_TRANSITIONS`, `ITEM_STATES`, `LABELS` (`js/models.js`) ; `now` (`js/rules.js`) ; `logAction`, `ACTIONS` (`js/log.js`) ; `applyItemState` (`js/actions/items.js`).
-- Produit : `openEvents(itemId)`, `reportIssue({ itemId, auteurId, description, loanId, bookingId })`, `createIntervention({ itemId, type, prestataire, cout, description, pedagoId })`, `startIntervention(id, pedagoId)`, `closeEvent(id, pedagoId, { remettreEnService })`, `maintenanceRows(date)`, `immobilises()`.
+- Produit : `openEvents(itemId)`, `reportIssue({ itemId, auteurId, description, loanId, bookingId })`, `createIntervention({ itemId, type, prestataire, cout, description, pedagoId })`, `startIntervention(id, pedagoId)`, `closeEvent(id, pedagoId, { remettreEnService })`, `maintenanceRows()`, `immobilises()`.
 
 Spec §5.4 : clore **le dernier** événement ouvert d’un objet le remet `disponible`, ou `hs` si la pédago le décide. Tant qu’il reste un autre événement ouvert, l’objet ne bouge pas.
 
