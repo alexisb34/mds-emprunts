@@ -62,34 +62,53 @@ export async function hasCamera() {
 }
 
 let stream = null;
+let cameraGen = 0;
 
 export async function startCamera(videoEl) {
   stopCamera();
-  stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-  videoEl.srcObject = stream;
+  const gen = cameraGen;
+  const media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+  // Entre-temps l’utilisateur a pu quitter l’écran : on relâche tout de suite ce qui vient d’être acquis.
+  if (gen !== cameraGen) { media.getTracks().forEach((t) => t.stop()); throw new Error('Caméra annulée.'); }
+  stream = media;
+  videoEl.srcObject = media;
   await videoEl.play();
 }
 
 export function stopCamera() {
+  cameraGen += 1;
   if (stream) stream.getTracks().forEach((t) => t.stop());
   stream = null;
 }
 
 let scanner = null;
+let scannerOp = Promise.resolve(); // chaîne d’opérations : jamais de start et de stop en parallèle
+let scannerGen = 0;
 
 // elementId : id d’un conteneur vide ; onCode reçoit le texte normalisé à chaque lecture.
-export async function startScanner(elementId, onCode) {
-  const Lib = typeof window !== 'undefined' ? window.Html5Qrcode : null;
-  if (!Lib) throw new Error('Bibliothèque de scan indisponible.');
-  await stopScanner();
-  scanner = new Lib(elementId, { verbose: false });
-  await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, (text) => onCode(normalizeScanText(text)), () => {});
+export function startScanner(elementId, onCode) {
+  const gen = ++scannerGen;
+  scannerOp = scannerOp.then(async () => {
+    const Lib = typeof window !== 'undefined' ? window.Html5Qrcode : null;
+    if (!Lib) throw new Error('Bibliothèque de scan indisponible.');
+    if (gen !== scannerGen) return;
+    const s = new Lib(elementId, { verbose: false });
+    await s.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, (text) => { if (gen === scannerGen) onCode(normalizeScanText(text)); }, () => {});
+    // Arrêt demandé pendant le démarrage : on arrête ce qui vient d’être lancé.
+    if (gen !== scannerGen) { try { await s.stop(); } catch { /* déjà arrêté */ } try { s.clear(); } catch { /* conteneur retiré */ } return; }
+    scanner = s;
+  });
+  return scannerOp;
 }
 
-export async function stopScanner() {
-  if (!scanner) return;
-  const s = scanner;
-  scanner = null;
-  try { await s.stop(); } catch { /* déjà arrêté */ }
-  try { s.clear(); } catch { /* conteneur retiré */ }
+export function stopScanner() {
+  scannerGen += 1;
+  scannerOp = scannerOp.then(async () => {
+    const s = scanner;
+    scanner = null;
+    if (!s) return;
+    try { await s.stop(); } catch { /* déjà arrêté */ }
+    try { s.clear(); } catch { /* conteneur retiré */ }
+  }).catch(() => {});
+  return scannerOp;
 }
