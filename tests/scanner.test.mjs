@@ -78,3 +78,15 @@ test('startScanner seul : le callback reçoit le texte normalisé ; stopScanner 
   assert.equal(instances[0].stops, 1);
   assert.equal(instances[0].clears, 1);
 });
+
+test('startScanner arrête une instance encore active avant d’en créer une autre', async () => {
+  instances.length = 0;
+  await startScanner('a', () => {});
+  await startScanner('b', () => {});
+  assert.equal(instances.length, 2);
+  assert.equal(instances[0].stops, 1, 'la première instance a été arrêtée');
+  assert.equal(instances[0].clears, 1);
+  assert.equal(instances[1].stops, 0);
+  await stopScanner();
+  assert.equal(instances[1].stops, 1);
+});
