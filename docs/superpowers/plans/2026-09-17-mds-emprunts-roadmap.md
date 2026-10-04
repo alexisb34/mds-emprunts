@@ -88,6 +88,8 @@
 
 ## Phase 4 — Salle photo
 
+**Prérequis :** `ui.toDate` doit parser `YYYY-MM-DD` en date locale (test épinglé sur `TZ=America/New_York`) et `store.transaction` doit différer la persistance et la notification.
+
 | # | Tâche | Fichiers | Produit (interfaces) | Vérification |
 |---|---|---|---|---|
 | 4.1 | Actions salle | `js/actions/bookings.js`, `tests/actions-bookings.test.mjs` | `createBooking({ userId, date, creneaux })` (contiguïté, conflit, jour ouvré, 8-17h), `cancelBooking(id, auteurId)`, `recordEntry(id, checklist)` (→ `en_cours`), `recordExit(id, checklist)` (→ `terminee`), `roomChecklist()` (items `salle` + ligne globale) | Tests : conflit, non contigu, week-end, sortie |
@@ -98,6 +100,8 @@
 ---
 
 ## Phase 5 — Maintenance & paramètres
+
+**Reprises de la phase 3 :** extraction d’un `openScanModal({ title, hint, onCode })` réutilisable et pré-remplissage de la remise depuis la ligne ; recherche admin par code de retrait ; jeton d’identité des modales.
 
 | # | Tâche | Fichiers | Produit (interfaces) | Vérification |
 |---|---|---|---|---|
