@@ -2,10 +2,9 @@
 // la création et la clôture d’interventions, et le matériel immobilisé.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now } from '../../rules.js';
 import { navigate } from '../../router.js';
 import { MAINT_STATES, MAINT_TYPES, LABELS } from '../../models.js';
-import { escapeHtml, badge, avatar, fullName, formatDate, openModal, toast } from '../../ui.js';
+import { escapeHtml, badge, fullName, formatDate, openModal, toast } from '../../ui.js';
 import { createIntervention, startIntervention, closeEvent, maintenanceRows, immobilises } from '../../actions/maintenance.js';
 import { setTopbar } from '../layout.js';
 

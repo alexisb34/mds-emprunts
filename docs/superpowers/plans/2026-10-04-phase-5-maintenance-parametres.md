@@ -537,10 +537,9 @@ Attendu : `ERR_MODULE_NOT_FOUND` sur `js/admin/views/maintenance.js`.
 // la création et la clôture d’interventions, et le matériel immobilisé.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now } from '../../rules.js';
 import { navigate } from '../../router.js';
 import { MAINT_STATES, MAINT_TYPES, LABELS } from '../../models.js';
-import { escapeHtml, badge, avatar, fullName, formatDate, openModal, toast } from '../../ui.js';
+import { escapeHtml, badge, fullName, formatDate, openModal, toast } from '../../ui.js';
 import { createIntervention, startIntervention, closeEvent, maintenanceRows, immobilises } from '../../actions/maintenance.js';
 import { setTopbar } from '../layout.js';
 
@@ -717,14 +716,7 @@ export function maintenanceView(container) {
 
 - [ ] **Étape 5 : libellés, route et CSS**
 
-`js/models.js` — `LABELS` gagne la famille des types de maintenance, à côté de `maintState` :
-
-```js
-  maintType: {
-    signalement: 'Signalement', intervention_interne: 'Interne',
-    intervention_externe: 'Externe', remise_en_service: 'Remise en service',
-  },
-```
+`js/models.js` : **ne rien ajouter.** `LABELS.maintType` existe déjà (`js/models.js:77`), avec les libellés « Intervention interne » et « Intervention externe ». Une seconde clé du même nom dans le même objet littéral écraserait la première en silence. La vue lit les libellés existants via `LABELS.maintType?.[event.type]`.
 
 `js/admin/app.js` : `import { maintenanceView } from './views/maintenance.js';` et la route devient `{ path: '/maintenance', view: guard(maintenanceView) }`.
 
@@ -753,7 +745,7 @@ Admin → Maintenance : les onglets filtrent, « Créer une intervention » enre
 - [ ] **Étape 8 : commit**
 
 ```bash
-git add js/admin/views/maintenance.js js/admin/views/salle.js js/admin/views/dashboard.js js/admin/kpi.js js/admin/app.js js/models.js css/admin.css tests/admin-maintenance.test.mjs tests/admin-salle.test.mjs
+git add js/admin/views/maintenance.js js/admin/views/salle.js js/admin/views/dashboard.js js/admin/kpi.js js/admin/app.js css/admin.css tests/admin-maintenance.test.mjs tests/admin-salle.test.mjs
 git commit -m "feat(admin): écran de maintenance, interventions et matériel immobilisé"
 ```
 
