@@ -19,6 +19,7 @@ import { utilisateursView } from './views/utilisateurs.js';
 import { utilisateurFicheView } from './views/utilisateurFiche.js';
 import { empruntsView } from './views/emprunts.js';
 import { salleView } from './views/salle.js';
+import { maintenanceView } from './views/maintenance.js';
 
 store.init(buildSeed);
 
@@ -59,7 +60,7 @@ const routes = [
   { path: '/materiel/:id', view: guard(materielFicheView) },
   { path: '/emprunts', view: guard(empruntsView) },
   { path: '/salle', view: guard(salleView) },
-  { path: '/maintenance', view: guard(aVenirView('Maintenance', 5)) },
+  { path: '/maintenance', view: guard(maintenanceView) },
   { path: '/utilisateurs', view: guard(utilisateursView) },
   { path: '/utilisateurs/:id', view: guard(utilisateurFicheView) },
   { path: '/parametres', view: guard(aVenirView('Paramètres', 5)) },

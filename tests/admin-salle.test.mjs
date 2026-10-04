@@ -5,7 +5,8 @@ import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { buildWeekGrid } from '../js/weekGrid.js';
 import { weekBookings } from '../js/actions/bookings.js';
-import { planningHtml, exitMissingRows, bookingDetailHtml, salleHtml } from '../js/admin/views/salle.js';
+import { planningHtml, bookingDetailHtml, salleHtml } from '../js/admin/views/salle.js';
+import { exitMissingRows } from '../js/admin/kpi.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 beforeEach(() => { localStorage.clear(); store.init(() => buildSeed(NOW)); store.settings.update({ horlogeDemo: NOW.toISOString() }); });

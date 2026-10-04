@@ -8,8 +8,7 @@ import { escapeHtml, badge, avatar, formatDate, formatTime, formatDateTime, rela
 import { setDemoClock, resetDemoData, toDatetimeLocal, fromDatetimeLocal, officeStatus } from '../../actions/settings.js';
 import { setTopbar } from '../layout.js';
 import { openHandoverModal } from '../handoverModal.js';
-import { computeKpis, lateLoans, dueTodayReservations, openReports } from '../kpi.js';
-import { exitMissingRows } from './salle.js';
+import { computeKpis, lateLoans, dueTodayReservations, openReports, exitMissingRows } from '../kpi.js';
 
 // Prochain jour ouvré à 9h (aujourd’hui si c’est un jour ouvré avant 9h).
 function nextOpenDay(date) {

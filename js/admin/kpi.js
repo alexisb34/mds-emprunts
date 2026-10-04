@@ -1,6 +1,6 @@
 // js/admin/kpi.js — calculs du tableau de bord (fonctions pures sur des tableaux).
 import { ITEM_STATES, LOAN_STATES, BOOKING_STATES, MAINT_STATES } from '../models.js';
-import { isLate, ymd } from '../rules.js';
+import { isLate, isExitMissing, ymd } from '../rules.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -48,4 +48,12 @@ export function openReports({ maintenance, items, users }) {
       auteur: users.find((u) => u.id === event.auteurId) || null,
     }))
     .sort((a, b) => b.event.date.localeCompare(a.event.date));
+}
+
+// Créneaux dont l’état des lieux de sortie manque depuis plus d’une heure (spec §6).
+export function exitMissingRows(bookings, users, date) {
+  return bookings
+    .filter((b) => b.statut === BOOKING_STATES.EN_COURS && isExitMissing(b, date))
+    .map((booking) => ({ booking, user: users.find((u) => u.id === booking.userId) || null }))
+    .sort((a, b) => a.booking.date.localeCompare(b.booking.date));
 }
