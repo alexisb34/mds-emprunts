@@ -107,6 +107,9 @@ export function userLoans(userId, date = now()) {
       pickupOpen: isInPickupWindow(loan, date, minutes),
       expired: isExpired(loan, date, minutes),
     })),
+    // Réservations expirées dans les dernières 24 h : l’accueil en informe l’emprunteur
+    // (elles ne sont plus dans `reservations`, qui ne contient que les réservations en attente).
+    expireesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.EXPIREE && (date - pickupWindow(l, minutes).end) < 24 * 60 * 60 * 1000), (l) => l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
     historique: sortByDateDesc(mine.filter((l) => !ACTIVE.includes(l.statut)), (l) => l.dateRetourReelle || l.dateRetrait || l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
   };
 }
@@ -254,11 +257,17 @@ export function extendLoan(loanId, finPrevue, pedagoId) {
 export function expireDueLoans(date = now()) {
   const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
   const due = store.loans.list((l) => isExpired(l, date, minutes));
-  for (const loan of due) {
+  let libérées = 0;
+  for (const candidat of due) {
+    // Une écriture de la boucle notifie les abonnés, dont un rendu qui rappelle expireDueLoans :
+    // on relit l’emprunt pour ne pas rejouer une expiration déjà effectuée.
+    const loan = store.loans.get(candidat.id);
+    if (!loan || loan.statut !== LOAN_STATES.RESERVEE) continue;
     const item = store.items.get(loan.itemId);
     releaseReservation(loan, { statut: LOAN_STATES.EXPIREE, action: ACTIONS.LOAN_EXPIREE, auteurId: loan.userId, detail: `${item ? item.nom : loan.itemId} — non retiré dans l’heure` });
+    libérées += 1;
   }
-  return due.length;
+  return libérées;
 }
 
 // Réservations à remettre le jour de `date`, avec leur fenêtre de retrait.

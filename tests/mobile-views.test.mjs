@@ -73,7 +73,7 @@ test('accueilHtml : avis de retrait et d’expiration', () => {
   const open = accueilHtml({ ...base, reservations: [{ loan: {}, item, pickupOpen: true, expired: false, window: w }] });
   assert.match(open, /à retirer avant 11h00/);
   assert.match(open, /href="#\/emprunts"/);
-  const exp = accueilHtml({ ...base, reservations: [{ loan: {}, item, pickupOpen: false, expired: true, window: w }] });
+  const exp = accueilHtml({ ...base, expireesRecentes: [{ loan: {}, item }] });
   assert.match(exp, /réservation expirée/);
   assert.doesNotMatch(accueilHtml(base), /alert--info|alert--warning/);
 });

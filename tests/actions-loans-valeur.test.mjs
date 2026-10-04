@@ -209,3 +209,36 @@ test('reserveValeur : une fenêtre de retrait déjà close est refusée d’embl
   const ok = reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: new Date(2026, 8, 17, 14, 0), finPrevue: new Date(2026, 8, 17, 14, 0), motif: '' });
   assert.equal(ok.statut, LOAN_STATES.RESERVEE);
 });
+
+test('expireDueLoans : une vue abonnée qui rappelle expireDueLoans ne rejoue pas une expiration', () => {
+  const a = freeValeur('hoya-nd');
+  const b = freeValeur('sd-256');
+  reserveValeur({ itemId: a.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  reserveValeur({ itemId: b.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  clock(new Date(2026, 8, 18, 10, 30));
+  const unsubscribe = store.subscribe(() => { expireDueLoans(now()); });
+  try {
+    expireDueLoans(now());
+  } finally {
+    unsubscribe();
+  }
+  assert.equal(store.log.list((e) => e.action === ACTIONS.LOAN_EXPIREE).length, 2);
+  assert.equal(store.items.get(a.id).etat, ITEM_STATES.DISPONIBLE);
+  assert.equal(store.items.get(b.id).etat, ITEM_STATES.DISPONIBLE);
+  assert.equal(expireDueLoans(now()), 0);
+});
+
+test('userLoans : expireesRecentes ne garde que les réservations expirées depuis moins de 24 h', () => {
+  const a = freeValeur('hoya-nd');
+  const b = freeValeur('sd-256');
+  reserveValeur({ itemId: a.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  clock(new Date(2026, 8, 18, 11, 0)); // fenêtre close à 10h : expirée il y a 1 h
+  expireDueLoans(now());
+  const recent = userLoans(ELEVE, new Date(2026, 8, 18, 12, 0)); // expirée il y a 2 h
+  assert.equal(recent.expireesRecentes.length, 1);
+  assert.equal(recent.expireesRecentes[0].item.id, a.id);
+  assert.equal(recent.reservations.length, 0);
+  const ancienne = userLoans(ELEVE, new Date(2026, 8, 19, 16, 0)); // expirée il y a 30 h
+  assert.equal(ancienne.expireesRecentes.length, 0);
+  assert.equal(ancienne.reservations.length, 0);
+});

@@ -26,18 +26,17 @@ function bookingCard(nextBooking, date) {
     </a>`;
 }
 
-function noticesHtml(reservations, date) {
+function noticesHtml(reservations, expireesRecentes) {
   const open = reservations.filter((r) => r.pickupOpen);
-  const expired = reservations.filter((r) => r.expired);
-  if (!open.length && !expired.length) return '';
+  if (!open.length && !expireesRecentes.length) return '';
   const lignes = [
     ...open.map((r) => `<div class="alert alert--info">${escapeHtml(r.item ? r.item.nom : '')} : à retirer avant ${escapeHtml(formatTime(r.window.end))} — <a href="#/emprunts">voir mon code</a>.</div>`),
-    ...expired.map((r) => `<div class="alert alert--warning">${escapeHtml(r.item ? r.item.nom : '')} : réservation expirée, le matériel est reparti dans le catalogue.</div>`),
+    ...expireesRecentes.map((r) => `<div class="alert alert--warning">${escapeHtml(r.item ? r.item.nom : '')} : réservation expirée, le matériel est reparti dans le catalogue.</div>`),
   ];
   return `<section class="stack">${lignes.join('')}</section>`;
 }
 
-export function accueilHtml({ user, enCours, nextBooking, date, reservations = [] }) {
+export function accueilHtml({ user, enCours, nextBooking, date, reservations = [], expireesRecentes = [] }) {
   const lateCount = enCours.filter((x) => x.late).length;
   return `
     <section class="m-hero">
@@ -46,7 +45,7 @@ export function accueilHtml({ user, enCours, nextBooking, date, reservations = [
       <p class="m-hero__sub">${lateCount ? `${lateCount} emprunt${lateCount > 1 ? 's' : ''} en retard — pensez à le rendre.` : 'Scannez l’étiquette d’un objet pour l’emprunter ou le rendre.'}</p>
       <a class="btn btn--primary btn--block" href="#/scan">Scanner un QR code</a>
     </section>
-    ${noticesHtml(reservations, date)}
+    ${noticesHtml(reservations, expireesRecentes)}
     <section class="card">
       <div class="card__header"><h3 class="card__title">Mes emprunts en cours</h3><a class="body-sm" href="#/emprunts">Tout voir →</a></div>
       ${loansCard(enCours, date)}
@@ -66,7 +65,7 @@ export function accueilView(container) {
       .sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]);
     const loans = userLoans(user.id, date);
     setHeader({ title: 'MDS Emprunts' });
-    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, nextBooking: bookings[0] || null, date });
+    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, expireesRecentes: loans.expireesRecentes, nextBooking: bookings[0] || null, date });
   };
   render();
   return store.subscribe(render);
