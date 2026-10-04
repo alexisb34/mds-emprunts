@@ -25,16 +25,6 @@ test('planningHtml : 5 colonnes, initiales de l’occupant, créneau cliquable',
   assert.doesNotMatch(html, /week-grid--admin/, 'classe morte retirée');
 });
 
-test('exitMissingRows : une réservation dont la sortie manque depuis plus d’une heure', () => {
-  const actif = store.bookings.list((b) => b.statut === 'en_cours')[0];
-  assert.deepEqual(exitMissingRows(store.bookings.list(), store.users.list(), NOW), [], 'le créneau est encore en cours');
-  const tard = new Date(2026, 8, 17, 13, 0); // fin 11h + 1h dépassée
-  const rows = exitMissingRows(store.bookings.list(), store.users.list(), tard);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].booking.id, actif.id);
-  assert.equal(rows[0].user.id, actif.userId);
-});
-
 test('bookingDetailHtml : créneaux, états des lieux, bouton d’annulation', () => {
   const actif = store.bookings.list((b) => b.statut === 'en_cours')[0];
   const html = bookingDetailHtml({ booking: actif, user: store.users.get(actif.userId) });

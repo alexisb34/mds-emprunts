@@ -2,7 +2,7 @@ import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeed } from '../js/seed.js';
-import { computeKpis, joinLoan, lateLoans, dueTodayReservations, openReports } from '../js/admin/kpi.js';
+import { computeKpis, joinLoan, lateLoans, dueTodayReservations, openReports, exitMissingRows } from '../js/admin/kpi.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const db = buildSeed(NOW);
@@ -43,4 +43,14 @@ test('openReports : signalements ouverts joints', () => {
   assert.equal(r[0].item.reference, 'souris');
   assert.ok(r[0].auteur);
   assert.match(r[0].event.description, /Clic gauche/);
+});
+
+test('exitMissingRows : une réservation dont la sortie manque depuis plus d’une heure', () => {
+  const actif = db.bookings.filter((b) => b.statut === 'en_cours')[0];
+  assert.deepEqual(exitMissingRows(db.bookings, db.users, NOW), [], 'le créneau est encore en cours');
+  const tard = new Date(2026, 8, 17, 13, 0); // fin 11h + 1h dépassée
+  const rows = exitMissingRows(db.bookings, db.users, tard);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].booking.id, actif.id);
+  assert.equal(rows[0].user.id, actif.userId);
 });

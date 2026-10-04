@@ -29,7 +29,7 @@ const viewEl = document.getElementById('view');
 export function sidebarCounts() {
   return {
     emprunts: store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS).length,
-    maintenance: store.maintenance.list((m) => m.statut === MAINT_STATES.OUVERT).length,
+    maintenance: store.maintenance.list((m) => m.statut !== MAINT_STATES.CLOS).length,
   };
 }
 

@@ -23,9 +23,11 @@ function titreEtLien({ event, item }) {
   return { titre: 'Sans objet', href: null };
 }
 
+const EUROS = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+
 function coutHtml(event) {
   if (!event.cout) return '';
-  return `<span class="body-tiny text-secondary">${escapeHtml(String(event.cout))} €</span>`;
+  return `<span class="body-tiny text-secondary">${escapeHtml(EUROS.format(event.cout))}</span>`;
 }
 
 export function eventsTableHtml({ rows, filtre }) {
@@ -75,7 +77,7 @@ export function maintenanceHtml({ rows, bloques, filtre }) {
           <div class="tabs">${onglets}</div>
           <button type="button" class="btn btn--primary btn--sm" data-action="new-intervention">Créer une intervention</button>
         </div>
-        <div data-role="events">${eventsTableHtml({ rows, filtre })}</div>
+        <div>${eventsTableHtml({ rows, filtre })}</div>
       </div>
       <div class="card">
         <div class="card__header"><h2 class="card__title">Matériel immobilisé</h2><span class="body-sm text-secondary">${bloques.length}</span></div>
@@ -84,10 +86,8 @@ export function maintenanceHtml({ rows, bloques, filtre }) {
     </div>`;
 }
 
-const TYPES = [
-  { value: MAINT_TYPES.INTERNE, label: 'Interne' },
-  { value: MAINT_TYPES.EXTERNE, label: 'Externe (prestataire)' },
-];
+// Les libellés viennent de `LABELS.maintType`, comme dans le tableau : un seul vocabulaire.
+const TYPES = [MAINT_TYPES.INTERNE, MAINT_TYPES.EXTERNE].map((value) => ({ value, label: LABELS.maintType[value] }));
 
 // `item` null = l’objet reste à choisir dans la liste.
 export function interventionFormHtml(item = null, items = []) {
@@ -98,7 +98,7 @@ export function interventionFormHtml(item = null, items = []) {
     <div class="stack">
       ${choixObjet}
       <label class="field"><span class="field__label">Type</span><select class="select" name="type">${TYPES.map((t) => `<option value="${t.value}">${escapeHtml(t.label)}</option>`).join('')}</select></label>
-      <label class="field"><span class="field__label">Prestataire (intervention externe)</span><input class="input" name="prestataire" placeholder="Objectif Service"></label>
+      <label class="field"><span class="field__label">Prestataire</span><input class="input" name="prestataire" placeholder="Objectif Service"><span class="field__hint">Pour une intervention externe.</span></label>
       <label class="field"><span class="field__label">Coût en euros</span><input class="input" name="cout" type="text" inputmode="decimal" value="0" placeholder="120,50"></label>
       <label class="field"><span class="field__label">Description</span><textarea class="textarea" name="description" placeholder="Révision de la bague"></textarea></label>
     </div>`;
