@@ -13,6 +13,12 @@ import { setHeader } from '../layout.js';
 const stepTitle = (n, text) => `<h2 class="step-title"><span class="step-num">${n}</span><span class="h6">${escapeHtml(text)}</span></h2>`;
 const itemLine = (item) => `<div class="m-item"><span class="m-item__body"><strong>${escapeHtml(item.nom)}</strong><span class="body-tiny text-secondary">${escapeHtml(item.code)}</span></span>${badge('circuit', item.circuit)}</div>`;
 
+// localStorage plein (photos) : message utile plutôt que l’exception du navigateur.
+export function friendlyError(e) {
+  const quota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+  return quota ? 'Stockage de démonstration plein : demandez à la pédago de réinitialiser les données.' : (e && e.message) || 'Une erreur est survenue.';
+}
+
 export function scanStepHtml({ codes, camera }) {
   const reader = camera
     ? '<div id="reader" class="reader"><p class="reader__hint">Visez l’étiquette QR de l’objet</p></div>'
@@ -116,9 +122,13 @@ export function scanView(container) {
   const codes = () => store.items.list((i) => i.etat !== ITEM_STATES.HS).sort((a, b) => a.code.localeCompare(b.code)).map((i) => ({ code: i.code, nom: i.nom }));
   const set = (next) => { state = next; render(); };
   const on = (selector, fn) => { const el = container.querySelector(selector); if (el) el.addEventListener('click', fn); };
-  // stopScanner() ci-dessous n’est pas attendu : il annule la référence du module de manière
-  // synchrone, donc le flux peut avancer sans dépendre de la résolution de la promesse.
-  const handleCode = (text) => { stopScanner(); set(onScanResolved(state, resolveScan(normalizeScanText(text), user.id, now()))); };
+  // stopScanner() n’est pas attendu : le jeton de génération du module neutralise déjà les lectures
+  // tardives, donc le flux peut avancer sans dépendre de l’arrêt réel du lecteur.
+  const handleCode = (text) => {
+    if (!alive || state.step !== STEPS.SCAN) return;
+    stopScanner();
+    set(onScanResolved(state, resolveScan(normalizeScanText(text), user.id, now())));
+  };
 
   const bindScan = async () => {
     stopCamera();
@@ -142,7 +152,7 @@ export function scanView(container) {
     const video = container.querySelector('#video');
     if (capture) {
       capture.addEventListener('click', () => {
-        if (!video.srcObject) { toast('La caméra démarre…', 'info'); return; }
+        if (!video.srcObject || !video.videoWidth) { toast('La caméra démarre…', 'info'); return; }
         const photo = capturePhoto(video);
         stopCamera();
         set(onPhoto(state, photo));
@@ -167,7 +177,7 @@ export function scanView(container) {
         const loan = borrowSelf({ itemCode: state.item.code, userId: user.id, photo: state.photo });
         set(onDone(state, { loanId: loan.id, finPrevue: loan.finPrevue }));
       } catch (e) {
-        set(e.reason ? onScanResolved(state, { mode: 'erreur', item: state.item, loan: null, reason: e.reason }) : onError(state, e.message));
+        set(e.reason ? onScanResolved(state, { mode: 'erreur', item: state.item, loan: null, reason: e.reason }) : onError(state, friendlyError(e)));
       }
     });
   };
@@ -181,7 +191,7 @@ export function scanView(container) {
         const r = returnSelf({ loanId: state.loan.id, userId: user.id, photo: state.photo, checklist: state.checklist });
         set(onDone(state, { loanId: r.loan.id, problem: !!r.maintenance }));
       } catch (e) {
-        set(onError(state, e.message));
+        set(onError(state, friendlyError(e)));
       }
     });
   };
@@ -201,7 +211,20 @@ export function scanView(container) {
     }
   };
 
-  hasCamera().then((c) => { if (!alive) return; camera = c; if (state.step === STEPS.SCAN) render(); });
+  hasCamera().then((c) => {
+    if (!alive || c === camera) return;
+    camera = c;
+    if (state.step !== STEPS.SCAN) return;
+    // Le re-rendu ne doit pas écraser ce que l’utilisateur a déjà choisi ou saisi.
+    const sim = container.querySelector('[name="code-sim"]');
+    const manual = container.querySelector('[name="code-manual"]');
+    const keep = { sim: sim ? sim.value : null, manual: manual ? manual.value : '' };
+    render();
+    const sim2 = container.querySelector('[name="code-sim"]');
+    const manual2 = container.querySelector('[name="code-manual"]');
+    if (sim2 && keep.sim) sim2.value = keep.sim;
+    if (manual2) manual2.value = keep.manual;
+  });
   render();
   return () => { alive = false; stopScanner(); stopCamera(); };
 }

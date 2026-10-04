@@ -1,7 +1,7 @@
 import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scanStepHtml, photoStepHtml, confirmStepHtml, checklistStepHtml, resultHtml, errorHtml } from '../js/mobile/views/scan.js';
+import { scanStepHtml, photoStepHtml, confirmStepHtml, checklistStepHtml, resultHtml, errorHtml, friendlyError } from '../js/mobile/views/scan.js';
 
 const item = { id: 'item_001', code: 'MDS-0001', nom: 'Multiprise #1', reference: 'multiprise', circuit: 'self' };
 const PHOTO = 'data:image/jpeg;base64,AAAA';
@@ -61,4 +61,11 @@ test('resultHtml et errorHtml', () => {
   assert.match(valeur, /href="#\/catalogue\/canon-r10"/);
   const tech = errorHtml({ reason: null, error: 'Caméra indisponible.', item: null });
   assert.match(tech, /Caméra indisponible\./);
+});
+
+test('friendlyError : quota de stockage en français, autres erreurs inchangées', () => {
+  assert.match(friendlyError({ name: 'QuotaExceededError' }), /Stockage de démonstration plein/);
+  assert.match(friendlyError({ code: 22 }), /Stockage de démonstration plein/);
+  assert.equal(friendlyError(new Error('boum')), 'boum');
+  assert.equal(friendlyError(null), 'Une erreur est survenue.');
 });
