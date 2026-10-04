@@ -203,13 +203,13 @@ test('maintenanceRows : joint objet et auteur, ouverts d’abord, plus récents 
   if (premierClos !== -1) assert.ok(dernierOuvert < premierClos, 'les clos passent après les ouverts');
 });
 
-test('immobilises : matériel en maintenance ou hors service, avec ses événements ouverts', () => {
+test('immobilises : matériel en maintenance ou hors service, avec ce qui reste à traiter', () => {
   const item = itemDispo();
   reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Bague grippée' });
   const rows = immobilises();
   const ligne = rows.find((r) => r.item.id === item.id);
   assert.ok(ligne, 'l’objet immobilisé est listé');
-  assert.equal(ligne.ouverts.length, 1);
+  assert.equal(ligne.aTraiter.length, 1);
   assert.ok(rows.every((r) => r.item.etat === ITEM_STATES.MAINTENANCE || r.item.etat === ITEM_STATES.HS));
 });
 ```
@@ -371,7 +371,7 @@ export function maintenanceRows() {
 export function immobilises() {
   return store.items
     .list((i) => i.etat === ITEM_STATES.MAINTENANCE || i.etat === ITEM_STATES.HS)
-    .map((item) => ({ item, ouverts: openEvents(item.id) }))
+    .map((item) => ({ item, aTraiter: openEvents(item.id) }))
     .sort((a, b) => a.item.nom.localeCompare(b.item.nom, 'fr'));
 }
 ```
@@ -406,6 +406,8 @@ git commit -m "feat(actions): signalements, interventions et clôture de la main
 - Produit : `eventsTableHtml({ rows, filtre })`, `immobilisesHtml(rows)`, `maintenanceHtml({ rows, bloques, filtre })`, `interventionFormHtml(item)`, `readInterventionForm(root)`, `maintenanceView(container)`.
 
 Spec §6 : « Liste des événements par statut · *Créer une intervention* · *Clôturer* · vue “Matériel en maintenance / HS” ».
+
+Attention au libellé de la colonne de droite : `immobilises()` renvoie `aTraiter`, qui compte les événements `ouvert` **et** `en_cours`. Un objet `hs` en a zéro par construction, et un objet passé en maintenance à la main depuis sa fiche n’en a aucun non plus. La liste s’intitule donc « Matériel immobilisé », pas « à traiter », et le compte s’affiche par ligne.
 
 Reprise de la phase 4 : `exitMissingRows` quitte `js/admin/views/salle.js` pour `js/admin/kpi.js`, où vivent déjà `openReports`, `lateLoans` et `dueTodayReservations`. Le tableau de bord importait un module de **vue** pour un sélecteur pur, ce qui traînait `auth` et `layout` dans son graphe.
 
@@ -588,9 +590,9 @@ export function eventsTableHtml({ rows, filtre }) {
 
 export function immobilisesHtml(rows) {
   if (!rows.length) return '<div class="empty-state">Aucun matériel immobilisé.</div>';
-  return `<div class="list">${rows.map(({ item, ouverts }) => `
+  return `<div class="list">${rows.map(({ item, aTraiter }) => `
     <div class="list__item" data-href="/materiel/${escapeHtml(item.id)}">
-      <div class="list__grow"><strong>${escapeHtml(item.nom)}</strong><span class="activity__detail">${ouverts.length ? `${ouverts.length} à traiter` : 'rien à traiter'}</span></div>
+      <div class="list__grow"><strong>${escapeHtml(item.nom)}</strong><span class="activity__detail">${aTraiter.length ? `${aTraiter.length} à traiter` : 'rien à traiter'}</span></div>
       ${badge('item', item.etat)}
     </div>`).join('')}</div>`;
 }
