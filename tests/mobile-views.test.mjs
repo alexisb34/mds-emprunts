@@ -58,3 +58,10 @@ test('ficheHtml : exemplaires et bouton selon le circuit', () => {
   assert.match(allOut, /Aucun exemplaire disponible/);
   assert.doesNotMatch(allOut, /href="#\/reserver/);
 });
+
+test('ficheHtml : réservation déjà faite → lien vers Mes emprunts, pas de bouton Réserver', () => {
+  const group = groupByReference(store.items.list()).find((g) => g.reference === 'sd-256');
+  const html = ficheHtml({ group, date: NOW, reserved: { loan: { debutPrevu: new Date(2026, 8, 18, 9).toISOString() } } });
+  assert.match(html, /Voir ma réservation/);
+  assert.doesNotMatch(html, /href="#\/reserver\//);
+});

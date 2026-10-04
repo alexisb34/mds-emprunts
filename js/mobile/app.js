@@ -13,6 +13,7 @@ import { catalogueView } from './views/catalogue.js';
 import { ficheView } from './views/fiche.js';
 import { scanView } from './views/scan.js';
 import { empruntsView } from './views/emprunts.js';
+import { reserverView } from './views/reserver.js';
 
 store.init(buildSeed);
 
@@ -36,7 +37,7 @@ const routes = [
   { path: '/scan', view: guard(scanView) },
   { path: '/emprunts', view: guard(empruntsView) },
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
-  { path: '/reserver/:id', view: guard(aVenirView('Réserver', 3, '/catalogue')) },
+  { path: '/reserver/:id', view: guard(reserverView) },
   { path: '/profil', view: guard(profilView) },
 ];
 
