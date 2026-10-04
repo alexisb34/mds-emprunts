@@ -177,3 +177,20 @@ test('userLoans : en cours avec retard, réservations, historique trié', () => 
   assert.ok(hist.every((x) => x.loan.statut !== LOAN_STATES.EN_COURS && x.loan.statut !== LOAN_STATES.RESERVEE));
   assert.ok(hist.every((x, i, a) => i === 0 || (a[i - 1].loan.dateRetourReelle || '') >= (x.loan.dateRetourReelle || '')));
 });
+
+const valueLoan = () => store.loans.list((l) => l.statut === 'en_cours' && store.items.get(l.itemId).circuit === 'valeur')[0];
+
+test('resolveScan : le matériel de valeur emprunté par moi ne se rend pas par scan → rendu_a_la_pedago', () => {
+  const loan = valueLoan();
+  assert.ok(loan);
+  const r = resolveScan(store.items.get(loan.itemId).code, loan.userId);
+  assert.equal(r.mode, 'erreur');
+  assert.equal(r.reason, REASONS.RENDU_A_LA_PEDAGO);
+});
+
+test('returnSelf : refuse le matériel de valeur (rendu_a_la_pedago), emprunt et objet inchangés', () => {
+  const loan = valueLoan();
+  assert.throws(() => returnSelf({ loanId: loan.id, userId: loan.userId, photo: PHOTO }), (e) => e.reason === REASONS.RENDU_A_LA_PEDAGO);
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.EN_COURS);
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE);
+});

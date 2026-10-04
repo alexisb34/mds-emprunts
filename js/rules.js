@@ -26,6 +26,7 @@ export const REASONS = {
   DUREE_TROP_LONGUE: 'duree_trop_longue',
   UTILISATEUR_INACTIF: 'utilisateur_inactif',
   CODE_INCONNU: 'code_inconnu',
+  RENDU_A_LA_PEDAGO: 'rendu_a_la_pedago',
 };
 
 export const REASON_LABELS = {
@@ -41,6 +42,7 @@ export const REASON_LABELS = {
   duree_trop_longue: 'La durée demandée dépasse le maximum autorisé.',
   utilisateur_inactif: 'Ce compte est désactivé.',
   code_inconnu: 'Code non reconnu : scannez l’étiquette MDS-XXXX collée sur l’objet.',
+  rendu_a_la_pedago: 'Ce matériel se rend directement à la pédago, qui vérifie son état.',
 };
 
 const UNAVAILABLE_REASON = {

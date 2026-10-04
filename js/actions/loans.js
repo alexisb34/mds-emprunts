@@ -1,7 +1,7 @@
 // js/actions/loans.js — emprunts. Phase 2 : circuit self-service (scan → emprunt / retour).
 // Phase 3 ajoutera les réservations de matériel de valeur (remise, réception, expiration).
 import { store } from '../store.js';
-import { ITEM_STATES, LOAN_STATES, MAINT_TYPES, MAINT_STATES } from '../models.js';
+import { CIRCUITS, ITEM_STATES, LOAN_STATES, MAINT_TYPES, MAINT_STATES } from '../models.js';
 import { now, canBorrowSelf, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, REASONS, REASON_LABELS } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
@@ -27,7 +27,11 @@ export function resolveScan(code, userId, date = now()) {
   const item = store.items.list((i) => i.code === text)[0];
   if (!item) return { mode: 'erreur', reason: REASONS.CODE_INCONNU, ...nothing };
   const loan = findOpenLoanForItem(item.id);
-  if (loan && loan.userId === userId) return { mode: 'retour', item, loan, reason: null };
+  if (loan && loan.userId === userId) {
+    // Seul le self-service se rend par scan : le matériel de valeur passe par la réception pédago (spec §5.2).
+    if (item.circuit !== CIRCUITS.SELF) return { mode: 'erreur', item, loan, reason: REASONS.RENDU_A_LA_PEDAGO };
+    return { mode: 'retour', item, loan, reason: null };
+  }
   const user = store.users.get(userId);
   const check = canBorrowSelf({ item, user, loans: store.loans.list(), items: store.items.list(), settings: store.settings.get(), date });
   if (!check.ok) return { mode: 'erreur', item, loan, reason: check.reason };
@@ -61,6 +65,7 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
   if (loan.statut !== LOAN_STATES.EN_COURS) throw new Error('Cet emprunt n’est plus en cours.');
   if (loan.userId !== userId) throw new Error('Cet emprunt ne vous appartient pas.');
   const item = store.items.get(loan.itemId);
+  if (item.circuit !== CIRCUITS.SELF) throw refusal(REASONS.RENDU_A_LA_PEDAGO);
   const date = now();
   const lines = checklist || buildChecklist(item.reference);
   const problem = hasProblem(lines);
