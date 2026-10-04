@@ -14,6 +14,7 @@ import { materielView } from './views/materiel.js';
 import { materielFicheView } from './views/materielFiche.js';
 import { utilisateursView } from './views/utilisateurs.js';
 import { utilisateurFicheView } from './views/utilisateurFiche.js';
+import { empruntsView } from './views/emprunts.js';
 
 store.init(buildSeed);
 
@@ -50,7 +51,7 @@ const routes = [
   { path: '/dashboard', view: guard(dashboardView) },
   { path: '/materiel', view: guard(materielView) },
   { path: '/materiel/:id', view: guard(materielFicheView) },
-  { path: '/emprunts', view: guard(aVenirView('Emprunts', 3)) },
+  { path: '/emprunts', view: guard(empruntsView) },
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
   { path: '/maintenance', view: guard(aVenirView('Maintenance', 5)) },
   { path: '/utilisateurs', view: guard(utilisateursView) },

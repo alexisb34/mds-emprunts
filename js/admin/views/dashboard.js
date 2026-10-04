@@ -7,6 +7,7 @@ import { auth } from '../../auth.js';
 import { escapeHtml, badge, avatar, formatDate, formatTime, formatDateTime, relativeDay, fullName, toast, openModal } from '../../ui.js';
 import { setDemoClock, resetDemoData, toDatetimeLocal, fromDatetimeLocal, officeStatus } from '../../actions/settings.js';
 import { setTopbar } from '../layout.js';
+import { openHandoverModal } from '../handoverModal.js';
 import { computeKpis, lateLoans, dueTodayReservations, openReports } from '../kpi.js';
 
 // Prochain jour ouvré à 9h (aujourd’hui si c’est un jour ouvré avant 9h).
@@ -42,8 +43,8 @@ function dueList(due) {
       ${user ? avatar(user) : ''}
       <div class="list__grow"><strong>${escapeHtml(item ? item.nom : loan.itemId)}</strong><span class="activity__detail">${user ? escapeHtml(fullName(user)) : '—'} · retrait à ${escapeHtml(formatTime(loan.debutPrevu))} · code ${escapeHtml(loan.codeRetrait || '')}</span></div>
       ${badge('loan', loan.statut)}
-    </div>`).join('')}</div>
-    <p class="body-tiny text-secondary">La remise se fait depuis l’écran Emprunts (phase 3).</p>`;
+      <button type="button" class="btn btn--primary btn--sm" data-action="handover">Remettre</button>
+    </div>`).join('')}</div>`;
 }
 
 function reportsList(reports) {
@@ -123,6 +124,7 @@ export function dashboardView(container) {
       horlogeDemo: settings.horlogeDemo || null, status: officeStatus(date, settings),
     });
     container.querySelectorAll('[data-href]').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.href)));
+    container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); openHandoverModal({}); }));
     const apply = (value) => {
       try {
         setDemoClock(value, auth.currentUserId());

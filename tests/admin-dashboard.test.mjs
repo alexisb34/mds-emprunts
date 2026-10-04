@@ -24,8 +24,20 @@ test('dashboardHtml : KPI, retards, signalements, activités', () => {
   assert.match(html, /1 jour</);
   assert.match(html, /Clic gauche/);
   assert.match(html, /Aucune remise prévue aujourd’hui/);
+  assert.doesNotMatch(html, /La remise se fait depuis/);
   assert.equal((html.match(/activity__item/g) || []).length, 15);
   assert.match(html, /data-href="\/materiel\/item_/);
+});
+
+test('dashboardHtml : un bouton Remettre par remise du jour', () => {
+  const due = dueTodayReservations({ ...db, loans: db.loans.map((l, i) => (i === 0 ? { ...l, statut: 'reservee', debutPrevu: NOW.toISOString(), codeRetrait: 'AB12CD' } : l)) }, NOW);
+  assert.ok(due.length >= 1);
+  const html = dashboardHtml({
+    kpis: computeKpis(db, NOW), late: [], due, reports: [], activity: [], users: db.users, date: NOW,
+    horlogeDemo: null, status: officeStatus(NOW, db.settings),
+  });
+  assert.equal((html.match(/data-action="handover"/g) || []).length, due.length);
+  assert.doesNotMatch(html, /La remise se fait depuis/);
 });
 
 test('dashboardHtml : états vides', () => {
