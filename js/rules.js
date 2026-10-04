@@ -32,6 +32,11 @@ export const REASONS = {
   DATES_INCOHERENTES: 'dates_incoherentes',
   HORS_OUVERTURE: 'hors_ouverture',
   RENDU_A_LA_PEDAGO: 'rendu_a_la_pedago',
+  CRENEAU_VIDE: 'creneau_vide',
+  CRENEAUX_NON_CONTIGUS: 'creneaux_non_contigus',
+  CRENEAU_OCCUPE: 'creneau_occupe',
+  CRENEAU_PASSE: 'creneau_passe',
+  SALLE_FERMEE: 'salle_fermee',
 };
 
 export const REASON_LABELS = {
@@ -53,6 +58,11 @@ export const REASON_LABELS = {
   dates_incoherentes: 'La date de retour doit être postérieure ou égale à la date de retrait.',
   hors_ouverture: 'Le retrait doit tomber pendant les heures d’ouverture du bureau (jours ouvrés, 8h-12h et 13h-17h).',
   rendu_a_la_pedago: 'Ce matériel se rend directement à la pédago, qui vérifie son état.',
+  creneau_vide: 'Choisissez au moins un créneau.',
+  creneaux_non_contigus: 'Les créneaux doivent se suivre sans interruption.',
+  creneau_occupe: 'Un de ces créneaux est déjà réservé.',
+  creneau_passe: 'Ce créneau est déjà passé.',
+  salle_fermee: 'La salle photo est ouverte du lundi au vendredi, de 8h à 17h.',
 };
 
 const UNAVAILABLE_REASON = {
