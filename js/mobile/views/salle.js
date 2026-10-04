@@ -5,7 +5,7 @@ import { auth } from '../../auth.js';
 import { now, addDays, isWeekday, REASONS, REASON_LABELS } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatDate, formatSlots, relativeDay, openModal, toast } from '../../ui.js';
-import { buildWeekGrid, toggleSlot, selectionIsValid, startOfWeek, weekDays } from '../../weekGrid.js';
+import { buildWeekGrid, toggleSlot, selectionIsValid, startOfWeek, weekLabel } from '../../weekGrid.js';
 import { createBooking, cancelBooking, recordEntry, recordExit, roomChecklist, userBookings, sweepBookings } from '../../actions/bookings.js';
 import { setHeader } from '../layout.js';
 
@@ -96,12 +96,6 @@ export function etatHtml({ booking, moment, lignes }) {
     <button type="button" class="btn btn--primary btn--block" data-action="confirm-etat">Valider l’état des lieux</button>
     <button type="button" class="btn btn--ghost btn--block" data-action="cancel-etat">Retour</button>`;
 }
-
-const weekLabel = (date) => {
-  const jours = weekDays(date);
-  const fmt = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
-  return `${new Intl.DateTimeFormat('fr-FR', { day: 'numeric' }).format(jours[0].date)} – ${fmt.format(jours[4].date)}`;
-};
 
 // Semaine affichée à l’ouverture : le week-end, la semaine écoulée n’offre plus rien, on passe à la suivante.
 export function openingWeek(date) {

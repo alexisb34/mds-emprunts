@@ -4,11 +4,11 @@ import { auth } from '../../auth.js';
 import { now, addDays, isExitMissing } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, avatar, fullName, formatDate, formatDateTime, formatSlots, openModal, toast } from '../../ui.js';
-import { buildWeekGrid, startOfWeek, weekDays } from '../../weekGrid.js';
+import { buildWeekGrid, startOfWeek, weekLabel } from '../../weekGrid.js';
 import { weekBookings, cancelBooking, forceCloseBooking, sweepBookings } from '../../actions/bookings.js';
 import { setTopbar } from '../layout.js';
 
-const initials = (user) => (user ? `${(user.prenom || '')[0] || ''}${(user.nom || '')[0] || ''}`.toUpperCase() : '?');
+const initials = (user) => (user ? `${(user.prenom || '')[0] || ''}${(user.nom || '')[0] || ''}`.toUpperCase() || '?' : '?');
 
 export function planningHtml({ grid, users }) {
   const entetes = grid.days.map((d) => `<th data-day="${escapeHtml(d.ymd)}"${d.isToday ? ' class="is-today"' : ''}>${escapeHtml(d.label)}</th>`).join('');
@@ -54,12 +54,6 @@ export function bookingDetailHtml({ booking, user }) {
       ${annulable ? `<button type="button" class="btn btn--danger btn--sm" data-cancel-booking="${escapeHtml(booking.id)}">Annuler la réservation</button>` : ''}
     </div>`;
 }
-
-const weekLabel = (date) => {
-  const jours = weekDays(date);
-  const fmt = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
-  return `${new Intl.DateTimeFormat('fr-FR', { day: 'numeric' }).format(jours[0].date)} – ${fmt.format(jours[4].date)}`;
-};
 
 export function salleHtml({ grid, users, missing, semaine }) {
   const bandeau = missing.length

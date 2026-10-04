@@ -2,7 +2,7 @@ import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SETTINGS, REASONS } from '../js/rules.js';
-import { startOfWeek, weekDays, roomHours, buildWeekGrid, toggleSlot, selectionIsValid } from '../js/weekGrid.js';
+import { startOfWeek, weekDays, weekLabel, roomHours, buildWeekGrid, toggleSlot, selectionIsValid } from '../js/weekGrid.js';
 
 const JEUDI = new Date(2026, 8, 17, 10, 0);   // jeudi 17 septembre 2026
 const S = DEFAULT_SETTINGS;
@@ -74,4 +74,26 @@ test('selectionIsValid : vide, non contiguë, conflit, passé, jour ouvré', () 
   assert.deepEqual(selectionIsValid({ ymd: '2026-09-17', creneaux: [8] }, ctx), { ok: false, reason: REASONS.CRENEAU_PASSE });
   assert.deepEqual(selectionIsValid({ ymd: '2026-09-19', creneaux: [9] }, ctx), { ok: false, reason: REASONS.SALLE_FERMEE });
   assert.deepEqual(selectionIsValid({ ymd: '2026-09-17', creneaux: [11, 12, 13] }, ctx), { ok: true, reason: null });
+});
+
+test('weekDays : « aujourd’hui » suit l’horloge, pas la semaine affichée', () => {
+  const semaineSuivante = new Date(2026, 8, 21, 9, 0);   // lundi 21 septembre
+  // Sans second argument, le repère reste la date passée (compatibilité des libellés).
+  assert.equal(weekDays(semaineSuivante).find((d) => d.isToday).ymd, '2026-09-21');
+  // Avec l’horloge : aucun jour de la semaine suivante n’est « aujourd’hui ».
+  assert.equal(weekDays(semaineSuivante, JEUDI).some((d) => d.isToday), false);
+  assert.equal(weekDays(JEUDI, JEUDI).find((d) => d.isToday).ymd, '2026-09-17');
+});
+
+test('buildWeekGrid : la semaine affichée ne déplace pas le repère du jour', () => {
+  const suivante = buildWeekGrid({ date: new Date(2026, 8, 21), bookings: [], settings: S, userId: null, now: JEUDI });
+  assert.equal(suivante.days.some((d) => d.isToday), false);
+  const courante = buildWeekGrid({ date: JEUDI, bookings: [], settings: S, userId: null, now: JEUDI });
+  assert.equal(courante.days.find((d) => d.isToday).ymd, '2026-09-17');
+});
+
+test('weekLabel : mois répété seulement quand la semaine chevauche deux mois', () => {
+  assert.equal(weekLabel(JEUDI), '14 – 18 sept.');
+  // Lundi 28 septembre → vendredi 2 octobre.
+  assert.equal(weekLabel(new Date(2026, 8, 28)), '28 sept. – 2 oct.');
 });

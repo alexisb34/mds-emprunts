@@ -14,13 +14,25 @@ export function startOfWeek(date) {
   return d;
 }
 
-export function weekDays(date) {
+// `maintenant` distingue la semaine AFFICHÉE de la date du jour : sans lui, naviguer
+// d’une semaine mettait en évidence le lundi de la semaine affichée comme « aujourd’hui ».
+export function weekDays(date, maintenant = date) {
   const lundi = startOfWeek(date);
-  const today = ymd(date);
+  const today = ymd(maintenant);
   return Array.from({ length: 5 }, (_, i) => {
     const d = addDays(lundi, i);
     return { ymd: ymd(d), date: d, label: dayFmt.format(d), isToday: ymd(d) === today };
   });
+}
+
+// « 14 – 18 sept. », et « 28 sept. – 2 oct. » quand la semaine chevauche deux mois.
+export function weekLabel(date) {
+  const jours = weekDays(date);
+  const [debut, fin] = [jours[0].date, jours[4].date];
+  const avecMois = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
+  const jourSeul = new Intl.DateTimeFormat('fr-FR', { day: 'numeric' });
+  const memeMois = debut.getMonth() === fin.getMonth();
+  return `${(memeMois ? jourSeul : avecMois).format(debut)} – ${avecMois.format(fin)}`;
 }
 
 export function roomHours(settings) {
@@ -32,7 +44,7 @@ export function roomHours(settings) {
 
 // cells[ymd][heure] : qui occupe, est-ce moi, est-ce passé, est-ce libre.
 export function buildWeekGrid({ date, bookings, settings, userId, now }) {
-  const days = weekDays(date);
+  const days = weekDays(date, now);
   const hours = roomHours(settings);
   const actives = bookings.filter((b) => b.statut !== BOOKING_STATES.ANNULEE);
   const cells = {};

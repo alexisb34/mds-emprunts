@@ -17,9 +17,10 @@ test('planningHtml : 5 colonnes, initiales de l’occupant, créneau cliquable',
   assert.equal((html.match(/<th data-day=/g) || []).length, 5);
   const actif = store.bookings.list((b) => b.statut === 'en_cours')[0];
   const user = store.users.get(actif.userId);
-  assert.match(html, new RegExp(`data-booking="${actif.id}"`));
-  assert.match(html, new RegExp(`${user.prenom[0]}${user.nom[0]}`));
-  assert.match(html, /slot--taken|slot--booked/);
+  // Les initiales doivent être DANS la cellule occupée, pas seulement quelque part
+  // dans le document (le `title` les contiendrait aussi).
+  const initiales = `${user.prenom[0]}${user.nom[0]}`.toUpperCase();
+  assert.match(html, new RegExp(`class="slot slot--taken" data-booking="${actif.id}"[^>]*>${initiales}</button>`));
 });
 
 test('exitMissingRows : une réservation dont la sortie manque depuis plus d’une heure', () => {
