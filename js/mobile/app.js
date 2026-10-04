@@ -10,7 +10,6 @@ import { sweepBookings } from '../actions/bookings.js';
 import { mountNav } from './layout.js';
 import { loginView } from './views/login.js';
 import { profilView } from './views/profil.js';
-import { aVenirView } from './views/aVenir.js';
 import { accueilView } from './views/accueil.js';
 import { catalogueView } from './views/catalogue.js';
 import { ficheView } from './views/fiche.js';

@@ -5,7 +5,7 @@ import { now, isBookingActive } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, formatDate, formatSlots, relativeDay } from '../../ui.js';
 import { userLoans, sweepExpirations } from '../../actions/loans.js';
-import { userBookings } from '../../actions/bookings.js';
+import { userBookings, sweepBookings } from '../../actions/bookings.js';
 import { setHeader } from '../layout.js';
 
 function loansCard(enCours, date) {
@@ -22,7 +22,7 @@ function bookingCard(nextBooking, date, active = null) {
   const aFaire = active && !(active.entreeFaite && active.sortieFaite)
     ? `<a class="btn btn--primary btn--block" href="#/salle">${active.entreeFaite ? 'Faire l’état des lieux de sortie' : 'Faire l’état des lieux d’entrée'}</a>`
     : '';
-  if (!nextBooking) return `<div class="empty-state">Aucune réservation de la salle photo.</div>${aFaire}`;
+  if (!nextBooking) return aFaire || '<div class="empty-state">Aucune réservation de la salle photo.</div>';
   const enCours = isBookingActive(nextBooking, date);
   return `
     <a class="m-item" href="#/salle">
@@ -67,6 +67,7 @@ export function accueilView(container) {
     const user = auth.currentUser();
     const date = now();
     sweepExpirations(date);
+    sweepBookings(date);
     const bookings = store.bookings.list((b) => b.userId === user.id && (b.statut === BOOKING_STATES.A_VENIR || b.statut === BOOKING_STATES.EN_COURS))
       .sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]);
     const loans = userLoans(user.id, date);

@@ -2,7 +2,8 @@
 // mes réservations et états des lieux d’entrée et de sortie.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, addDays, ymd, REASON_LABELS } from '../../rules.js';
+import { now, addDays, isWeekday, REASONS, REASON_LABELS } from '../../rules.js';
+import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatDate, formatSlots, relativeDay, openModal, toast } from '../../ui.js';
 import { buildWeekGrid, toggleSlot, selectionIsValid, startOfWeek, weekDays } from '../../weekGrid.js';
 import { createBooking, cancelBooking, recordEntry, recordExit, roomChecklist, userBookings, sweepBookings } from '../../actions/bookings.js';
@@ -37,7 +38,8 @@ export function selectionBarHtml({ selection, check }) {
   const resume = n
     ? `<strong>${escapeHtml(formatSlots(selection.creneaux))}</strong> · ${n} créneau${n > 1 ? 'x' : ''}`
     : 'Touchez un ou plusieurs créneaux qui se suivent.';
-  const message = check.ok ? '' : `<p class="body-tiny text-secondary">${escapeHtml(REASON_LABELS[check.reason] || '')}</p>`;
+  // Sélection vide : le résumé invite déjà à choisir, inutile d’empiler un second message.
+  const message = check.ok || check.reason === REASONS.CRENEAU_VIDE ? '' : `<p class="body-tiny text-secondary">${escapeHtml(REASON_LABELS[check.reason] || '')}</p>`;
   return `
     <div class="selection-bar">
       <div class="selection-bar__resume body-sm">${resume}</div>
@@ -50,12 +52,13 @@ export function myBookingsHtml({ active, aVenir }, date) {
   const bloc = [];
   if (active) {
     const { booking, entreeFaite, sortieFaite } = active;
+    const titre = booking.statut === BOOKING_STATES.EN_COURS ? 'Créneau en cours' : 'Créneau du jour';
     const action = !entreeFaite
       ? '<button type="button" class="btn btn--primary btn--block" data-action="entry">Faire l’état des lieux d’entrée</button>'
       : (!sortieFaite ? '<button type="button" class="btn btn--primary btn--block" data-action="exit">Faire l’état des lieux de sortie</button>' : '');
     bloc.push(`
       <div class="m-item m-item--stacked m-item--pickup">
-        <div class="m-item__row"><span class="m-item__body"><strong>Créneau en cours · ${escapeHtml(formatSlots(booking.creneaux))}</strong><span class="body-tiny text-secondary">${escapeHtml(formatDate(booking.date))}</span></span>${badge('booking', booking.statut)}</div>
+        <div class="m-item__row"><span class="m-item__body"><strong>${titre} · ${escapeHtml(formatSlots(booking.creneaux))}</strong><span class="body-tiny text-secondary">${escapeHtml(formatDate(booking.date))}</span></span>${badge('booking', booking.statut)}</div>
         ${action}
       </div>`);
   }
@@ -70,8 +73,10 @@ export function myBookingsHtml({ active, aVenir }, date) {
   return `<div class="m-list">${bloc.join('')}</div>`;
 }
 
+const etatTitre = (moment) => (moment === 'entree' ? 'État des lieux d’entrée' : 'État des lieux de sortie');
+
 export function etatHtml({ booking, moment, lignes }) {
-  const titre = moment === 'entree' ? 'État des lieux d’entrée' : 'État des lieux de sortie';
+  const titre = etatTitre(moment);
   const aide = moment === 'entree'
     ? 'Vérifiez le matériel avant de commencer : ce que vous signalez maintenant ne vous sera pas reproché.'
     : 'Vérifiez le matériel avant de partir : la salle doit être rangée.';
@@ -98,12 +103,18 @@ const weekLabel = (date) => {
   return `${new Intl.DateTimeFormat('fr-FR', { day: 'numeric' }).format(jours[0].date)} – ${fmt.format(jours[4].date)}`;
 };
 
-export function salleHtml({ grid, selection, check, mine, date }) {
+// Semaine affichée à l’ouverture : le week-end, la semaine écoulée n’offre plus rien, on passe à la suivante.
+export function openingWeek(date) {
+  return isWeekday(date) ? date : addDays(startOfWeek(date), 7);
+}
+
+// `semaine` : une date de la semaine affichée ; `date` : l’instant présent, référence des jours relatifs.
+export function salleHtml({ grid, selection, check, mine, semaine, date }) {
   return `
     <section class="card">
       <div class="card__header">
         <button type="button" class="btn btn--ghost btn--sm" data-action="prev-week" aria-label="Semaine précédente">←</button>
-        <h2 class="card__title">${escapeHtml(weekLabel(date))}</h2>
+        <h2 class="card__title">${escapeHtml(weekLabel(semaine))}</h2>
         <button type="button" class="btn btn--ghost btn--sm" data-action="next-week" aria-label="Semaine suivante">→</button>
       </div>
       ${gridHtml({ grid, selection })}
@@ -117,7 +128,7 @@ export function salleHtml({ grid, selection, check, mine, date }) {
 
 export function salleView(container) {
   const user = auth.currentUser();
-  let semaine = now();
+  let semaine = openingWeek(now());
   let selection = emptySelection();
   let etat = null; // { bookingId, moment, lignes } quand un état des lieux est ouvert
 
@@ -128,7 +139,8 @@ export function salleView(container) {
     const settings = store.settings.get();
     if (etat) {
       const booking = store.bookings.get(etat.bookingId);
-      setHeader({ title: 'Salle photo', back: '/salle' });
+      // Sous-état de la route /salle : pas de flèche de retour (le lien ne changerait pas le hash), le bouton « Retour » suffit.
+      setHeader({ title: etatTitre(etat.moment) });
       container.innerHTML = etatHtml({ booking, moment: etat.moment, lignes: etat.lignes });
       container.querySelectorAll('[data-line]').forEach((b) => b.addEventListener('click', () => {
         const i = Number(b.dataset.line);
@@ -157,7 +169,7 @@ export function salleView(container) {
     const grid = buildWeekGrid({ date: semaine, bookings, settings, userId: user.id, now: date });
     const check = selectionIsValid(selection, { bookings, settings, date });
     setHeader({ title: 'Salle photo' });
-    container.innerHTML = salleHtml({ grid, selection, check, mine: userBookings(user.id, date), date: semaine });
+    container.innerHTML = salleHtml({ grid, selection, check, mine: userBookings(user.id, date), semaine, date });
     container.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => {
       const [jour, heure] = b.dataset.slot.split(':');
       selection = toggleSlot(selection, { ymd: jour, heure: Number(heure) });

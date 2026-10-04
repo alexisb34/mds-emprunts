@@ -37,6 +37,9 @@ test('accueilHtml : bouton d’état des lieux quand le créneau est en cours', 
   const fait = accueilHtml({ ...base, salle: { active: { booking, entreeFaite: true, sortieFaite: true }, aVenir: [], passees: [] } });
   assert.doesNotMatch(fait, /Faire l’état des lieux/);
   assert.doesNotMatch(accueilHtml(base), /Faire l’état des lieux/);
+  const sansProchaine = accueilHtml({ ...base, nextBooking: null, salle: { active: { booking, entreeFaite: false, sortieFaite: false }, aVenir: [], passees: [] } });
+  assert.match(sansProchaine, /Faire l’état des lieux d’entrée/);
+  assert.doesNotMatch(sansProchaine, /Aucune réservation de la salle photo/, 'pas de message vide au-dessus du bouton');
 });
 
 test('catalogueHtml : chips, cartes par référence, badge et pastille circuit', () => {
