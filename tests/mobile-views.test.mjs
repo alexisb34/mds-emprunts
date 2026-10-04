@@ -65,3 +65,15 @@ test('ficheHtml : réservation déjà faite → lien vers Mes emprunts, pas de b
   assert.match(html, /Voir ma réservation/);
   assert.doesNotMatch(html, /href="#\/reserver\//);
 });
+
+test('accueilHtml : avis de retrait et d’expiration', () => {
+  const base = { user: store.users.get('user_010'), enCours: [], nextBooking: null, date: NOW };
+  const item = { nom: 'Canon R10' };
+  const w = { end: new Date(2026, 8, 17, 11, 0) };
+  const open = accueilHtml({ ...base, reservations: [{ loan: {}, item, pickupOpen: true, expired: false, window: w }] });
+  assert.match(open, /à retirer avant 11h00/);
+  assert.match(open, /href="#\/emprunts"/);
+  const exp = accueilHtml({ ...base, reservations: [{ loan: {}, item, pickupOpen: false, expired: true, window: w }] });
+  assert.match(exp, /réservation expirée/);
+  assert.doesNotMatch(accueilHtml(base), /alert--info|alert--warning/);
+});
