@@ -242,3 +242,17 @@ test('userLoans : expireesRecentes ne garde que les réservations expirées depu
   assert.equal(ancienne.expireesRecentes.length, 0);
   assert.equal(ancienne.reservations.length, 0);
 });
+
+test('userLoans : refuseesRecentes porte le motif de refus et s’efface après 24 h', () => {
+  const item = freeValeur('hoya-nd');
+  const loan = reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  refuseLoan(loan.id, PEDAGO, 'Réservé pour un cours');
+  const recent = userLoans(ELEVE, now()).refuseesRecentes;
+  assert.equal(recent.length, 1);
+  assert.equal(recent[0].loan.motifRefus, 'Réservé pour un cours');
+  assert.equal(recent[0].item.id, item.id);
+  // `updatedAt` est posé par le store à l’horloge réelle (le patch ne peut pas le forcer) :
+  // on simule le temps qui passe en interrogeant 25 h après l’écriture.
+  const plusTard = new Date(new Date(store.loans.get(loan.id).updatedAt).getTime() + 25 * 60 * 60 * 1000);
+  assert.equal(userLoans(ELEVE, plusTard).refuseesRecentes.length, 0);
+});

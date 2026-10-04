@@ -69,3 +69,11 @@ test('empruntsHtml : l’onglet Réservations affiche les cartes de retrait', ()
   assert.match(html, /data-action="cancel"/);
   assert.doesNotMatch(html, /Le QR de retrait s’affichera ici/);
 });
+
+test('empruntsHtml : l’historique affiche le motif d’un refus, échappé', () => {
+  const loan = { id: 'loan_r', itemId: 'inconnu', statut: 'refusee', debutPrevu: NOW.toISOString(), finPrevue: NOW.toISOString(), motifRefus: 'Réservé pour un <cours>' };
+  const data = { enCours: [], reservations: [], historique: [{ loan, item: { nom: 'Canon R10' } }] };
+  const html = empruntsHtml({ tab: 'historique', data, date: NOW });
+  assert.match(html, /Motif : Réservé pour un &lt;cours&gt;/);
+  assert.match(html, /badge--hs">Refusé/);
+});

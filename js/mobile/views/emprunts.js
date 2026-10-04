@@ -62,7 +62,7 @@ function historiqueHtml(rows) {
   if (!rows.length) return '<div class="empty-state">Aucun emprunt passé.</div>';
   return `<div class="m-list">${rows.map(({ loan, item }) => `
     <div class="m-item m-item--stacked">
-      <div class="m-item__row"><span class="m-item__body"><strong>${nameOf(item, loan)}</strong><span class="body-tiny text-secondary">${escapeHtml(formatDate(loan.dateRetrait || loan.debutPrevu))}${loan.dateRetourReelle ? ` → ${escapeHtml(formatDate(loan.dateRetourReelle))}` : ''}</span></span>${badge('loan', loan.statut)}</div>
+      <div class="m-item__row"><span class="m-item__body"><strong>${nameOf(item, loan)}</strong><span class="body-tiny text-secondary">${escapeHtml(formatDate(loan.dateRetrait || loan.debutPrevu))}${loan.dateRetourReelle ? ` → ${escapeHtml(formatDate(loan.dateRetourReelle))}` : ''}</span>${loan.motifRefus ? `<span class="body-tiny text-secondary">Motif : ${escapeHtml(loan.motifRefus)}</span>` : ''}</span>${badge('loan', loan.statut)}</div>
       ${loan.photoEmprunt || loan.photoRetour ? `<div class="m-item__photos">${photo(loan.photoEmprunt, 'Photo à l’emprunt')}${photo(loan.photoRetour, 'Photo au retour')}</div>` : ''}
     </div>`).join('')}</div>`;
 }

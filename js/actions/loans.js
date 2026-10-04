@@ -110,6 +110,8 @@ export function userLoans(userId, date = now()) {
     // Réservations expirées dans les dernières 24 h : l’accueil en informe l’emprunteur
     // (elles ne sont plus dans `reservations`, qui ne contient que les réservations en attente).
     expireesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.EXPIREE && (date - pickupWindow(l, minutes).end) < 24 * 60 * 60 * 1000), (l) => l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
+    // Réservations refusées dans les dernières 24 h : l’accueil en informe l’emprunteur avec le motif.
+    refuseesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.REFUSEE && (date - new Date(l.updatedAt)) < 24 * 60 * 60 * 1000), (l) => l.updatedAt).map((loan) => ({ loan, item: itemOf(loan) })),
     historique: sortByDateDesc(mine.filter((l) => !ACTIVE.includes(l.statut)), (l) => l.dateRetourReelle || l.dateRetrait || l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
   };
 }

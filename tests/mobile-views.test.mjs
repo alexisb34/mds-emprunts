@@ -77,3 +77,11 @@ test('accueilHtml : avis de retrait et d’expiration', () => {
   assert.match(exp, /réservation expirée/);
   assert.doesNotMatch(accueilHtml(base), /alert--info|alert--warning/);
 });
+
+test('accueilHtml : avis de refus avec le motif, échappé', () => {
+  const base = { user: store.users.get('user_010'), enCours: [], nextBooking: null, date: NOW };
+  const html = accueilHtml({ ...base, refuseesRecentes: [{ loan: { motifRefus: 'Réservé pour un <cours>' }, item: { nom: 'Canon R10' } }] });
+  assert.match(html, /alert--error/);
+  assert.match(html, /Canon R10 : réservation refusée — Réservé pour un &lt;cours&gt;/);
+  assert.doesNotMatch(accueilHtml(base), /alert--error/);
+});
