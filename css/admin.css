@@ -58,6 +58,8 @@
 .list__grow { flex: 1; min-width: 0; }
 .thumb { width: 48px; height: 36px; object-fit: cover; border-radius: var(--radius-xs); border: var(--stroke-thin) solid var(--border-default); }
 .lightbox { width: 100%; height: auto; border-radius: var(--radius-md); }
+.demo-clock__row { display: flex; gap: var(--space-md); align-items: flex-end; flex-wrap: wrap; margin-top: var(--space-lg); }
+.demo-clock__row .field { flex: 1; min-width: 220px; }
 .error-card { border-left: 4px solid var(--feedback-error); }
 .kpi--alert .kpi__value { color: var(--feedback-error); }
 

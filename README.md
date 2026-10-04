@@ -10,7 +10,7 @@ python3 -m http.server 8000
 
 Puis ouvrir http://localhost:8000 — `admin.html` (pédagogie, desktop) est disponible ; `mobile.html` (emprunteurs, téléphone) est disponible — ouvrir les deux côte à côte pour la démo (sessions séparées par onglet). La caméra (scan QR, photo) exige `localhost` ou HTTPS.
 
-Les données de démo supposent un jour ouvré ; un week-end, régler l’horloge de démo (Paramètres) sur un jour de semaine.
+Les règles suivent une **horloge de démonstration** réglable depuis le tableau de bord admin (carte « Horloge de démonstration ») : un week-end ou hors 8h-12h / 13h-17h, le bureau est fermé et les emprunts en self-service sont refusés. Cliquer sur « Jour ouvré 9h » pour se placer dans une plage ouverte, puis sur « Régénérer les données » pour recaler le jeu de démonstration (emprunts, retards, réservations) sur cette date.
 
 Le scan et la photo utilisent la caméra (autorisation demandée) ; sans caméra, l’écran Scanner propose une simulation et une image de démonstration. Après une mise à jour du code, forcer un rechargement complet (Cmd/Ctrl + Maj + R) : le serveur de développement n’envoie pas d’en-têtes de cache.
 
