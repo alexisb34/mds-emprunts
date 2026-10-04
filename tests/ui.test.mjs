@@ -83,6 +83,20 @@ test('openModal : ouvrir une modale libère d’abord la précédente, closeModa
   }
 });
 
+test('openModal : seuls les boutons du pied de modale sont câblés sur les actions', () => {
+  const selecteurs = [];
+  const root = { innerHTML: '', querySelectorAll: (s) => { selecteurs.push(s); return []; }, querySelector: () => null };
+  const avant = globalThis.document;
+  globalThis.document = { getElementById: () => root, body: { classList: { add() {}, remove() {} } } };
+  try {
+    openModal({ title: 'A', body: '<button data-action="force-close"></button>' });
+  } finally {
+    globalThis.document = avant;
+  }
+  assert.ok(selecteurs.includes('.modal__footer [data-action]'), 'un data-action non numérique dans le corps ne doit pas être câblé');
+  assert.ok(!selecteurs.includes('[data-action]'));
+});
+
 test('toDate : une date seule est locale, pas UTC', () => {
   // new Date('2026-09-17') vaut minuit UTC : à l’ouest de Greenwich, c’est le 16 au soir.
   assert.equal(formatDate('2026-09-17'), '17 sept. 2026');

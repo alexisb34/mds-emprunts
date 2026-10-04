@@ -2,7 +2,6 @@
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
 import { now, isBookingActive } from '../../rules.js';
-import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, formatDate, formatSlots, relativeDay } from '../../ui.js';
 import { userLoans, sweepExpirations } from '../../actions/loans.js';
 import { userBookings, sweepBookings } from '../../actions/bookings.js';
@@ -42,6 +41,15 @@ function noticesHtml(reservations, expireesRecentes, refuseesRecentes) {
   return `<section class="stack">${lignes.join('')}</section>`;
 }
 
+// Réservation mise en avant sur la carte « Salle photo » : le créneau réellement en cours, sinon
+// le prochain à venir. Un créneau passé resté ouvert (sortie jamais faite) n’y figure pas : il
+// masquerait la réservation à venir, et son état des lieux reste proposé par le bouton de la carte.
+export function salleCardBooking(salle, date) {
+  const actif = salle.active?.booking;
+  if (actif && isBookingActive(actif, date)) return actif;
+  return salle.aVenir[0] ?? null;
+}
+
 export function accueilHtml({ user, enCours, nextBooking, date, reservations = [], expireesRecentes = [], refuseesRecentes = [], salle = null }) {
   const lateCount = enCours.filter((x) => x.late).length;
   return `
@@ -68,11 +76,10 @@ export function accueilView(container) {
     const date = now();
     sweepExpirations(date);
     sweepBookings(date);
-    const bookings = store.bookings.list((b) => b.userId === user.id && (b.statut === BOOKING_STATES.A_VENIR || b.statut === BOOKING_STATES.EN_COURS))
-      .sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]);
     const loans = userLoans(user.id, date);
+    const salle = userBookings(user.id, date);
     setHeader({ title: 'MDS Emprunts' });
-    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, expireesRecentes: loans.expireesRecentes, refuseesRecentes: loans.refuseesRecentes, nextBooking: bookings[0] || null, salle: userBookings(user.id, date), date });
+    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, expireesRecentes: loans.expireesRecentes, refuseesRecentes: loans.refuseesRecentes, nextBooking: salleCardBooking(salle, date), salle, date });
   };
   render();
   return store.subscribe(render);

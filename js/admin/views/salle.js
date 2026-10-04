@@ -21,7 +21,7 @@ export function planningHtml({ grid, users }) {
     }).join('');
     return `<tr><th>${heure}h</th>${cases}</tr>`;
   }).join('');
-  return `<table class="week-grid week-grid--admin"><thead><tr><th></th>${entetes}</tr></thead><tbody>${lignes}</tbody></table>`;
+  return `<table class="week-grid"><thead><tr><th></th>${entetes}</tr></thead><tbody>${lignes}</tbody></table>`;
 }
 
 export function exitMissingRows(bookings, users, date) {
@@ -43,12 +43,13 @@ function etatBloc(titre, etat) {
     </div>`;
 }
 
-export function bookingDetailHtml({ booking, user }) {
+export function bookingDetailHtml({ booking, user, date = now() }) {
   const annulable = booking.statut === BOOKING_STATES.A_VENIR || booking.statut === BOOKING_STATES.EN_COURS;
+  const sortieManquante = booking.statut === BOOKING_STATES.EN_COURS && isExitMissing(booking, date);
   return `
     <div class="stack">
       <p class="body-sm">${user ? `<span class="row">${avatar(user)}${escapeHtml(fullName(user))}</span>` : '—'}</p>
-      <p class="body-sm">${escapeHtml(formatDate(booking.date))} · <strong>${escapeHtml(formatSlots(booking.creneaux))}</strong> ${badge('booking', booking.statut)}</p>
+      <p class="body-sm">${escapeHtml(formatDate(booking.date))} · <strong>${escapeHtml(formatSlots(booking.creneaux))}</strong> ${badge('booking', booking.statut)}${sortieManquante ? ` ${badge('derived', 'sortie_non_faite')}` : ''}</p>
       ${etatBloc('État des lieux d’entrée', booking.etatEntree)}
       ${etatBloc('État des lieux de sortie', booking.etatSortie)}
       ${annulable ? `<button type="button" class="btn btn--danger btn--sm" data-cancel-booking="${escapeHtml(booking.id)}">Annuler la réservation</button>` : ''}
@@ -105,7 +106,7 @@ export function salleView(container) {
       const user = users.find((u) => u.id === booking.userId) || null;
       const close = openModal({
         title: `Créneau du ${formatDate(booking.date)}`,
-        body: bookingDetailHtml({ booking, user }),
+        body: bookingDetailHtml({ booking, user, date: now() }),
         actions: [{ label: 'Fermer', variant: 'ghost' }],
       });
       const root = document.getElementById('modal-root');

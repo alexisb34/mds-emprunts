@@ -65,6 +65,7 @@ test('demoClockHtml : état du bureau, valeur du champ, badge et boutons', () =>
 test('dashboardHtml : widget des sorties non faites', () => {
   const tard = new Date(2026, 8, 17, 13, 0);
   const actif = db.bookings.find((b) => b.statut === 'en_cours');
+  assert.ok(actif, 'le seed contient une réservation en cours');
   const missing = [{ booking: actif, user: db.users.find((u) => u.id === actif.userId) }];
   const html = dashboardHtml({
     kpis: computeKpis(db, tard), late: [], due: [], reports: [], activity: [], users: db.users, date: tard,

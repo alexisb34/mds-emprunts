@@ -22,6 +22,11 @@ test('gridHtml : une colonne par jour ouvré, une case par heure, états disting
   assert.match(html, /data-slot="2026-09-17:8" class="slot slot--past"/);
   assert.match(html, /data-slot="2026-09-17:9" class="slot slot--taken"/, 'créneau déjà réservé');
   assert.match(html, /<th>11h<\/th>/);
+  const label = (slot) => html.match(new RegExp(`data-slot="${slot}"[^>]*aria-label="([^"]*)"`))[1];
+  assert.match(label('2026-09-17:11'), /, sélectionné$/);
+  assert.match(label('2026-09-17:8'), /, passé$/);
+  assert.match(label('2026-09-17:9'), /, (déjà pris|réservé par vous)$/);
+  assert.match(label('2026-09-17:15'), /, libre$/);
 });
 
 test('selectionBarHtml : résumé, motif de refus, bouton actif ou non', () => {

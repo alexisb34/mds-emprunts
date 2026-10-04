@@ -81,9 +81,9 @@ function recordEtatDesLieux({ booking, userId, checklist, moment }) {
     });
     if (!problem) return { booking: updated, maintenance: null };
     const lignesProblemes = problemLines(lignes);
-    const moment = entree ? 'd’entrée' : 'de sortie';
+    const libelleMoment = entree ? 'd’entrée' : 'de sortie';
     const events = lignesProblemes.map((ligne) => {
-      const description = `Signalé à l’état des lieux ${moment} : ${ligne.ligne}${ligne.commentaire ? ` → ${ligne.commentaire}` : ''}`;
+      const description = `Signalé à l’état des lieux ${libelleMoment} : ${ligne.ligne}${ligne.commentaire ? ` → ${ligne.commentaire}` : ''}`;
       const event = store.maintenance.create({
         itemId: ligne.itemId || null, type: MAINT_TYPES.SIGNALEMENT, auteurId: userId, date: date.toISOString(), statut: MAINT_STATES.OUVERT,
         description, prestataire: '', cout: 0, loanId: null, bookingId: booking.id,
@@ -125,17 +125,22 @@ export function recordExit({ bookingId, userId, checklist = null }) {
 // passe `terminee`. Celles dont la sortie manque restent `en_cours` et remontent via `isExitMissing`.
 export function closeDueBookings(date = now()) {
   const dues = store.bookings.list((b) => (b.statut === BOOKING_STATES.A_VENIR || b.statut === BOOKING_STATES.EN_COURS) && date >= bookingEnd(b) && !b.etatEntree);
+  if (!dues.length) return 0;
   let closes = 0;
-  for (const candidat of dues) {
-    const booking = store.bookings.get(candidat.id);
-    if (!booking || booking.etatEntree || booking.statut === BOOKING_STATES.TERMINEE || booking.statut === BOOKING_STATES.ANNULEE) continue;
-    store.transaction(() => {
+  // Une seule transaction pour tout le balayage : une persistance, une notification. Une
+  // transaction par réservation relançait N rendus imbriqués (la vue est l’abonné qui balaie).
+  // Si une écriture échoue, les clôtures déjà faites sont annulées avec elle : le balayage
+  // suivant reprend le tout.
+  return store.transaction(() => {
+    for (const candidat of dues) {
+      const booking = store.bookings.get(candidat.id);
+      if (!booking || booking.etatEntree || booking.statut === BOOKING_STATES.TERMINEE || booking.statut === BOOKING_STATES.ANNULEE) continue;
       store.bookings.update(booking.id, { statut: BOOKING_STATES.TERMINEE });
       logAction({ auteurId: booking.userId, action: ACTIONS.BOOKING_SORTIE, bookingId: booking.id, userId: booking.userId, detail: `Créneau ${formatSlots(booking.creneaux)} terminé — salle non occupée` });
-    });
-    closes += 1;
-  }
-  return closes;
+      closes += 1;
+    }
+    return closes;
+  });
 }
 
 // Clôture administrative d’un créneau dont l’état des lieux de sortie n’a jamais été fait :
@@ -177,12 +182,12 @@ export function userBookings(userId, date = now()) {
   const today = ymd(date);
   return {
     active: active ? { booking: active, entreeFaite: !!active.etatEntree, sortieFaite: !!active.etatSortie } : null,
-    aVenir: mine.filter((b) => b.statut === BOOKING_STATES.A_VENIR && b.date >= today && b !== active).sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]),
+    aVenir: mine.filter((b) => b.statut === BOOKING_STATES.A_VENIR && b.date >= today && b.id !== active?.id).sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]),
     passees: sortByDateDesc(mine.filter((b) => b.statut === BOOKING_STATES.TERMINEE), (b) => b.date),
   };
 }
 
 export function weekBookings(date) {
-  const jours = weekDays(startOfWeek(date)).map((d) => d.ymd);
+  const jours = weekDays(startOfWeek(date), date).map((d) => d.ymd);
   return store.bookings.list((b) => jours.includes(b.date));
 }

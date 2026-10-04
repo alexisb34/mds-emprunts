@@ -50,6 +50,11 @@ function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
 }
 
+// Remet la mémoire dans l’état de l’instantané pris au début d’une transaction.
+function restore(snapshot) {
+  db = freezeDb(JSON.parse(snapshot));
+}
+
 function notify() {
   for (const fn of listeners) fn();
 }
@@ -135,30 +140,40 @@ export const store = {
     return { bytes, budget: BUDGET_BYTES, percent: Math.min(100, Math.round((bytes / BUDGET_BYTES) * 100)) };
   },
   // Regroupe plusieurs écritures : une seule persistance et une seule notification à la fin.
-  // Si `fn` lève, l’état d’avant est restauré et personne n’est notifié.
+  // Contrat : la transaction est atomique. Si `fn` lève, ou si la persistance finale échoue
+  // (stockage plein), l’état d’avant est restauré en mémoire, personne n’est notifié et
+  // l’erreur remonte à l’appelant. localStorage n’est écrit qu’à la fin : un échec le laisse
+  // tel qu’il était, donc mémoire et stockage restent d’accord.
+  // L’instantané vient de la mémoire (pas de localStorage, qu’un autre onglet ou un échec
+  // passé peut avoir laissé en retard).
   // Imbrication : seule la transaction la plus externe restaure. Une transaction imbriquée
   // qui lève remonte l’erreur ; si l’externe la rattrape et continue, les écritures de
   // l’imbriquée sont conservées. Les actions de ce projet n’imbriquent pas.
   transaction(fn) {
     assertInit();
-    const snapshot = localStorage.getItem(STORAGE_KEY);
+    const snapshot = depth === 0 ? JSON.stringify(db) : null;
     depth += 1;
     let out;
     try {
       out = fn();
     } catch (err) {
       depth -= 1;
-      if (depth === 0) {
-        pending = false;
-        if (snapshot === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, snapshot);
-        load();
-      }
+      if (depth === 0) { pending = false; restore(snapshot); }
       throw err;
     }
     depth -= 1;
-    // Hors du try : si persist() lève (stockage plein), l’erreur remonte telle quelle
-    // sans fausser la profondeur ni rejouer la restauration.
-    if (depth === 0 && pending) { pending = false; persist(); notify(); }
+    if (depth === 0 && pending) {
+      pending = false;
+      try {
+        persist();
+      } catch (err) {
+        restore(snapshot);
+        throw err;
+      }
+      // Hors du try : un abonné qui lève ne doit pas annuler une écriture déjà persistée,
+      // ni fausser la profondeur (déjà revenue à 0).
+      notify();
+    }
     return out;
   },
 };

@@ -40,6 +40,11 @@ test('bookingDetailHtml : créneaux, états des lieux, bouton d’annulation', (
   assert.match(html, /État des lieux d’entrée/);
   assert.match(html, /pas encore faite/);
   assert.match(html, /data-cancel-booking="book_/);
+  assert.doesNotMatch(html, /Sortie non faite/, 'le créneau est encore en cours');
+  const tard = new Date(2026, 8, 17, 13, 0);
+  const manquante = bookingDetailHtml({ booking: actif, user: store.users.get(actif.userId), date: tard });
+  assert.match(manquante, /badge--late">Sortie non faite/, 'une heure après la fin, la sortie manque');
+  assert.doesNotMatch(planningHtml({ grid: grid(), users: store.users.list() }), /week-grid--admin/);
   const terminee = store.bookings.list((b) => b.statut === 'terminee')[0];
   const html2 = bookingDetailHtml({ booking: terminee, user: store.users.get(terminee.userId) });
   assert.doesNotMatch(html2, /data-cancel-booking/);

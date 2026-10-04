@@ -115,7 +115,7 @@ export function openModal({ title, body, actions = [], onClose = null }) {
     </div>`;
   document.body.classList.add('has-modal');
   root.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', (e) => { if (e.target === el) closeModal(); }));
-  root.querySelectorAll('[data-action]').forEach((btn) => btn.addEventListener('click', async () => {
+  root.querySelectorAll('.modal__footer [data-action]').forEach((btn) => btn.addEventListener('click', async () => {
     const a = actions[Number(btn.dataset.action)];
     const keepOpen = a.onClick ? (await a.onClick(root.querySelector('.modal'))) === false : false;
     if (a.close !== false && !keepOpen) closeModal();

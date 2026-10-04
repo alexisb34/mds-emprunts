@@ -5,7 +5,7 @@ import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { userLoans } from '../js/actions/loans.js';
 import { groupByReference } from '../js/mobile/catalog.js';
-import { accueilHtml } from '../js/mobile/views/accueil.js';
+import { accueilHtml, salleCardBooking } from '../js/mobile/views/accueil.js';
 import { catalogueHtml, catalogueResultsHtml } from '../js/mobile/views/catalogue.js';
 import { ficheHtml } from '../js/mobile/views/fiche.js';
 
@@ -25,6 +25,22 @@ test('accueilHtml : salutation, emprunts en cours avec retard, réservation sall
   assert.match(html2, /Aucun emprunt en cours/);
   assert.match(html2, /9h-11h/);
   assert.match(html2, /En cours/);
+});
+
+test('salleCardBooking : un créneau passé resté ouvert ne masque pas la réservation à venir', () => {
+  const lapsed = { id: 'book_hier', userId: 'user_010', date: '2026-09-16', creneaux: [11], statut: 'en_cours', etatEntree: { lignes: [] }, etatSortie: null };
+  const futur = { id: 'book_demain', userId: 'user_010', date: '2026-09-18', creneaux: [9], statut: 'a_venir', etatEntree: null, etatSortie: null };
+  const salle = { active: { booking: lapsed, entreeFaite: true, sortieFaite: false }, aVenir: [futur], passees: [] };
+  assert.equal(salleCardBooking(salle, NOW).id, 'book_demain', 'le créneau à venir est celui de la carte');
+  const html = accueilHtml({ user: store.users.get('user_010'), enCours: [], nextBooking: salleCardBooking(salle, NOW), date: NOW, salle });
+  assert.match(html, /Demain · 9h-10h/);
+  assert.doesNotMatch(html, /Hier/);
+  assert.match(html, /Faire l’état des lieux de sortie/, 'la sortie manquante reste proposée');
+  // Sans réservation à venir, le créneau passé n’est pas affiché comme une carte.
+  assert.equal(salleCardBooking({ ...salle, aVenir: [] }, NOW), null);
+  // Un créneau réellement en cours garde la carte.
+  const enCours = { ...lapsed, id: 'book_now', date: '2026-09-17', creneaux: [9, 10] };
+  assert.equal(salleCardBooking({ ...salle, active: { booking: enCours, entreeFaite: true, sortieFaite: false } }, NOW).id, 'book_now');
 });
 
 test('accueilHtml : bouton d’état des lieux quand le créneau est en cours', () => {

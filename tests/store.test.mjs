@@ -228,3 +228,27 @@ test('transaction imbriquée qui lève et est rattrapée : ses écritures sont c
   assert.equal(n, 1);
   assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 3);
 });
+
+test('transaction : si la persistance finale échoue, l’erreur remonte et la mémoire revient en arrière', () => {
+  store.users.create({ nom: 'Avant' });
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  const setItem = localStorage.setItem;
+  localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+  try {
+    assert.throws(() => store.transaction(() => {
+      store.users.create({ nom: 'Perdu' });
+    }), /QuotaExceededError/);
+  } finally {
+    localStorage.setItem = setItem;
+    off();
+  }
+  assert.deepEqual(store.users.list().map((u) => u.nom), ['Avant'], 'la mémoire ne garde pas l’écriture non persistée');
+  assert.equal(n, 0, 'personne n’est notifié');
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 1, 'le stockage est resté d’accord');
+  // L’instantané de la transaction suivante vient de la mémoire : son annulation ne perd rien.
+  store.users.create({ nom: 'Après' });
+  assert.throws(() => store.transaction(() => { store.users.create({ nom: 'Annulé' }); throw new Error('boum'); }), /boum/);
+  assert.deepEqual(store.users.list().map((u) => u.nom), ['Avant', 'Après']);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 2);
+});

@@ -119,6 +119,22 @@ test('closeDueBookings : clôture les créneaux passés sans sortie manquante, i
   assert.equal(closeDueBookings(), 0, 'idempotent');
 });
 
+test('closeDueBookings : plusieurs clôtures en une seule notification', () => {
+  createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
+  createBooking({ userId: 'user_011', date: '2026-09-17', creneaux: [13] });
+  createBooking({ userId: 'user_012', date: '2026-09-17', creneaux: [14] });
+  clock(new Date(2026, 8, 17, 16, 0));
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  try {
+    assert.equal(sweepBookings(), 3);
+  } finally {
+    off();
+  }
+  assert.equal(n, 1, 'une persistance et une notification pour tout le balayage');
+  assert.equal(store.bookings.list((b) => b.statut === BOOKING_STATES.TERMINEE && b.date === '2026-09-17').length >= 3, true);
+});
+
 test('sweepBookings : une écriture qui échoue ne lève pas', () => {
   createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
   clock(new Date(2026, 8, 17, 13, 30));
