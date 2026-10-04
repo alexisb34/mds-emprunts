@@ -189,6 +189,29 @@ test('forceCloseBooking : clôt une sortie manquante, refuse un créneau non en 
   assert.throws(() => forceCloseBooking(b.id, PEDAGO), /pas en cours/);
 });
 
+test('forceCloseBooking : refuse un auteur qui n’est pas de la pédagogie', () => {
+  const b = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
+  clock(new Date(2026, 8, 17, 11, 5));
+  recordEntry({ bookingId: b.id, userId: ELEVE, checklist: roomChecklist() });
+  assert.throws(() => forceCloseBooking(b.id, ELEVE), /Seule la pédagogie/);
+  assert.throws(() => forceCloseBooking(b.id, 'user_inconnu'), /Seule la pédagogie/);
+  assert.equal(store.bookings.get(b.id).statut, BOOKING_STATES.EN_COURS);
+});
+
+test('userBookings : le créneau réellement en cours passe devant un créneau resté ouvert', () => {
+  const vieux = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
+  clock(new Date(2026, 8, 17, 11, 5));
+  recordEntry({ bookingId: vieux.id, userId: ELEVE, checklist: roomChecklist() });
+  clock(new Date(2026, 8, 17, 14, 5));
+  const maintenant = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [14] });
+  const u = userBookings(ELEVE);
+  assert.equal(u.active.booking.id, maintenant.id);
+  // Le créneau resté ouvert revient dès que celui du moment est clos.
+  recordEntry({ bookingId: maintenant.id, userId: ELEVE, checklist: roomChecklist() });
+  recordExit({ bookingId: maintenant.id, userId: ELEVE, checklist: roomChecklist() });
+  assert.equal(userBookings(ELEVE).active.booking.id, vieux.id);
+});
+
 test('recordEntry avec deux lignes en problème : un signalement par ligne', () => {
   const b = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
   clock(new Date(2026, 8, 17, 11, 5));

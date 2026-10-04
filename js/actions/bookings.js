@@ -142,6 +142,10 @@ export function closeDueBookings(date = now()) {
 // la pédago constate l’état de la salle elle-même et retire l’alerte.
 export function forceCloseBooking(id, pedagoId) {
   const booking = requireBooking(id);
+  // Même garde que cancelBooking : la clôture d’office est un geste de la pédago, on ne
+  // s’appuie pas uniquement sur la garde de route de l’admin.
+  const auteur = store.users.get(pedagoId);
+  if (!auteur || auteur.role !== ROLES.PEDAGO) throw new Error('Seule la pédagogie peut clore un créneau.');
   if (booking.statut !== BOOKING_STATES.EN_COURS) throw new Error('Ce créneau n’est pas en cours.');
   return store.transaction(() => {
     const updated = store.bookings.update(id, { statut: BOOKING_STATES.TERMINEE });
@@ -165,7 +169,11 @@ export function userBookings(userId, date = now()) {
   const mine = store.bookings.list((b) => b.userId === userId && b.statut !== BOOKING_STATES.ANNULEE);
   // Un créneau terminé dont la sortie manque reste « actif » pour l’emprunteur : c’est le seul
   // endroit d’où il peut encore faire son état des lieux de sortie.
-  const active = mine.find((b) => isBookingActive(b, date) || (b.statut === BOOKING_STATES.EN_COURS && !b.etatSortie)) || null;
+  // On privilégie le créneau réellement en cours à cet instant ; un créneau plus ancien resté
+  // ouvert ne vient qu’en second, sinon il masquerait la réservation du moment.
+  const active = mine.find((b) => isBookingActive(b, date))
+    || mine.find((b) => b.statut === BOOKING_STATES.EN_COURS && !b.etatSortie)
+    || null;
   const today = ymd(date);
   return {
     active: active ? { booking: active, entreeFaite: !!active.etatEntree, sortieFaite: !!active.etatSortie } : null,
