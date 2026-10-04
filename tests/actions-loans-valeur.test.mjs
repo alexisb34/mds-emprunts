@@ -62,7 +62,9 @@ test('reserveValeur : refus — circuit, durée, doublon de référence, indispo
   const sd1 = store.items.list((i) => i.reference === 'sd-256' && i.etat === ITEM_STATES.DISPONIBLE)[0];
   const sd2 = store.items.list((i) => i.reference === 'sd-256' && i.etat === ITEM_STATES.DISPONIBLE)[1];
   reserveValeur({ itemId: sd1.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN9, motif: '' });
-  assert.throws(() => reserveValeur({ itemId: sd2.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN9 }), (e) => e.reason === REASONS.DEJA_RESERVE);
+  assert.throws(() => reserveValeur({ itemId: sd2.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN9 }), (e) => e.reason === REASONS.DEJA_UN_EXEMPLAIRE);
+  // Re-réserver son propre exemplaire : « déjà un exemplaire », pas « réservé par quelqu’un d’autre ».
+  assert.throws(() => reserveValeur({ itemId: sd1.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN9 }), (e) => e.reason === REASONS.DEJA_UN_EXEMPLAIRE);
   assert.throws(() => reserveValeur({ itemId: sd1.id, userId: 'user_011', debutPrevu: DEMAIN9, finPrevue: DEMAIN9 }), (e) => e.reason === REASONS.RESERVE_PAR_AUTRE);
 });
 
@@ -78,7 +80,7 @@ test('handOver : seulement dans la fenêtre de retrait, par code court ou QR', (
   assert.equal(store.items.get(item.id).etat, ITEM_STATES.EMPRUNTE);
   assert.equal(store.log.list().at(-1).action, ACTIONS.LOAN_REMISE);
   assert.throws(() => handOver({ code: loan.codeRetrait, pedagoId: PEDAGO }), /plus en attente de remise/);
-  assert.throws(() => handOver({ code: 'ZZZZZZ', pedagoId: PEDAGO }), (e) => e.reason === REASONS.CODE_INCONNU);
+  assert.throws(() => handOver({ code: 'ZZZZZZ', pedagoId: PEDAGO }), (e) => e.reason === REASONS.CODE_RETRAIT_INCONNU);
 });
 
 test('expireDueLoans : libère après la fenêtre, idempotent, n’touche pas les autres', () => {

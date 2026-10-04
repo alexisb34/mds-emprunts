@@ -138,6 +138,9 @@ test('canReserveValeur : durée max et circuit', () => {
   assert.equal(canReserveValeur({ ...base, item: items[0] }).reason, REASONS.MAUVAIS_CIRCUIT);
   assert.equal(canReserveValeur({ ...base, item: items[3] }).reason, REASONS.MAUVAIS_CIRCUIT);
   assert.equal(canReserveValeur({ ...base, item: { ...items[2], etat: 'reserve' } }).reason, REASONS.RESERVE_PAR_AUTRE);
+  // Le doublon de référence prime sur l’état : son propre exemplaire réservé n’est pas « réservé par quelqu’un d’autre ».
+  const sienne = [{ userId: 'u1', itemId: 'i3', statut: 'reservee' }];
+  assert.equal(canReserveValeur({ ...base, item: { ...items[2], etat: 'reserve' }, loans: sienne }).reason, REASONS.DEJA_UN_EXEMPLAIRE);
 });
 
 test('canReserveValeur : durée max et circuit (jours calendaires)', () => {

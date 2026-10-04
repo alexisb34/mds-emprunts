@@ -143,13 +143,8 @@ export function reserveValeur({ itemId, userId, debutPrevu, finPrevue, motif = '
   const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
   if (new Date(debut.getTime() + minutes * 60000) < date) throw refusal(REASONS.DATE_PASSEE);
   const loans = store.loans.list();
-  // « Un exemplaire par référence » couvre déjà les autres exemplaires, mais le message doit être
-  // explicite quand c’est l’emprunteur lui-même qui a déjà réservé cette référence.
   const check = canReserveValeur({ item, user, loans, items: store.items.list(), settings: store.settings.get(), debutPrevu: debut, finPrevue: fin, date });
-  if (!check.ok) {
-    const sienne = check.reason === REASONS.DEJA_UN_EXEMPLAIRE;
-    throw refusal(sienne ? REASONS.DEJA_RESERVE : check.reason);
-  }
+  if (!check.ok) throw refusal(check.reason);
   return store.transaction(() => {
     const loan = store.loans.create({
       itemId, userId, statut: LOAN_STATES.RESERVEE, motif: String(motif || '').trim(), motifRefus: '', codeRetrait: code6(),
@@ -173,7 +168,7 @@ export function handOver({ code, pedagoId, date = now() }) {
   const loan = parsed
     ? store.loans.get(parsed.loanId)
     : (byCode.find((l) => l.statut === LOAN_STATES.RESERVEE) || byCode[0]);
-  if (!loan || (parsed && loan.codeRetrait !== parsed.code6)) throw refusal(REASONS.CODE_INCONNU);
+  if (!loan || (parsed && loan.codeRetrait !== parsed.code6)) throw refusal(REASONS.CODE_RETRAIT_INCONNU);
   if (loan.statut !== LOAN_STATES.RESERVEE) throw new Error('Cette réservation n’est plus en attente de remise.');
   const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
   if (!isInPickupWindow(loan, date, minutes)) throw refusal(REASONS.FENETRE_RETRAIT);
