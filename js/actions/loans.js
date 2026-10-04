@@ -1,5 +1,4 @@
-// js/actions/loans.js — emprunts. Phase 2 : circuit self-service (scan → emprunt / retour).
-// Phase 3 ajoutera les réservations de matériel de valeur (remise, réception, expiration).
+// js/actions/loans.js — emprunts : circuit self-service (scan → emprunt / retour) et matériel de valeur (réservation, remise, réception, refus, expiration).
 import { store } from '../store.js';
 import { CIRCUITS, ITEM_STATES, LOAN_STATES, MAINT_TYPES, MAINT_STATES } from '../models.js';
 import {
@@ -134,6 +133,10 @@ export function reserveValeur({ itemId, userId, debutPrevu, finPrevue, motif = '
   const fin = new Date(finPrevue);
   if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime())) throw new Error('Dates invalides.');
   if (debut < new Date(date.getFullYear(), date.getMonth(), date.getDate())) throw refusal(REASONS.DATE_PASSEE);
+  // Une réservation dont la fenêtre de retrait est déjà close serait balayée par expireDueLoans
+  // dès le prochain rendu : autant la refuser tout de suite.
+  const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
+  if (new Date(debut.getTime() + minutes * 60000) < date) throw refusal(REASONS.DATE_PASSEE);
   const loans = store.loans.list();
   // « Un exemplaire par référence » couvre déjà les autres exemplaires, mais le message doit être
   // explicite quand c’est l’emprunteur lui-même qui a déjà réservé cette référence.
@@ -240,9 +243,11 @@ export function extendLoan(loanId, finPrevue, pedagoId) {
   if (Number.isNaN(fin.getTime())) throw new Error('Date invalide.');
   if (fin <= new Date(loan.finPrevue)) throw new Error('La nouvelle date doit être postérieure à la date de retour actuelle.');
   const item = store.items.get(loan.itemId);
-  const updated = store.loans.update(loanId, { finPrevue: fin.toISOString() });
-  logAction({ auteurId: pedagoId, action: ACTIONS.LOAN_PROLONGEE, itemId: loan.itemId, loanId, userId: loan.userId, detail: `${item ? item.nom : loan.itemId} jusqu’au ${new Date(fin).toLocaleDateString('fr-FR')}` });
-  return updated;
+  return store.transaction(() => {
+    const updated = store.loans.update(loanId, { finPrevue: fin.toISOString() });
+    logAction({ auteurId: pedagoId, action: ACTIONS.LOAN_PROLONGEE, itemId: loan.itemId, loanId, userId: loan.userId, detail: `${item ? item.nom : loan.itemId} jusqu’au ${new Date(fin).toLocaleDateString('fr-FR')}` });
+    return updated;
+  });
 }
 
 // Appelé au rendu des vues : libère les réservations non retirées dans la fenêtre. Idempotent.

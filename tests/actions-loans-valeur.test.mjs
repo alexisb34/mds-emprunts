@@ -182,3 +182,30 @@ test('userLoans.reservations : fenêtre de retrait et expiration dérivées', ()
   assert.equal(tard.pickupOpen, false);
   assert.equal(tard.expired, true);
 });
+
+test('extendLoan est transactionnel : un échec du journal laisse la date de retour intacte', () => {
+  const enCours = store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS)[0];
+  const avant = enCours.finPrevue;
+  const orig = store.log.create;
+  store.log.create = () => { throw new Error('quota'); };
+  try {
+    assert.throws(() => extendLoan(enCours.id, addDays(new Date(avant), 2), PEDAGO), /quota/);
+  } finally {
+    store.log.create = orig;
+  }
+  assert.equal(store.loans.get(enCours.id).finPrevue, avant);
+});
+
+test('reserveValeur : une fenêtre de retrait déjà close est refusée d’emblée', () => {
+  const item = freeValeur('hoya-nd');
+  clock(new Date(2026, 8, 17, 10, 30));
+  const nbLoans = store.loans.list().length;
+  assert.throws(
+    () => reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: new Date(2026, 8, 17, 8, 0), finPrevue: new Date(2026, 8, 17, 8, 0), motif: '' }),
+    (e) => e.reason === REASONS.DATE_PASSEE,
+  );
+  assert.equal(store.loans.list().length, nbLoans);
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
+  const ok = reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: new Date(2026, 8, 17, 14, 0), finPrevue: new Date(2026, 8, 17, 14, 0), motif: '' });
+  assert.equal(ok.statut, LOAN_STATES.RESERVEE);
+});
