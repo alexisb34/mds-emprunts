@@ -1,0 +1,156 @@
+// js/actions/bookings.js — réservations de la salle photo et états des lieux.
+// Réserver la salle vaut responsabilité de son contenu (spec §5.3) : le matériel « salle »
+// ne fait pas l’objet d’emprunts individuels, il est contrôlé à l’entrée et à la sortie.
+import { store } from '../store.js';
+import { BOOKING_STATES, CIRCUITS, ITEM_STATES, MAINT_TYPES, MAINT_STATES } from '../models.js';
+import { now, ymd, fromYmd, bookingStart, bookingEnd, isBookingActive, sortByDateDesc, REASONS, REASON_LABELS } from '../rules.js';
+import { logAction, ACTIONS } from '../log.js';
+import { applyItemState } from './items.js';
+import { buildRoomChecklist, hasProblem, problemLines } from '../checklists.js';
+import { selectionIsValid, startOfWeek, weekDays } from '../weekGrid.js';
+import { fullName, formatSlots } from '../ui.js';
+
+function refusal(reason) {
+  return Object.assign(new Error(REASON_LABELS[reason] || reason), { reason });
+}
+
+function requireBooking(id) {
+  const booking = store.bookings.get(id);
+  if (!booking) throw new Error(`Réservation introuvable (${id})`);
+  return booking;
+}
+
+export function roomItems() {
+  return store.items.list((i) => i.circuit === CIRCUITS.SALLE && i.etat !== ITEM_STATES.HS);
+}
+
+export function roomChecklist() {
+  return buildRoomChecklist(roomItems());
+}
+
+export function createBooking({ userId, date, creneaux }) {
+  const maintenant = now();
+  const user = store.users.get(userId);
+  if (!user || user.actif === false) throw refusal(REASONS.UTILISATEUR_INACTIF);
+  const check = selectionIsValid({ ymd: date, creneaux: [...creneaux] }, { bookings: store.bookings.list(), settings: store.settings.get(), date: maintenant });
+  if (!check.ok) throw refusal(check.reason);
+  const ordonnes = [...creneaux].sort((a, b) => a - b);
+  return store.transaction(() => {
+    const booking = store.bookings.create({
+      userId, date, creneaux: ordonnes, statut: BOOKING_STATES.A_VENIR, etatEntree: null, etatSortie: null,
+    });
+    logAction({ auteurId: userId, action: ACTIONS.BOOKING_CREEE, bookingId: booking.id, userId, detail: `Salle photo ${formatSlots(ordonnes)} — ${fullName(user)}` });
+    return booking;
+  });
+}
+
+export function cancelBooking(id, auteurId) {
+  const booking = requireBooking(id);
+  if (booking.statut !== BOOKING_STATES.A_VENIR && booking.statut !== BOOKING_STATES.EN_COURS) throw new Error('Cette réservation n’est plus annulable.');
+  return store.transaction(() => {
+    const updated = store.bookings.update(id, { statut: BOOKING_STATES.ANNULEE });
+    logAction({ auteurId, action: ACTIONS.BOOKING_ANNULEE, bookingId: id, userId: booking.userId, detail: `Salle photo ${formatSlots(booking.creneaux)} du ${booking.date}` });
+    return updated;
+  });
+}
+
+// Un état des lieux : horodaté, enregistré tel quel, et tout problème ouvre un signalement
+// par objet concerné (l’objet passe en maintenance). La ligne globale « salle rangée »
+// n’a pas d’itemId : son problème est signalé sans changement d’état.
+function recordEtatDesLieux({ booking, userId, checklist, moment }) {
+  const date = now();
+  const lignes = checklist || roomChecklist();
+  const problem = hasProblem(lignes);
+  const entree = moment === 'entree';
+  const patch = entree
+    ? { statut: BOOKING_STATES.EN_COURS, etatEntree: { date: date.toISOString(), lignes } }
+    : { statut: BOOKING_STATES.TERMINEE, etatSortie: { date: date.toISOString(), lignes } };
+  return store.transaction(() => {
+    const updated = store.bookings.update(booking.id, patch);
+    logAction({
+      auteurId: userId, action: entree ? ACTIONS.BOOKING_ENTREE : ACTIONS.BOOKING_SORTIE,
+      bookingId: booking.id, userId: booking.userId,
+      detail: `État des lieux ${entree ? 'd’entrée' : 'de sortie'}${problem ? ' — problème signalé' : ' OK'}`,
+    });
+    if (!problem) return { booking: updated, maintenance: null };
+    const lignesProblemes = problemLines(lignes);
+    const description = `Signalé à l’état des lieux ${entree ? 'd’entrée' : 'de sortie'} : ${lignesProblemes.map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ')}`;
+    const itemId = lignesProblemes.find((l) => l.itemId)?.itemId || null;
+    const maintenance = store.maintenance.create({
+      itemId, type: MAINT_TYPES.SIGNALEMENT, auteurId: userId, date: date.toISOString(), statut: MAINT_STATES.OUVERT,
+      description, prestataire: '', cout: 0, loanId: null, bookingId: booking.id,
+    });
+    for (const ligne of lignesProblemes) {
+      const item = ligne.itemId ? store.items.get(ligne.itemId) : null;
+      if (item && item.etat === ITEM_STATES.DISPONIBLE) applyItemState(item.id, ITEM_STATES.MAINTENANCE);
+    }
+    logAction({ auteurId: userId, action: ACTIONS.MAINT_SIGNALEMENT, itemId, bookingId: booking.id, detail: description });
+    return { booking: updated, maintenance };
+  });
+}
+
+export function recordEntry({ bookingId, userId, checklist = null }) {
+  const booking = requireBooking(bookingId);
+  if (booking.userId !== userId) throw new Error('Cette réservation ne vous appartient pas.');
+  if (booking.statut === BOOKING_STATES.ANNULEE || booking.statut === BOOKING_STATES.TERMINEE) throw new Error('Cette réservation est close.');
+  if (booking.etatEntree) throw new Error('L’état des lieux d’entrée a déjà été fait.');
+  const date = now();
+  if (date < bookingStart(booking)) throw new Error('Le créneau n’a pas encore commencé.');
+  if (date >= bookingEnd(booking)) throw refusal(REASONS.CRENEAU_PASSE);
+  return recordEtatDesLieux({ booking, userId, checklist, moment: 'entree' });
+}
+
+export function recordExit({ bookingId, userId, checklist = null }) {
+  const booking = requireBooking(bookingId);
+  if (booking.userId !== userId) throw new Error('Cette réservation ne vous appartient pas.');
+  // L’ordre compte : sans entrée la réservation est encore `a_venir`, et le message utile
+  // est « faites d’abord l’entrée », pas « plus en cours ».
+  if (booking.statut === BOOKING_STATES.ANNULEE || booking.statut === BOOKING_STATES.TERMINEE) throw new Error('Cette réservation n’est plus en cours.');
+  if (!booking.etatEntree) throw new Error('Faites d’abord l’état des lieux d’entrée.');
+  if (booking.statut !== BOOKING_STATES.EN_COURS) throw new Error('Cette réservation n’est plus en cours.');
+  return recordEtatDesLieux({ booking, userId, checklist, moment: 'sortie' });
+}
+
+// Clôture les créneaux terminés : une réservation jamais ouverte ou dont la sortie a été faite
+// passe `terminee`. Celles dont la sortie manque restent `en_cours` et remontent via `isExitMissing`.
+export function closeDueBookings(date = now()) {
+  const dues = store.bookings.list((b) => (b.statut === BOOKING_STATES.A_VENIR || b.statut === BOOKING_STATES.EN_COURS) && date >= bookingEnd(b) && !b.etatEntree);
+  let closes = 0;
+  for (const candidat of dues) {
+    const booking = store.bookings.get(candidat.id);
+    if (!booking || booking.etatEntree || booking.statut === BOOKING_STATES.TERMINEE || booking.statut === BOOKING_STATES.ANNULEE) continue;
+    store.transaction(() => {
+      store.bookings.update(booking.id, { statut: BOOKING_STATES.TERMINEE });
+      logAction({ auteurId: booking.userId, action: ACTIONS.BOOKING_SORTIE, bookingId: booking.id, userId: booking.userId, detail: `Créneau ${formatSlots(booking.creneaux)} terminé — salle non occupée` });
+    });
+    closes += 1;
+  }
+  return closes;
+}
+
+// Balayage défensif appelé par les vues et les gardes : une écriture qui échoue
+// (stockage plein) ne doit jamais empêcher l’affichage.
+export function sweepBookings(date = now()) {
+  try {
+    return closeDueBookings(date);
+  } catch (e) {
+    console.error('Clôture des créneaux impossible :', e);
+    return 0;
+  }
+}
+
+export function userBookings(userId, date = now()) {
+  const mine = store.bookings.list((b) => b.userId === userId && b.statut !== BOOKING_STATES.ANNULEE);
+  const active = mine.find((b) => isBookingActive(b, date)) || null;
+  const today = ymd(date);
+  return {
+    active: active ? { booking: active, entreeFaite: !!active.etatEntree, sortieFaite: !!active.etatSortie } : null,
+    aVenir: mine.filter((b) => b.statut === BOOKING_STATES.A_VENIR && b.date >= today && b !== active).sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]),
+    passees: sortByDateDesc(mine.filter((b) => b.statut === BOOKING_STATES.TERMINEE), (b) => b.date),
+  };
+}
+
+export function weekBookings(date) {
+  const jours = weekDays(startOfWeek(date)).map((d) => d.ymd);
+  return store.bookings.list((b) => jours.includes(b.date));
+}
