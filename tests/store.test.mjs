@@ -123,3 +123,20 @@ test('un seedFn qui renvoie des objets mutables est gelé après init', () => {
   store.init(seedFn);
   assert.ok(Object.isFrozen(store.users.get('u1')));
 });
+
+test('transaction : si fn() lève, les écritures intermédiaires sont annulées et les abonnés notifiés', () => {
+  let n = 0;
+  store.subscribe(() => n++);
+  assert.throws(() => store.transaction(() => {
+    store.users.create({ nom: 'A' });
+    throw new Error('boom');
+  }), /boom/);
+  assert.equal(store.users.list().length, 0);
+  assert.ok(n >= 1);
+});
+
+test('transaction : si fn() réussit, renvoie sa valeur et conserve les écritures', () => {
+  const u = store.transaction(() => store.users.create({ nom: 'A' }));
+  assert.equal(u.nom, 'A');
+  assert.equal(store.users.list().length, 1);
+});

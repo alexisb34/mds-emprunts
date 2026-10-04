@@ -149,9 +149,9 @@ Mêmes tokens, déclinés en mobile-first (largeur cible 360-430 px). Header sim
 | `#/login` | Comptes de démo en un clic (regroupés par rôle) |
 | `#/accueil` | Salutation · « Mes emprunts en cours » (retour attendu, badge retard) · « Ma prochaine réservation salle » avec bouton *État des lieux* si le créneau est en cours · notifications (expiration, refus, retard) |
 | `#/catalogue` | Recherche + chips de catégorie · cartes objet (photo, nom, badge d'état, pastille circuit) |
-| `#/catalogue/:id` | Fiche objet · bouton contextuel selon circuit : *Scanner pour emprunter* / *Réserver* / *Disponible dans la salle photo → Réserver la salle* |
+| `#/catalogue/:reference` | Fiche d’une référence (une carte du catalogue par référence, pas par exemplaire ; liste des exemplaires) · bouton contextuel selon circuit : *Scanner pour emprunter* / *Réserver* / *Disponible dans la salle photo → Réserver la salle* |
 | `#/reserver/:id` | Dates début/fin, motif, rappel « à retirer dans l'heure suivant le début » → *Confirmer* |
-| `#/scan` | Plein écran caméra (`html5-qrcode`) + bouton **Simuler un scan** (liste déroulante des codes) · détection emprunt vs retour · **prise de photo** (caméra → canvas → JPEG 640 px) · confirmation ou mini-checklist · messages d'erreur explicites |
+| `#/scan` | Lecteur caméra carré (`html5-qrcode`, pas un plein écran) + bouton **Simuler un scan** (liste déroulante des codes) · détection emprunt vs retour · **prise de photo** (caméra → canvas → JPEG 640 px) · confirmation ou mini-checklist · messages d'erreur explicites |
 | `#/salle` | Grille semaine (jours en horizontal, heures en vertical) · sélection de créneaux contigus → *Réserver* · mes réservations · état des lieux entrée/sortie |
 | `#/emprunts` | Onglets *En cours / Réservations / Historique* · réservation valeur active : **QR de retrait** + code court (actif seulement dans la fenêtre de retrait) · emprunt en cours : date, photo prise à l'emprunt |
 | `#/profil` | Nom, rôle, promo · *Changer d'utilisateur* (démo) · déconnexion |

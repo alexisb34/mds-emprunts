@@ -130,6 +130,20 @@ export const store = {
     const bytes = (localStorage.getItem(STORAGE_KEY) || '').length * 2; // UTF-16
     return { bytes, budget: BUDGET_BYTES, percent: Math.min(100, Math.round((bytes / BUDGET_BYTES) * 100)) };
   },
+  // Exécute fn() ; si elle lève, restaure la base persistée telle qu’avant (les écritures
+  // intermédiaires sont annulées, les abonnés re-notifiés). Utilisé par les actions multi-écritures.
+  transaction(fn) {
+    assertInit();
+    const snapshot = localStorage.getItem(STORAGE_KEY);
+    try {
+      return fn();
+    } catch (err) {
+      if (snapshot === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, snapshot);
+      load();
+      notify();
+      throw err;
+    }
+  },
 };
 
 for (const c of COLLECTIONS) store[c] = collection(c);
