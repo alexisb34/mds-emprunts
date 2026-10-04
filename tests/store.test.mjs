@@ -184,3 +184,47 @@ test('transaction imbriquée : la notification part à la sortie de la plus exte
   assert.equal(n, 1);
   assert.equal(store.users.list().length, 2);
 });
+
+test('transaction : un abonné qui lève à la notification finale ne fausse pas la profondeur', () => {
+  const off = store.subscribe(() => { throw new Error('vue cassée'); });
+  try {
+    assert.throws(() => store.transaction(() => store.users.create({ nom: 'A' })), /vue cassée/);
+  } finally {
+    off();
+  }
+  let n = 0;
+  const off2 = store.subscribe(() => n++);
+  try {
+    store.transaction(() => {
+      store.users.create({ nom: 'B' });
+      store.users.create({ nom: 'C' });
+    });
+  } finally {
+    off2();
+  }
+  assert.equal(n, 1, 'le regroupement fonctionne encore (profondeur revenue à 0)');
+  assert.equal(store.users.list().length, 3);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 3, 'persisté');
+});
+
+test('transaction imbriquée qui lève et est rattrapée : ses écritures sont conservées (sémantique fixée)', () => {
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  try {
+    store.transaction(() => {
+      store.users.create({ nom: 'A' });
+      try {
+        store.transaction(() => {
+          store.users.create({ nom: 'B' });
+          throw new Error('interne');
+        });
+      } catch { /* rattrapée par l’externe */ }
+      store.users.create({ nom: 'C' });
+    });
+  } finally {
+    off();
+  }
+  assert.deepEqual(store.users.list().map((u) => u.nom), ['A', 'B', 'C']);
+  assert.equal(n, 1);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 3);
+});

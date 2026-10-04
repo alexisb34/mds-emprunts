@@ -80,7 +80,13 @@ export function withDefaults(settings) {
 
 const MIN = 60 * 1000;
 const DAY = 24 * 60 * MIN;
-const toDate = (d) => (d instanceof Date ? d : new Date(d));
+// Une date seule « AAAA-MM-JJ » est interprétée en heure locale, comme dans ui.js.
+const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const toDate = (d) => {
+  if (d instanceof Date) return d;
+  const m = DATE_ONLY_RE.exec(String(d));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(d);
+};
 
 export function now(settings) {
   const s = withDefaults(settings || store.settings.get());

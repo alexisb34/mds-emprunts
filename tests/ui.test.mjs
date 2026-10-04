@@ -90,4 +90,7 @@ test('toDate : une date seule est locale, pas UTC', () => {
   assert.equal(relativeDay('2026-09-18', new Date(2026, 8, 17, 0, 10)), 'Demain');
   // Les horodatages ISO complets restent interprétés comme avant.
   assert.equal(formatTime('2026-09-17T09:05:00.000Z'), formatTime(new Date('2026-09-17T09:05:00.000Z')));
+  // Vérification indépendante du fuseau : avant le correctif, « 2026-09-17 » valait minuit UTC,
+  // soit 02h00 à Paris et 20h00 la veille à New York.
+  assert.equal(formatTime('2026-09-17'), '00h00');
 });

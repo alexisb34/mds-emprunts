@@ -136,15 +136,16 @@ export const store = {
   },
   // Regroupe plusieurs écritures : une seule persistance et une seule notification à la fin.
   // Si `fn` lève, l’état d’avant est restauré et personne n’est notifié.
+  // Imbrication : seule la transaction la plus externe restaure. Une transaction imbriquée
+  // qui lève remonte l’erreur ; si l’externe la rattrape et continue, les écritures de
+  // l’imbriquée sont conservées. Les actions de ce projet n’imbriquent pas.
   transaction(fn) {
     assertInit();
     const snapshot = localStorage.getItem(STORAGE_KEY);
     depth += 1;
+    let out;
     try {
-      const out = fn();
-      depth -= 1;
-      if (depth === 0 && pending) { pending = false; persist(); notify(); }
-      return out;
+      out = fn();
     } catch (err) {
       depth -= 1;
       if (depth === 0) {
@@ -154,6 +155,11 @@ export const store = {
       }
       throw err;
     }
+    depth -= 1;
+    // Hors du try : si persist() lève (stockage plein), l’erreur remonte telle quelle
+    // sans fausser la profondeur ni rejouer la restauration.
+    if (depth === 0 && pending) { pending = false; persist(); notify(); }
+    return out;
   },
 };
 
