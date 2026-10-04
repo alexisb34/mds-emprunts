@@ -2,9 +2,9 @@
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
 import { now, isBookingActive } from '../../rules.js';
-import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, formatDate, formatSlots, relativeDay } from '../../ui.js';
 import { userLoans, sweepExpirations } from '../../actions/loans.js';
+import { userBookings, sweepBookings } from '../../actions/bookings.js';
 import { setHeader } from '../layout.js';
 
 function loansCard(enCours, date) {
@@ -16,14 +16,26 @@ function loansCard(enCours, date) {
     </a>`).join('')}</div>`;
 }
 
-function bookingCard(nextBooking, date) {
-  if (!nextBooking) return '<div class="empty-state">Aucune réservation de la salle photo.</div>';
-  const active = isBookingActive(nextBooking, date);
+function bookingCard(nextBooking, date, active = null) {
+  // L’état des lieux attendu (entrée, puis sortie) est proposé tant que le créneau en cours n’est pas bouclé.
+  // Quand il porte sur un AUTRE créneau que celui de la carte (créneau passé resté ouvert), il le nomme :
+  // sinon le bouton semble appartenir à la réservation affichée juste au-dessus.
+  const aFaire = active && !(active.entreeFaite && active.sortieFaite)
+    ? (() => {
+      const b = active.booking;
+      const autre = !nextBooking || nextBooking.id !== b.id;
+      const quoi = active.entreeFaite ? 'de sortie' : 'd’entrée';
+      const precision = autre ? ` — ${relativeDay(b.date, date)} ${formatSlots(b.creneaux)}` : '';
+      return `<a class="btn btn--primary btn--block" href="#/salle">${escapeHtml(`Faire l’état des lieux ${quoi}${precision}`)}</a>`;
+    })()
+    : '';
+  if (!nextBooking) return aFaire || '<div class="empty-state">Aucune réservation de la salle photo.</div>';
+  const enCours = isBookingActive(nextBooking, date);
   return `
     <a class="m-item" href="#/salle">
-      <span class="m-item__body"><strong>${escapeHtml(relativeDay(nextBooking.date, date))} · ${escapeHtml(formatSlots(nextBooking.creneaux))}</strong><span class="body-tiny text-secondary">${escapeHtml(formatDate(nextBooking.date))}${active ? ' · créneau en cours' : ''}</span></span>
-      ${badge('booking', active ? 'en_cours' : nextBooking.statut)}
-    </a>`;
+      <span class="m-item__body"><strong>${escapeHtml(relativeDay(nextBooking.date, date))} · ${escapeHtml(formatSlots(nextBooking.creneaux))}</strong><span class="body-tiny text-secondary">${escapeHtml(formatDate(nextBooking.date))}${enCours ? ' · créneau en cours' : ''}</span></span>
+      ${badge('booking', enCours ? 'en_cours' : nextBooking.statut)}
+    </a>${aFaire}`;
 }
 
 function noticesHtml(reservations, expireesRecentes, refuseesRecentes) {
@@ -37,7 +49,16 @@ function noticesHtml(reservations, expireesRecentes, refuseesRecentes) {
   return `<section class="stack">${lignes.join('')}</section>`;
 }
 
-export function accueilHtml({ user, enCours, nextBooking, date, reservations = [], expireesRecentes = [], refuseesRecentes = [] }) {
+// Réservation mise en avant sur la carte « Salle photo » : le créneau réellement en cours, sinon
+// le prochain à venir. Un créneau passé resté ouvert (sortie jamais faite) n’y figure pas : il
+// masquerait la réservation à venir, et son état des lieux reste proposé par le bouton de la carte.
+export function salleCardBooking(salle, date) {
+  const actif = salle.active?.booking;
+  if (actif && isBookingActive(actif, date)) return actif;
+  return salle.aVenir[0] ?? null;
+}
+
+export function accueilHtml({ user, enCours, nextBooking, date, reservations = [], expireesRecentes = [], refuseesRecentes = [], salle = null }) {
   const lateCount = enCours.filter((x) => x.late).length;
   return `
     <section class="m-hero">
@@ -53,7 +74,7 @@ export function accueilHtml({ user, enCours, nextBooking, date, reservations = [
     </section>
     <section class="card">
       <div class="card__header"><h3 class="card__title">Salle photo</h3><a class="body-sm" href="#/salle">Réserver →</a></div>
-      ${bookingCard(nextBooking, date)}
+      ${bookingCard(nextBooking, date, salle ? salle.active : null)}
     </section>`;
 }
 
@@ -62,11 +83,11 @@ export function accueilView(container) {
     const user = auth.currentUser();
     const date = now();
     sweepExpirations(date);
-    const bookings = store.bookings.list((b) => b.userId === user.id && (b.statut === BOOKING_STATES.A_VENIR || b.statut === BOOKING_STATES.EN_COURS))
-      .sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]);
+    sweepBookings(date);
     const loans = userLoans(user.id, date);
+    const salle = userBookings(user.id, date);
     setHeader({ title: 'MDS Emprunts' });
-    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, expireesRecentes: loans.expireesRecentes, refuseesRecentes: loans.refuseesRecentes, nextBooking: bookings[0] || null, date });
+    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, expireesRecentes: loans.expireesRecentes, refuseesRecentes: loans.refuseesRecentes, nextBooking: salleCardBooking(salle, date), salle, date });
   };
   render();
   return store.subscribe(render);

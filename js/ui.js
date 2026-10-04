@@ -2,7 +2,14 @@
 // Ce module ne lit jamais le store ni l’horloge : les vues lui passent `now()` explicitement.
 import { LABELS } from './models.js';
 
-const toDate = (d) => (d instanceof Date ? d : new Date(d));
+// Une date seule « AAAA-MM-JJ » est interprétée en heure locale : `new Date('2026-09-17')`
+// vaudrait minuit UTC, soit la veille au soir à l’ouest de Greenwich.
+const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const toDate = (d) => {
+  if (d instanceof Date) return d;
+  const m = DATE_ONLY_RE.exec(String(d));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(d);
+};
 const pad2 = (n) => String(n).padStart(2, '0');
 const dateFmt = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -108,7 +115,7 @@ export function openModal({ title, body, actions = [], onClose = null }) {
     </div>`;
   document.body.classList.add('has-modal');
   root.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', (e) => { if (e.target === el) closeModal(); }));
-  root.querySelectorAll('[data-action]').forEach((btn) => btn.addEventListener('click', async () => {
+  root.querySelectorAll('.modal__footer [data-action]').forEach((btn) => btn.addEventListener('click', async () => {
     const a = actions[Number(btn.dataset.action)];
     const keepOpen = a.onClick ? (await a.onClick(root.querySelector('.modal'))) === false : false;
     if (a.close !== false && !keepOpen) closeModal();

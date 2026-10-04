@@ -61,3 +61,35 @@ test('demoClockHtml : état du bureau, valeur du champ, badge et boutons', () =>
   assert.match(ferme, /week-end/);
   assert.doesNotMatch(ferme, /data-action="real-clock" disabled/);
 });
+
+test('dashboardHtml : widget des sorties non faites', () => {
+  const tard = new Date(2026, 8, 17, 13, 0);
+  const actif = db.bookings.find((b) => b.statut === 'en_cours');
+  assert.ok(actif, 'le seed contient une réservation en cours');
+  const missing = [{ booking: actif, user: db.users.find((u) => u.id === actif.userId) }];
+  const html = dashboardHtml({
+    kpis: computeKpis(db, tard), late: [], due: [], reports: [], activity: [], users: db.users, date: tard,
+    horlogeDemo: null, status: officeStatus(tard, db.settings), exitMissing: missing,
+  });
+  assert.match(html, /Sorties non faites/);
+  assert.match(html, /href="#\/salle"/);
+  const sans = dashboardHtml({
+    kpis: computeKpis(db, NOW), late: [], due: [], reports: [], activity: [], users: db.users, date: NOW,
+    horlogeDemo: null, status: officeStatus(NOW, db.settings), exitMissing: [],
+  });
+  assert.doesNotMatch(sans, /Sorties non faites/);
+});
+
+test('dashboardHtml : un signalement sans objet reste lisible et pointe vers la salle', () => {
+  const event = {
+    id: 'maint_salle', itemId: null, bookingId: 'book_0001', statut: 'ouvert',
+    description: 'Salle rangée → chaises renversées', date: NOW.toISOString(),
+  };
+  const html = dashboardHtml({
+    kpis: computeKpis(db, NOW), late: [], due: [], reports: [{ event, item: null, auteur: null }],
+    activity: [], users: db.users, date: NOW, horlogeDemo: null, status: officeStatus(NOW, db.settings),
+  });
+  assert.match(html, /Salle photo — état des lieux/);
+  assert.match(html, /data-href="\/salle"/);
+  assert.doesNotMatch(html, /data-href="\/materiel\/null"/);
+});

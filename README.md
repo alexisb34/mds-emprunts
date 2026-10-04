@@ -12,6 +12,10 @@ Puis ouvrir http://localhost:8000 — `admin.html` (pédagogie, desktop) est dis
 
 Les règles suivent une **horloge de démonstration** réglable depuis le tableau de bord admin (carte « Horloge de démonstration ») : un week-end ou hors 8h-12h / 13h-17h, le bureau est fermé et les emprunts en self-service sont refusés. Cliquer sur « Jour ouvré 9h » pour se placer dans une plage ouverte, puis sur « Régénérer les données » pour recaler le jeu de démonstration (emprunts, retards, réservations) sur cette date.
 
+**Limite connue : un seul navigateur, pas de serveur.** Les deux interfaces se synchronisent par l’événement `storage` du navigateur ; le refus d’un créneau déjà pris ne vaut qu’une fois cet événement arrivé dans l’onglet concerné. De plus, la persistance `localStorage` réécrit l’ensemble des données à chaque écriture : deux écritures simultanées dans deux onglets se résolvent en « dernier arrivé gagne », et l’une peut disparaître. Un déploiement réel devra faire respecter les conflits de réservation côté serveur.
+
+La **salle photo** se réserve depuis l’onglet *Salle* du mobile, par créneaux d’une heure de 8h à 17h du lundi au vendredi, plusieurs créneaux à la suite. Le créneau commencé demande un état des lieux d’entrée, puis un de sortie : une ligne en « Problème » ouvre un signalement par objet et bascule l’objet en maintenance. Côté pédagogie, l’onglet *Salle photo* montre le planning de la semaine, le détail d’un créneau avec ses deux états des lieux, et un bandeau « Sorties non faites » — avec un bouton *Clore le créneau* — une heure après la fin d’un créneau resté ouvert.
+
 Le scan et la photo utilisent la caméra (autorisation demandée) ; sans caméra, l’écran Scanner propose une simulation et une image de démonstration. Après une mise à jour du code, forcer un rechargement complet (Cmd/Ctrl + Maj + R) : le serveur de développement n’envoie pas d’en-têtes de cache.
 
 ## Tester
@@ -27,12 +31,12 @@ Aucune dépendance à installer (Node ≥ 22).
 - Spec : `docs/superpowers/specs/2026-09-17-mds-emprunts-design.md`
 - Feuille de route : `docs/superpowers/plans/2026-09-17-mds-emprunts-roadmap.md`
 
-## État d'avancement
+## État d’avancement
 
 - [x] Phase 0 — Fondations (tokens, composants, store, règles, seed)
 - [x] Phase 1 — Admin : inventaire & utilisateurs
 - [x] Phase 2 — Mobile : self-service
 - [x] Phase 3 — Matériel de valeur
-- [ ] Phase 4 — Salle photo
+- [x] Phase 4 — Salle photo
 - [ ] Phase 5 — Maintenance & paramètres
 - [ ] Phase 6 — Déploiement test

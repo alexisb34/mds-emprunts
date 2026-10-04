@@ -207,3 +207,9 @@ test('isOfficeOpen(date, null) utilise les horaires par défaut', () => {
   assert.equal(isOfficeOpen(jeudi10h, null), true);
   assert.equal(isOfficeOpen(jeudi10h, undefined), true);
 });
+
+test('dates seules « AAAA-MM-JJ » lues en heure locale, quel que soit le fuseau', () => {
+  assert.equal(ymd('2026-09-17'), '2026-09-17');
+  assert.equal(isWeekday('2026-09-19'), false, 'samedi');
+  assert.equal(isWeekday('2026-09-18'), true, 'vendredi');
+});

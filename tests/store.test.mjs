@@ -124,19 +124,131 @@ test('un seedFn qui renvoie des objets mutables est gelé après init', () => {
   assert.ok(Object.isFrozen(store.users.get('u1')));
 });
 
-test('transaction : si fn() lève, les écritures intermédiaires sont annulées et les abonnés notifiés', () => {
+test('transaction : si fn() lève, les écritures intermédiaires sont annulées sans notification', () => {
   let n = 0;
-  store.subscribe(() => n++);
+  const off = store.subscribe(() => n++);
   assert.throws(() => store.transaction(() => {
     store.users.create({ nom: 'A' });
     throw new Error('boom');
   }), /boom/);
+  off();
   assert.equal(store.users.list().length, 0);
-  assert.ok(n >= 1);
+  assert.equal(n, 0, 'aucun abonné n’a vu l’état intermédiaire');
 });
 
 test('transaction : si fn() réussit, renvoie sa valeur et conserve les écritures', () => {
   const u = store.transaction(() => store.users.create({ nom: 'A' }));
   assert.equal(u.nom, 'A');
   assert.equal(store.users.list().length, 1);
+});
+
+test('transaction : une seule persistance et une seule notification', () => {
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  const out = store.transaction(() => {
+    store.users.create({ nom: 'A' });
+    store.users.create({ nom: 'B' });
+    store.settings.update({ marqueur: 1 });
+    return 'ok';
+  });
+  off();
+  assert.equal(out, 'ok');
+  assert.equal(n, 1, 'une seule notification pour trois écritures');
+  assert.equal(store.users.list().length, 2);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 2, 'persisté');
+});
+
+test('transaction : un échec ne notifie pas et ne laisse rien derrière', () => {
+  const before = store.users.list().length;
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  assert.throws(() => store.transaction(() => {
+    store.users.create({ nom: 'A' });
+    throw new Error('boum');
+  }), /boum/);
+  off();
+  assert.equal(n, 0, 'aucune notification pour une transaction annulée');
+  assert.equal(store.users.list().length, before);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, before);
+});
+
+test('transaction imbriquée : la notification part à la sortie de la plus externe', () => {
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  store.transaction(() => {
+    store.users.create({ nom: 'A' });
+    store.transaction(() => { store.users.create({ nom: 'B' }); });
+    assert.equal(n, 0, 'rien pendant la transaction');
+  });
+  off();
+  assert.equal(n, 1);
+  assert.equal(store.users.list().length, 2);
+});
+
+test('transaction : un abonné qui lève à la notification finale ne fausse pas la profondeur', () => {
+  const off = store.subscribe(() => { throw new Error('vue cassée'); });
+  try {
+    assert.throws(() => store.transaction(() => store.users.create({ nom: 'A' })), /vue cassée/);
+  } finally {
+    off();
+  }
+  let n = 0;
+  const off2 = store.subscribe(() => n++);
+  try {
+    store.transaction(() => {
+      store.users.create({ nom: 'B' });
+      store.users.create({ nom: 'C' });
+    });
+  } finally {
+    off2();
+  }
+  assert.equal(n, 1, 'le regroupement fonctionne encore (profondeur revenue à 0)');
+  assert.equal(store.users.list().length, 3);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 3, 'persisté');
+});
+
+test('transaction imbriquée qui lève et est rattrapée : ses écritures sont conservées (sémantique fixée)', () => {
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  try {
+    store.transaction(() => {
+      store.users.create({ nom: 'A' });
+      try {
+        store.transaction(() => {
+          store.users.create({ nom: 'B' });
+          throw new Error('interne');
+        });
+      } catch { /* rattrapée par l’externe */ }
+      store.users.create({ nom: 'C' });
+    });
+  } finally {
+    off();
+  }
+  assert.deepEqual(store.users.list().map((u) => u.nom), ['A', 'B', 'C']);
+  assert.equal(n, 1);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 3);
+});
+
+test('transaction : si la persistance finale échoue, l’erreur remonte et la mémoire revient en arrière', () => {
+  store.users.create({ nom: 'Avant' });
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  const setItem = localStorage.setItem;
+  localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+  try {
+    assert.throws(() => store.transaction(() => {
+      store.users.create({ nom: 'Perdu' });
+    }), /QuotaExceededError/);
+  } finally {
+    localStorage.setItem = setItem;
+    off();
+  }
+  assert.deepEqual(store.users.list().map((u) => u.nom), ['Avant'], 'la mémoire ne garde pas l’écriture non persistée');
+  assert.equal(n, 0, 'personne n’est notifié');
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 1, 'le stockage est resté d’accord');
+  // L’instantané de la transaction suivante vient de la mémoire : son annulation ne perd rien.
+  store.users.create({ nom: 'Après' });
+  assert.throws(() => store.transaction(() => { store.users.create({ nom: 'Annulé' }); throw new Error('boum'); }), /boum/);
+  assert.deepEqual(store.users.list().map((u) => u.nom), ['Avant', 'Après']);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 2);
 });

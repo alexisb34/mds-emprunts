@@ -1,5 +1,5 @@
 // tests/admin-dom-readers.test.mjs — lecteurs de formulaires DOM (readItemForm, readUserForm)
-// et takeSearch, testés avec un stub minimal de `querySelector` plutôt qu'un vrai DOM.
+// et takeSearch, testés avec un stub minimal de `querySelector` plutôt qu’un vrai DOM.
 import './helpers/storage.mjs';
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
