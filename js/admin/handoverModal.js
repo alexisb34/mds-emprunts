@@ -35,12 +35,13 @@ export function readChecklistForm(root, reference) {
 export function openHandoverModal({ onDone } = {}) {
   const close = openModal({
     title: 'Remettre le matériel',
+    onClose: () => { stopScanner(); },
     body: `
       <p class="body-sm text-secondary">Scannez le QR affiché par l’emprunteur, ou saisissez son code de retrait.</p>
       <div id="handover-reader" class="reader reader--admin"></div>
       <label class="field"><span class="field__label">Code de retrait</span><input class="input" name="code" placeholder="AB12CD" autocapitalize="characters" maxlength="24"></label>`,
     actions: [
-      { label: 'Annuler', variant: 'ghost', onClick: () => { stopScanner(); } },
+      { label: 'Annuler', variant: 'ghost' },
       {
         label: 'Remettre', variant: 'primary',
         onClick: (modal) => {

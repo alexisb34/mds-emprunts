@@ -2,9 +2,9 @@
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
 import { navigate } from '../../router.js';
-import { now, isLate, sortByDateDesc, addDays } from '../../rules.js';
+import { now, isLate, sortByDateDesc, addDays, ymd, fromYmd } from '../../rules.js';
 import { LOAN_STATES } from '../../models.js';
-import { escapeHtml, badge, avatar, fullName, formatDate, formatDateTime, relativeDay, openModal, toast } from '../../ui.js';
+import { escapeHtml, badge, avatar, fullName, formatDate, formatDateTime, openModal, toast } from '../../ui.js';
 import { receiveLoan, refuseLoan, extendLoan, expireDueLoans } from '../../actions/loans.js';
 import { setTopbar } from '../layout.js';
 import { sortRows, toggleSort, renderTable, bindTable } from '../table.js';
@@ -107,13 +107,12 @@ export function empruntsView(container) {
 
   const askExtend = (row) => openModal({
     title: `Prolonger — ${row.item ? row.item.nom : ''}`,
-    body: `<label class="field"><span class="field__label">Nouvelle date de retour</span><input class="input" type="date" name="fin" value="${escapeHtml(new Date(addDays(new Date(row.loan.finPrevue), 2)).toISOString().slice(0, 10))}"></label>`,
+    body: `<label class="field"><span class="field__label">Nouvelle date de retour</span><input class="input" type="date" name="fin" value="${escapeHtml(ymd(addDays(new Date(row.loan.finPrevue), 2)))}"></label>`,
     actions: [
       { label: 'Annuler', variant: 'ghost' },
       { label: 'Prolonger', variant: 'primary', onClick: (modal) => {
         const v = modal.querySelector('[name="fin"]').value;
-        const [y, m, d] = v.split('-').map(Number);
-        try { extendLoan(row.loan.id, new Date(y, m - 1, d, 17, 0), auth.currentUserId()); toast('Emprunt prolongé', 'success'); }
+        try { extendLoan(row.loan.id, fromYmd(v, 17), auth.currentUserId()); toast('Emprunt prolongé', 'success'); }
         catch (e) { toast(e.message, 'error'); return false; }
       } },
     ],

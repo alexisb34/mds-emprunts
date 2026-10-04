@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { TABS_ADMIN_LOANS, LOAN_COLUMNS, loanRows, empruntsHtml } from '../js/admin/views/emprunts.js';
-import { checklistFormHtml, readChecklistForm } from '../js/admin/handoverModal.js';
+import { checklistFormHtml, readChecklistForm, openHandoverModal } from '../js/admin/handoverModal.js';
 import { sortRows } from '../js/admin/table.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
@@ -66,4 +66,8 @@ test('checklistFormHtml et readChecklistForm', () => {
   assert.equal(read.checklist[0].commentaire, 'rayure');
   assert.equal(read.checklist[1].ok, true);
   assert.equal(read.commentaire, 'à nettoyer');
+});
+
+test('openHandoverModal est exposée', () => {
+  assert.equal(typeof openHandoverModal, 'function');
 });
