@@ -4,7 +4,7 @@ import { auth } from '../../auth.js';
 import { now } from '../../rules.js';
 import { escapeHtml, badge, formatDate, formatTime, formatDateTime, relativeDay, openModal, toast } from '../../ui.js';
 import { loanQrPayload, renderQr } from '../../qr.js';
-import { userLoans, cancelLoan, expireDueLoans } from '../../actions/loans.js';
+import { userLoans, cancelLoan, sweepExpirations } from '../../actions/loans.js';
 import { setHeader } from '../layout.js';
 
 export const TABS_EMPRUNTS = [
@@ -76,7 +76,7 @@ export function empruntsHtml({ tab, data, date }) {
 export function empruntsView(container) {
   let tab = 'enCours';
   const render = () => {
-    expireDueLoans(now());
+    sweepExpirations(now());
     const user = auth.currentUser();
     setHeader({ title: 'Mes emprunts' });
     container.innerHTML = empruntsHtml({ tab, data: userLoans(user.id, now()), date: now() });

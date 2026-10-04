@@ -4,7 +4,7 @@ import { auth } from '../../auth.js';
 import { now, isBookingActive } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, formatDate, formatSlots, relativeDay } from '../../ui.js';
-import { userLoans, expireDueLoans } from '../../actions/loans.js';
+import { userLoans, sweepExpirations } from '../../actions/loans.js';
 import { setHeader } from '../layout.js';
 
 function loansCard(enCours, date) {
@@ -61,7 +61,7 @@ export function accueilView(container) {
   const render = () => {
     const user = auth.currentUser();
     const date = now();
-    expireDueLoans(date);
+    sweepExpirations(date);
     const bookings = store.bookings.list((b) => b.userId === user.id && (b.statut === BOOKING_STATES.A_VENIR || b.statut === BOOKING_STATES.EN_COURS))
       .sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]);
     const loans = userLoans(user.id, date);

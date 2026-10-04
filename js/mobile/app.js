@@ -3,7 +3,9 @@ import { store } from '../store.js';
 import { buildSeed } from '../seed.js';
 import { auth } from '../auth.js';
 import { createRouter, navigate, currentPath } from '../router.js';
+import { now } from '../rules.js';
 import { escapeHtml } from '../ui.js';
+import { sweepExpirations } from '../actions/loans.js';
 import { mountNav } from './layout.js';
 import { loginView } from './views/login.js';
 import { profilView } from './views/profil.js';
@@ -26,6 +28,7 @@ const guard = (view) => (container, params) => {
   if (!user || user.actif === false) { auth.logout(); navigate('/login'); return undefined; }
   document.body.classList.remove('is-login');
   mountNav(navEl, currentPath());
+  sweepExpirations(now());
   return view(container, params);
 };
 

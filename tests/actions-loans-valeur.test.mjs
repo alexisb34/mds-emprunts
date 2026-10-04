@@ -10,7 +10,7 @@ import { buildChecklist } from '../js/checklists.js';
 import { loanQrPayload } from '../js/qr.js';
 import {
   reserveValeur, handOver, receiveLoan, refuseLoan, cancelLoan, extendLoan,
-  expireDueLoans, pendingHandovers, userLoans,
+  expireDueLoans, sweepExpirations, pendingHandovers, userLoans,
 } from '../js/actions/loans.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);   // jeudi 10h
@@ -255,4 +255,26 @@ test('userLoans : refuseesRecentes porte le motif de refus et s’efface après 
   // on simule le temps qui passe en interrogeant 25 h après l’écriture.
   const plusTard = new Date(new Date(store.loans.get(loan.id).updatedAt).getTime() + 25 * 60 * 60 * 1000);
   assert.equal(userLoans(ELEVE, plusTard).refuseesRecentes.length, 0);
+});
+
+test('sweepExpirations : comme expireDueLoans, mais une écriture qui échoue ne lève jamais', () => {
+  const item = freeValeur('hoya-nd');
+  const loan = reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  clock(new Date(2026, 8, 18, 10, 30));
+  const origLog = store.log.create;
+  const origError = console.error;
+  const traces = [];
+  store.log.create = () => { throw new Error('quota'); };
+  console.error = (...args) => { traces.push(args); };
+  try {
+    assert.equal(sweepExpirations(), 0);
+  } finally {
+    store.log.create = origLog;
+    console.error = origError;
+  }
+  assert.equal(traces.length, 1, 'l’erreur est tracée en console');
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.RESERVEE, 'transaction restaurée');
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.RESERVE);
+  assert.equal(sweepExpirations(), 1, 'sans panne, le prochain balayage libère la réservation');
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.EXPIREE);
 });

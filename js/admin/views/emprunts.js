@@ -5,7 +5,7 @@ import { navigate } from '../../router.js';
 import { now, isLate, sortByDateDesc, addDays, ymd, fromYmd } from '../../rules.js';
 import { LOAN_STATES } from '../../models.js';
 import { escapeHtml, badge, avatar, fullName, formatDate, formatDateTime, openModal, toast } from '../../ui.js';
-import { receiveLoan, refuseLoan, extendLoan, expireDueLoans } from '../../actions/loans.js';
+import { receiveLoan, refuseLoan, extendLoan, sweepExpirations } from '../../actions/loans.js';
 import { setTopbar } from '../layout.js';
 import { sortRows, toggleSort, renderTable, bindTable } from '../table.js';
 import { openHandoverModal, checklistFormHtml, readChecklistForm } from '../handoverModal.js';
@@ -120,7 +120,7 @@ export function empruntsView(container) {
 
   const render = () => {
     const date = now();
-    expireDueLoans(date);
+    sweepExpirations(date);
     const rows = sortRows(loanRows(tab, date), sort, LOAN_COLUMNS);
     setTopbar({ title: 'Emprunts', subtitle: 'Suivi des prêts et des réservations', action: { label: 'Remettre un matériel', onClick: () => openHandoverModal({}) } });
     container.innerHTML = empruntsHtml({ tab, rows, counts: counts(date), sort, date });

@@ -272,6 +272,18 @@ export function expireDueLoans(date = now()) {
   return libérées;
 }
 
+// Balayage défensif appelé par les vues : une écriture qui échoue (stockage plein) ne doit jamais
+// empêcher l’affichage. L’erreur est tracée en console, les données restent cohérentes
+// (store.transaction restaure l’état) et le prochain rendu retentera.
+export function sweepExpirations(date = now()) {
+  try {
+    return expireDueLoans(date);
+  } catch (e) {
+    console.error('Expiration des réservations impossible :', e);
+    return 0;
+  }
+}
+
 // Réservations à remettre le jour de `date`, avec leur fenêtre de retrait.
 export function pendingHandovers(date = now()) {
   const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;

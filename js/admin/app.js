@@ -4,7 +4,9 @@ import { buildSeed } from '../seed.js';
 import { auth } from '../auth.js';
 import { createRouter, navigate, currentPath } from '../router.js';
 import { LOAN_STATES, MAINT_STATES } from '../models.js';
+import { now } from '../rules.js';
 import { escapeHtml } from '../ui.js';
+import { sweepExpirations } from '../actions/loans.js';
 import { mountSidebar } from './layout.js';
 import { loginView } from './views/login.js';
 import { aVenirView } from './views/aVenir.js';
@@ -43,6 +45,7 @@ const guard = (view) => (container, params) => {
   if (!auth.isPedago()) { navigate('/login'); return undefined; }
   document.body.classList.remove('is-login');
   refreshSidebar();
+  sweepExpirations(now());
   return view(container, params);
 };
 
