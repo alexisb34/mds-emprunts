@@ -29,6 +29,8 @@ export const REASONS = {
   CODE_RETRAIT_INCONNU: 'code_retrait_inconnu',
   FENETRE_RETRAIT: 'fenetre_retrait',
   DATE_PASSEE: 'date_passee',
+  DATES_INCOHERENTES: 'dates_incoherentes',
+  HORS_OUVERTURE: 'hors_ouverture',
   RENDU_A_LA_PEDAGO: 'rendu_a_la_pedago',
 };
 
@@ -48,6 +50,8 @@ export const REASON_LABELS = {
   code_retrait_inconnu: 'Aucune réservation en attente ne correspond à ce code de retrait.',
   fenetre_retrait: 'Hors de la fenêtre de retrait : le matériel se retire dans l’heure qui suit le début de la réservation.',
   date_passee: 'La date de début est déjà passée.',
+  dates_incoherentes: 'La date de retour doit être postérieure ou égale à la date de retrait.',
+  hors_ouverture: 'Le retrait doit tomber pendant les heures d’ouverture du bureau (jours ouvrés, 8h-12h et 13h-17h).',
   rendu_a_la_pedago: 'Ce matériel se rend directement à la pédago, qui vérifie son état.',
 };
 
@@ -219,8 +223,10 @@ export function canBorrowSelf(ctx) {
 export function canReserveValeur(ctx) {
   const { debutPrevu, finPrevue, settings } = ctx;
   const S = withDefaults(settings);
+  if (toDate(finPrevue) < fromYmd(ymd(debutPrevu))) return { ok: false, reason: REASONS.DATES_INCOHERENTES };
+  if (!isOfficeOpen(debutPrevu, S.horaires)) return { ok: false, reason: REASONS.HORS_OUVERTURE };
   const days = Math.round((fromYmd(ymd(finPrevue)) - fromYmd(ymd(debutPrevu))) / DAY);
-  if (days < 0 || days > S.dureeMaxReservationJours) {
+  if (days > S.dureeMaxReservationJours) {
     return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };
   }
   const reason = commonChecks({ ...ctx, settings: S, circuit: CIRCUITS.VALEUR });

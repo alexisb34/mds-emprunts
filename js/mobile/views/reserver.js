@@ -7,14 +7,23 @@ import { escapeHtml, badge, formatTime, toast } from '../../ui.js';
 import { reserveValeur } from '../../actions/loans.js';
 import { setHeader } from '../layout.js';
 
-const HEURES = [8, 9, 10, 11, 13, 14, 15, 16];
-
-export function defaultDates(date, dureeMax) {
-  const debut = ymd(addDays(date, 1));
-  return { debut, fin: debut };
+// Heures entières de retrait proposées : celles de chaque plage d’ouverture des réglages
+// ([{ debut: 8, fin: 12 }, { debut: 13, fin: 17 }] → 8, 9, 10, 11, 13, 14, 15, 16).
+export function openHours(settings) {
+  const heures = [];
+  for (const { debut, fin } of withDefaults(settings).horaires) {
+    for (let h = debut; h < fin; h += 1) heures.push(h);
+  }
+  return heures;
 }
 
-export function reserverHtml({ item, dates, dureeMax, fenetreMinutes }) {
+// Horizon de réservation : 60 jours ; le jour même est permis par les règles.
+export function defaultDates(date, dureeMax) {
+  const debut = ymd(addDays(date, 1));
+  return { debut, fin: debut, min: ymd(date), max: ymd(addDays(date, 60)) };
+}
+
+export function reserverHtml({ item, dates, dureeMax, fenetreMinutes, heures = openHours({}) }) {
   return `
     <div class="card">
       <div class="card__header"><h2 class="card__title">${escapeHtml(item.nom)}</h2>${badge('circuit', item.circuit)}</div>
@@ -22,9 +31,9 @@ export function reserverHtml({ item, dates, dureeMax, fenetreMinutes }) {
     </div>
     <div class="card">
       <div class="stack">
-        <label class="field"><span class="field__label">Date de retrait</span><input class="input" type="date" name="debut" value="${escapeHtml(dates.debut)}" min="${escapeHtml(dates.debut)}"></label>
-        <label class="field"><span class="field__label">Heure de retrait</span><select class="select" name="heure">${HEURES.map((h) => `<option value="${h}"${h === 9 ? ' selected' : ''}>${h}h00</option>`).join('')}</select></label>
-        <label class="field"><span class="field__label">Date de retour</span><input class="input" type="date" name="fin" value="${escapeHtml(dates.fin)}" min="${escapeHtml(dates.debut)}"></label>
+        <label class="field"><span class="field__label">Date de retrait</span><input class="input" type="date" name="debut" value="${escapeHtml(dates.debut)}" min="${escapeHtml(dates.min)}" max="${escapeHtml(dates.max)}"></label>
+        <label class="field"><span class="field__label">Heure de retrait</span><select class="select" name="heure">${heures.map((h) => `<option value="${h}"${h === 9 ? ' selected' : ''}>${h}h00</option>`).join('')}</select></label>
+        <label class="field"><span class="field__label">Date de retour</span><input class="input" type="date" name="fin" value="${escapeHtml(dates.fin)}" min="${escapeHtml(dates.min)}" max="${escapeHtml(dates.max)}"></label>
         <label class="field"><span class="field__label">Motif (visible par la pédago)</span><textarea class="textarea" name="motif" placeholder="Tournage du projet MBA 2"></textarea></label>
       </div>
     </div>
@@ -55,6 +64,7 @@ export function reserverView(container, { id }) {
   container.innerHTML = reserverHtml({
     item, dates: defaultDates(now(), settings.dureeMaxReservationJours),
     dureeMax: settings.dureeMaxReservationJours, fenetreMinutes: settings.fenetreRetraitMinutes,
+    heures: openHours(settings),
   });
   container.querySelector('[data-action="confirm-reserve"]').addEventListener('click', () => {
     try {
