@@ -1156,10 +1156,10 @@ test('bookingDetailHtml : créneaux, états des lieux, bouton d’annulation', (
   assert.match(html, /9h-11h/);
   assert.match(html, /État des lieux d’entrée/);
   assert.match(html, /pas encore faite/);
-  assert.match(html, /data-action="cancel-booking"/);
+  assert.match(html, /data-cancel-booking="book_/);
   const terminee = store.bookings.list((b) => b.statut === 'terminee')[0];
   const html2 = bookingDetailHtml({ booking: terminee, user: store.users.get(terminee.userId) });
-  assert.doesNotMatch(html2, /data-action="cancel-booking"/);
+  assert.doesNotMatch(html2, /data-cancel-booking/);
 });
 
 test('salleHtml : navigation de semaine, planning et bandeau des sorties manquantes', () => {
@@ -1194,6 +1194,20 @@ test('dashboardHtml : widget des sorties non faites', () => {
     horlogeDemo: null, status: officeStatus(NOW, db.settings), exitMissing: [],
   });
   assert.doesNotMatch(sans, /Sorties non faites/);
+});
+
+test('dashboardHtml : un signalement sans objet reste lisible et pointe vers la salle', () => {
+  const event = {
+    id: 'maint_salle', itemId: null, bookingId: 'book_0001', statut: 'ouvert',
+    description: 'Salle rangée → chaises renversées', date: NOW.toISOString(),
+  };
+  const html = dashboardHtml({
+    kpis: computeKpis(db, NOW), late: [], due: [], reports: [{ event, item: null, auteur: null }],
+    activity: [], users: db.users, date: NOW, horlogeDemo: null, status: officeStatus(NOW, db.settings),
+  });
+  assert.match(html, /Salle photo — état des lieux/);
+  assert.match(html, /data-href="\/salle"/);
+  assert.doesNotMatch(html, /data-href="\/materiel\/null"/);
 });
 ```
 
@@ -1258,7 +1272,7 @@ export function bookingDetailHtml({ booking, user }) {
       <p class="body-sm">${escapeHtml(formatDate(booking.date))} · <strong>${escapeHtml(formatSlots(booking.creneaux))}</strong> ${badge('booking', booking.statut)}</p>
       ${etatBloc('État des lieux d’entrée', booking.etatEntree)}
       ${etatBloc('État des lieux de sortie', booking.etatSortie)}
-      ${annulable ? `<button type="button" class="btn btn--danger btn--sm" data-action="cancel-booking" data-booking="${escapeHtml(booking.id)}">Annuler la réservation</button>` : ''}
+      ${annulable ? `<button type="button" class="btn btn--danger btn--sm" data-cancel-booking="${escapeHtml(booking.id)}">Annuler la réservation</button>` : ''}
     </div>`;
 }
 
@@ -1316,16 +1330,21 @@ export function salleView(container) {
     container.querySelectorAll('.week-grid [data-booking]').forEach((b) => b.addEventListener('click', () => {
       const booking = store.bookings.get(b.dataset.booking);
       const user = users.find((u) => u.id === booking.userId) || null;
-      openModal({
+      const close = openModal({
         title: `Créneau du ${formatDate(booking.date)}`,
         body: bookingDetailHtml({ booking, user }),
         actions: [{ label: 'Fermer', variant: 'ghost' }],
       });
       const root = document.getElementById('modal-root');
-      const annuler = root.querySelector('[data-action="cancel-booking"]');
+      // L’attribut est à nous, pas `data-action` : openModal câble tous ses `[data-action]`
+      // sur son tableau d’actions, et un libellé non numérique y lèverait une TypeError.
+      const annuler = root.querySelector('[data-cancel-booking]');
       if (annuler) annuler.addEventListener('click', () => {
-        try { cancelBooking(annuler.dataset.booking, auth.currentUserId()); toast('Réservation annulée', 'success'); }
-        catch (e) { toast(e.message, 'error'); }
+        try {
+          cancelBooking(annuler.dataset.cancelBooking, auth.currentUserId());
+          toast('Réservation annulée', 'success');
+          close(); // sinon la modale reste ouverte sur un détail périmé
+        } catch (e) { toast(e.message, 'error'); }
       });
     }));
   };
