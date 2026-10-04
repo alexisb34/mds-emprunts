@@ -10,7 +10,8 @@ export const ACTIONS = {
   LOAN_ANNULEE: 'loan.annulee', LOAN_PROLONGEE: 'loan.prolongee',
   BOOKING_CREEE: 'booking.creee', BOOKING_ANNULEE: 'booking.annulee',
   BOOKING_ENTREE: 'booking.entree', BOOKING_SORTIE: 'booking.sortie',
-  MAINT_SIGNALEMENT: 'maintenance.signalement', MAINT_INTERVENTION: 'maintenance.intervention', MAINT_CLOS: 'maintenance.clos',
+  MAINT_SIGNALEMENT: 'maintenance.signalement', MAINT_INTERVENTION: 'maintenance.intervention',
+  MAINT_EN_COURS: 'maintenance.en_cours', MAINT_CLOS: 'maintenance.clos',
   SETTINGS_MODIFIES: 'settings.modifies', DEMO_RESET: 'demo.reset',
 };
 
@@ -22,7 +23,7 @@ export const ACTION_LABELS = {
   'loan.annulee': 'Réservation annulée', 'loan.prolongee': 'Emprunt prolongé',
   'booking.creee': 'Salle réservée', 'booking.annulee': 'Réservation de salle annulée',
   'booking.entree': 'État des lieux d’entrée', 'booking.sortie': 'État des lieux de sortie',
-  'maintenance.signalement': 'Signalement', 'maintenance.intervention': 'Intervention', 'maintenance.clos': 'Maintenance close',
+  'maintenance.signalement': 'Signalement', 'maintenance.intervention': 'Intervention', 'maintenance.en_cours': 'Intervention en cours', 'maintenance.clos': 'Maintenance close',
   'settings.modifies': 'Paramètres modifiés', 'demo.reset': 'Données de démo réinitialisées',
 };
 
