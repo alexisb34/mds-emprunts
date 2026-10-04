@@ -33,7 +33,7 @@
 | 1. Admin — inventaire & utilisateurs | `2026-09-18-phase-1-admin-inventaire.md` (exécuté) | Admin navigable : dashboard, matériel, fiche, QR, utilisateurs |
 | 2. Mobile — self-service | `2026-09-20-phase-2-mobile-self-service.md` (exécuté) | Scan → photo → emprunt → retour, visible en direct côté admin |
 | 3. Matériel de valeur | `2026-10-04-phase-3-materiel-valeur.md` (exécuté) | Réservation → remise par QR → retard → réception avec checklist |
-| 4. Salle photo | à rédiger fin phase 3 | Réservation multi-créneaux, états des lieux, planning admin |
+| 4. Salle photo | `2026-10-04-phase-4-salle-photo.md` (exécuté) | Réservation multi-créneaux, états des lieux, planning admin |
 | 5. Maintenance & paramètres | à rédiger fin phase 4 | Interventions, horloge de démo, reset, PWA installable |
 | 6. Déploiement test | à rédiger fin phase 5 | URL GitHub Pages, scénarios de démo, test sur téléphone |
 
@@ -87,6 +87,8 @@
 ---
 
 ## Phase 4 — Salle photo
+
+**Plan :** `2026-10-04-phase-4-salle-photo.md` (exécuté)
 
 **Prérequis :** `ui.toDate` doit parser `YYYY-MM-DD` en date locale (test épinglé sur `TZ=America/New_York`) et `store.transaction` doit différer la persistance et la notification.
 
