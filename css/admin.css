@@ -88,3 +88,13 @@
 .checklist-admin__row { display: grid; grid-template-columns: 1fr 200px; gap: var(--space-md); align-items: center; }
 .input--sm { height: var(--size-control-sm); font-size: 12px; }
 @media (max-width: 600px) { .checklist-admin__row { grid-template-columns: 1fr; } }
+
+.week-grid { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: fixed; }
+.week-grid th { font-size: 11px; font-weight: 700; color: var(--text-secondary); padding: var(--space-xs) 0; }
+.week-grid th.is-today { color: var(--text-brand); }
+.week-grid tbody th { width: 40px; text-align: right; padding-right: var(--space-sm); }
+.week-grid .slot { width: 100%; height: 34px; border-radius: var(--radius-xs); font-size: 11px; font-weight: 700; border: var(--stroke-thin) solid transparent; display: grid; place-items: center; }
+.week-grid .slot--free { background: var(--bg-surface); border-color: var(--border-default); }
+.week-grid .slot--past { background: var(--bg-muted); }
+.week-grid .slot--taken { background: var(--status-borrowed-bg); color: var(--status-borrowed-fg); cursor: pointer; }
+.week-grid .slot--taken:hover { background: var(--brand-primary); color: var(--text-on-brand); }

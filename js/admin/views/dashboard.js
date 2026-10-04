@@ -4,11 +4,12 @@ import { now, isWeekday } from '../../rules.js';
 import { recentLog, ACTION_LABELS } from '../../log.js';
 import { navigate } from '../../router.js';
 import { auth } from '../../auth.js';
-import { escapeHtml, badge, avatar, formatDate, formatTime, formatDateTime, relativeDay, fullName, toast, openModal } from '../../ui.js';
+import { escapeHtml, badge, avatar, formatDate, formatTime, formatDateTime, relativeDay, formatSlots, fullName, toast, openModal } from '../../ui.js';
 import { setDemoClock, resetDemoData, toDatetimeLocal, fromDatetimeLocal, officeStatus } from '../../actions/settings.js';
 import { setTopbar } from '../layout.js';
 import { openHandoverModal } from '../handoverModal.js';
 import { computeKpis, lateLoans, dueTodayReservations, openReports } from '../kpi.js';
+import { exitMissingRows } from './salle.js';
 
 // Prochain jour ouvré à 9h (aujourd’hui si c’est un jour ouvré avant 9h).
 function nextOpenDay(date) {
@@ -50,10 +51,19 @@ function dueList(due) {
 function reportsList(reports) {
   if (!reports.length) return '<div class="empty-state">Aucun signalement ouvert.</div>';
   return `<div class="list">${reports.map(({ event, item, auteur }) => `
-    <div class="list__item" data-href="/materiel/${escapeHtml(event.itemId)}">
-      <div class="list__grow"><strong>${escapeHtml(item ? item.nom : event.itemId)}</strong><span class="activity__detail">${escapeHtml(event.description)}</span><span class="activity__detail">${escapeHtml(formatDate(event.date))}${auteur ? ` · ${escapeHtml(fullName(auteur))}` : ''}</span></div>
+    <div class="list__item" data-href="${event.itemId ? `/materiel/${escapeHtml(event.itemId)}` : '/salle'}">
+      <div class="list__grow"><strong>${escapeHtml(item ? item.nom : (event.bookingId ? 'Salle photo — état des lieux' : event.itemId))}</strong><span class="activity__detail">${escapeHtml(event.description)}</span><span class="activity__detail">${escapeHtml(formatDate(event.date))}${auteur ? ` · ${escapeHtml(fullName(auteur))}` : ''}</span></div>
       ${badge('maint', event.statut)}
     </div>`).join('')}</div>`;
+}
+
+function exitMissingHtml(rows) {
+  if (!rows.length) return '';
+  return `
+    <div class="card">
+      <div class="card__header"><h2 class="card__title">Sorties non faites</h2><a class="body-sm" href="#/salle">Voir le planning →</a></div>
+      ${rows.map(({ booking, user }) => `<div class="alert alert--warning">${escapeHtml(formatDate(booking.date))} · ${escapeHtml(formatSlots(booking.creneaux))} — ${escapeHtml(user ? fullName(user) : booking.userId)}</div>`).join('')}
+    </div>`;
 }
 
 function activityList(activity, users, date) {
@@ -88,7 +98,7 @@ export function demoClockHtml({ date, horlogeDemo, status }) {
     </div>`;
 }
 
-export function dashboardHtml({ kpis, late, due, reports, activity, users, date, horlogeDemo, status }) {
+export function dashboardHtml({ kpis, late, due, reports, activity, users, date, horlogeDemo, status, exitMissing = [] }) {
   return `
     ${demoClockHtml({ date, horlogeDemo, status })}
     <div class="grid-4">
@@ -104,6 +114,7 @@ export function dashboardHtml({ kpis, late, due, reports, activity, users, date,
       </div>
       <div class="stack">
         <div class="card"><div class="card__header"><h2 class="card__title">Signalements ouverts</h2><a class="body-sm" href="#/maintenance">Tout voir →</a></div>${reportsList(reports)}</div>
+        ${exitMissingHtml(exitMissing)}
         <div class="card"><div class="card__header"><h2 class="card__title">Dernières activités</h2></div>${activityList(activity, users, date)}</div>
       </div>
     </div>`;
@@ -122,6 +133,7 @@ export function dashboardView(container) {
       kpis: computeKpis(data, date), late: lateLoans(data, date), due: dueTodayReservations(data, date),
       reports: openReports(data), activity: recentLog(15), users: data.users, date,
       horlogeDemo: settings.horlogeDemo || null, status: officeStatus(date, settings),
+      exitMissing: exitMissingRows(data.bookings, data.users, date),
     });
     container.querySelectorAll('[data-href]').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.href)));
     container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); openHandoverModal({}); }));
