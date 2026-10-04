@@ -6,6 +6,7 @@ import { createRouter, navigate, currentPath } from '../router.js';
 import { now } from '../rules.js';
 import { escapeHtml } from '../ui.js';
 import { sweepExpirations } from '../actions/loans.js';
+import { sweepBookings } from '../actions/bookings.js';
 import { mountNav } from './layout.js';
 import { loginView } from './views/login.js';
 import { profilView } from './views/profil.js';
@@ -16,6 +17,7 @@ import { ficheView } from './views/fiche.js';
 import { scanView } from './views/scan.js';
 import { empruntsView } from './views/emprunts.js';
 import { reserverView } from './views/reserver.js';
+import { salleView } from './views/salle.js';
 
 store.init(buildSeed);
 
@@ -29,6 +31,7 @@ const guard = (view) => (container, params) => {
   document.body.classList.remove('is-login');
   mountNav(navEl, currentPath());
   sweepExpirations(now());
+  sweepBookings(now());
   return view(container, params);
 };
 
@@ -39,7 +42,7 @@ const routes = [
   { path: '/catalogue/:reference', view: guard(ficheView) },
   { path: '/scan', view: guard(scanView) },
   { path: '/emprunts', view: guard(empruntsView) },
-  { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
+  { path: '/salle', view: guard(salleView) },
   { path: '/reserver/:id', view: guard(reserverView) },
   { path: '/profil', view: guard(profilView) },
 ];

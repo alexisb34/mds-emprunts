@@ -5,6 +5,7 @@ import { now, isBookingActive } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, formatDate, formatSlots, relativeDay } from '../../ui.js';
 import { userLoans, sweepExpirations } from '../../actions/loans.js';
+import { userBookings } from '../../actions/bookings.js';
 import { setHeader } from '../layout.js';
 
 function loansCard(enCours, date) {
@@ -16,14 +17,18 @@ function loansCard(enCours, date) {
     </a>`).join('')}</div>`;
 }
 
-function bookingCard(nextBooking, date) {
-  if (!nextBooking) return '<div class="empty-state">Aucune réservation de la salle photo.</div>';
-  const active = isBookingActive(nextBooking, date);
+function bookingCard(nextBooking, date, active = null) {
+  // L’état des lieux attendu (entrée, puis sortie) est proposé tant que le créneau en cours n’est pas bouclé.
+  const aFaire = active && !(active.entreeFaite && active.sortieFaite)
+    ? `<a class="btn btn--primary btn--block" href="#/salle">${active.entreeFaite ? 'Faire l’état des lieux de sortie' : 'Faire l’état des lieux d’entrée'}</a>`
+    : '';
+  if (!nextBooking) return `<div class="empty-state">Aucune réservation de la salle photo.</div>${aFaire}`;
+  const enCours = isBookingActive(nextBooking, date);
   return `
     <a class="m-item" href="#/salle">
-      <span class="m-item__body"><strong>${escapeHtml(relativeDay(nextBooking.date, date))} · ${escapeHtml(formatSlots(nextBooking.creneaux))}</strong><span class="body-tiny text-secondary">${escapeHtml(formatDate(nextBooking.date))}${active ? ' · créneau en cours' : ''}</span></span>
-      ${badge('booking', active ? 'en_cours' : nextBooking.statut)}
-    </a>`;
+      <span class="m-item__body"><strong>${escapeHtml(relativeDay(nextBooking.date, date))} · ${escapeHtml(formatSlots(nextBooking.creneaux))}</strong><span class="body-tiny text-secondary">${escapeHtml(formatDate(nextBooking.date))}${enCours ? ' · créneau en cours' : ''}</span></span>
+      ${badge('booking', enCours ? 'en_cours' : nextBooking.statut)}
+    </a>${aFaire}`;
 }
 
 function noticesHtml(reservations, expireesRecentes, refuseesRecentes) {
@@ -37,7 +42,7 @@ function noticesHtml(reservations, expireesRecentes, refuseesRecentes) {
   return `<section class="stack">${lignes.join('')}</section>`;
 }
 
-export function accueilHtml({ user, enCours, nextBooking, date, reservations = [], expireesRecentes = [], refuseesRecentes = [] }) {
+export function accueilHtml({ user, enCours, nextBooking, date, reservations = [], expireesRecentes = [], refuseesRecentes = [], salle = null }) {
   const lateCount = enCours.filter((x) => x.late).length;
   return `
     <section class="m-hero">
@@ -53,7 +58,7 @@ export function accueilHtml({ user, enCours, nextBooking, date, reservations = [
     </section>
     <section class="card">
       <div class="card__header"><h3 class="card__title">Salle photo</h3><a class="body-sm" href="#/salle">Réserver →</a></div>
-      ${bookingCard(nextBooking, date)}
+      ${bookingCard(nextBooking, date, salle ? salle.active : null)}
     </section>`;
 }
 
@@ -66,7 +71,7 @@ export function accueilView(container) {
       .sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]);
     const loans = userLoans(user.id, date);
     setHeader({ title: 'MDS Emprunts' });
-    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, expireesRecentes: loans.expireesRecentes, refuseesRecentes: loans.refuseesRecentes, nextBooking: bookings[0] || null, date });
+    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, expireesRecentes: loans.expireesRecentes, refuseesRecentes: loans.refuseesRecentes, nextBooking: bookings[0] || null, salle: userBookings(user.id, date), date });
   };
   render();
   return store.subscribe(render);

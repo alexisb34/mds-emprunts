@@ -7,6 +7,7 @@ import { LOAN_STATES, MAINT_STATES } from '../models.js';
 import { now } from '../rules.js';
 import { escapeHtml } from '../ui.js';
 import { sweepExpirations } from '../actions/loans.js';
+import { sweepBookings } from '../actions/bookings.js';
 import { mountSidebar } from './layout.js';
 import { loginView } from './views/login.js';
 import { aVenirView } from './views/aVenir.js';
@@ -46,6 +47,7 @@ const guard = (view) => (container, params) => {
   document.body.classList.remove('is-login');
   refreshSidebar();
   sweepExpirations(now());
+  sweepBookings(now());
   return view(container, params);
 };
 

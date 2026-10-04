@@ -27,6 +27,18 @@ test('accueilHtml : salutation, emprunts en cours avec retard, réservation sall
   assert.match(html2, /En cours/);
 });
 
+test('accueilHtml : bouton d’état des lieux quand le créneau est en cours', () => {
+  const booking = store.bookings.list((b) => b.statut === 'en_cours')[0];
+  const base = { user: store.users.get(booking.userId), enCours: [], nextBooking: booking, date: NOW };
+  const entree = accueilHtml({ ...base, salle: { active: { booking, entreeFaite: false, sortieFaite: false }, aVenir: [], passees: [] } });
+  assert.match(entree, /<a class="btn btn--primary btn--block" href="#\/salle">Faire l’état des lieux d’entrée<\/a>/);
+  const sortie = accueilHtml({ ...base, salle: { active: { booking, entreeFaite: true, sortieFaite: false }, aVenir: [], passees: [] } });
+  assert.match(sortie, /état des lieux de sortie/);
+  const fait = accueilHtml({ ...base, salle: { active: { booking, entreeFaite: true, sortieFaite: true }, aVenir: [], passees: [] } });
+  assert.doesNotMatch(fait, /Faire l’état des lieux/);
+  assert.doesNotMatch(accueilHtml(base), /Faire l’état des lieux/);
+});
+
 test('catalogueHtml : chips, cartes par référence, badge et pastille circuit', () => {
   const groups = groupByReference(store.items.list());
   const html = catalogueHtml({ groups, filters: { q: '', categorie: 'Audio' }, categories: ['Bureautique', 'Audio'] });
