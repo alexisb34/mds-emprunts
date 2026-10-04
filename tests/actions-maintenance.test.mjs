@@ -145,7 +145,7 @@ test('maintenanceRows : joint objet et auteur, ouverts d’abord, plus récents 
   if (premierClos !== -1) assert.ok(dernierOuvert < premierClos, 'les clos passent après les ouverts');
 });
 
-test('immobilises : matériel en maintenance ou hors service, avec ses événements ouverts', () => {
+test('immobilises : matériel en maintenance ou hors service, avec ce qui reste à traiter', () => {
   const item = itemDispo();
   reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Bague grippée' });
   const rows = immobilises();

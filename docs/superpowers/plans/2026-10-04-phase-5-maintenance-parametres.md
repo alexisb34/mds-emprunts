@@ -520,7 +520,7 @@ test('interventionFormHtml : type, prestataire, coût, description', () => {
   assert.match(html, /name="type"/);
   assert.match(html, new RegExp(`value="${MAINT_TYPES.EXTERNE}"`));
   assert.match(html, /name="prestataire"/);
-  assert.match(html, /name="cout"/);
+  assert.match(html, /name="cout"[^>]*inputmode="decimal"/, 'la virgule décimale française doit pouvoir être saisie');
   assert.match(html, /name="description"/);
 });
 ```
@@ -635,7 +635,7 @@ export function interventionFormHtml(item = null, items = []) {
       ${choixObjet}
       <label class="field"><span class="field__label">Type</span><select class="select" name="type">${TYPES.map((t) => `<option value="${t.value}">${escapeHtml(t.label)}</option>`).join('')}</select></label>
       <label class="field"><span class="field__label">Prestataire (intervention externe)</span><input class="input" name="prestataire" placeholder="Objectif Service"></label>
-      <label class="field"><span class="field__label">Coût en euros</span><input class="input" name="cout" type="number" min="0" step="0.01" value="0"></label>
+      <label class="field"><span class="field__label">Coût en euros</span><input class="input" name="cout" type="text" inputmode="decimal" value="0" placeholder="120,50"></label>
       <label class="field"><span class="field__label">Description</span><textarea class="textarea" name="description" placeholder="Révision de la bague"></textarea></label>
     </div>`;
 }
@@ -646,7 +646,9 @@ export function readInterventionForm(root) {
     itemId: val('itemId'),
     type: val('type'),
     prestataire: val('prestataire').trim(),
-    cout: Number(val('cout')) || 0,
+    // `type="number"` rendrait « 120,50 » comme une valeur vide : on lit du texte et on
+    // normalise la virgule décimale. `createIntervention` refuse ce qui n’est pas un nombre.
+    cout: val('cout').trim().replace(',', '.'),
     description: val('description').trim(),
   };
 }
