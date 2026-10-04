@@ -57,7 +57,7 @@ const VARIANTS = {
   maint: { ouvert: 'late', en_cours: 'maintenance', clos: 'available' },
   circuit: { self: 'available', salle: 'reserved', valeur: 'borrowed' },
   role: { eleve: 'reserved', intervenant: 'borrowed', pedago: 'available' },
-  derived: { en_retard: 'late', sortie_non_faite: 'late', actif: 'available', desactive: 'hs' },
+  derived: { en_retard: 'late', sortie_non_faite: 'late', actif: 'available', desactive: 'hs', horloge_demo: 'maintenance', temps_reel: 'available' },
 };
 const LABEL_FAMILY = { item: 'itemState', loan: 'loanState', booking: 'bookingState', maint: 'maintState', circuit: 'circuit', role: 'role' };
 
