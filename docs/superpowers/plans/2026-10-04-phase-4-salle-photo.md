@@ -1170,6 +1170,7 @@ test('salleHtml : navigation de semaine, planning et bandeau des sorties manquan
   assert.match(html, /data-action="next-week"/);
   assert.match(html, /Sorties non faites/);
   assert.match(html, /alert--warning/);
+  assert.match(html, /data-action="force-close" data-booking="book_/);
   const sans = salleHtml({ grid: grid(), users: store.users.list(), missing: [], date: NOW });
   assert.doesNotMatch(sans, /Sorties non faites/);
 });
@@ -1211,7 +1212,7 @@ import { now, addDays, isExitMissing } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, avatar, fullName, formatDate, formatDateTime, formatSlots, openModal, toast } from '../../ui.js';
 import { buildWeekGrid, startOfWeek, weekDays } from '../../weekGrid.js';
-import { weekBookings, cancelBooking, sweepBookings } from '../../actions/bookings.js';
+import { weekBookings, cancelBooking, forceCloseBooking, sweepBookings } from '../../actions/bookings.js';
 import { setTopbar } from '../layout.js';
 
 const initials = (user) => (user ? `${(user.prenom || '')[0] || ''}${(user.nom || '')[0] || ''}`.toUpperCase() : '?');
@@ -1270,7 +1271,7 @@ const weekLabel = (date) => {
 export function salleHtml({ grid, users, missing, date }) {
   const bandeau = missing.length
     ? `<div class="card"><div class="card__header"><h2 class="card__title">Sorties non faites</h2><span class="body-sm text-secondary">${missing.length}</span></div>
-        ${missing.map(({ booking, user }) => `<div class="alert alert--warning">${escapeHtml(formatDate(booking.date))} · ${escapeHtml(formatSlots(booking.creneaux))} — ${escapeHtml(user ? fullName(user) : booking.userId)} n’a pas fait l’état des lieux de sortie.</div>`).join('')}
+        ${missing.map(({ booking, user }) => `<div class="alert alert--warning"><span>${escapeHtml(formatDate(booking.date))} · ${escapeHtml(formatSlots(booking.creneaux))} — ${escapeHtml(user ? fullName(user) : booking.userId)} n’a pas fait l’état des lieux de sortie.</span><button type="button" class="btn btn--secondary btn--sm" data-action="force-close" data-booking="${escapeHtml(booking.id)}">Clore le créneau</button></div>`).join('')}
       </div>`
     : '';
   return `
@@ -1298,7 +1299,21 @@ export function salleView(container) {
     container.innerHTML = salleHtml({ grid, users, missing, date: semaine });
     container.querySelector('[data-action="prev-week"]').addEventListener('click', () => { semaine = addDays(startOfWeek(semaine), -7); render(); });
     container.querySelector('[data-action="next-week"]').addEventListener('click', () => { semaine = addDays(startOfWeek(semaine), 7); render(); });
-    container.querySelectorAll('[data-booking]').forEach((b) => b.addEventListener('click', () => {
+    container.querySelectorAll('[data-action="force-close"]').forEach((b) => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openModal({
+        title: 'Clore le créneau',
+        body: '<p class="body-sm">L’état des lieux de sortie n’a pas été fait. Clore le créneau le retire des alertes ; vérifiez la salle avant de valider.</p>',
+        actions: [
+          { label: 'Annuler', variant: 'ghost' },
+          { label: 'Clore le créneau', variant: 'primary', onClick: () => {
+            try { forceCloseBooking(b.dataset.booking, auth.currentUserId()); toast('Créneau clos', 'success'); }
+            catch (err) { toast(err.message, 'error'); return false; }
+          } },
+        ],
+      });
+    }));
+    container.querySelectorAll('.week-grid [data-booking]').forEach((b) => b.addEventListener('click', () => {
       const booking = store.bookings.get(b.dataset.booking);
       const user = users.find((u) => u.id === booking.userId) || null;
       openModal({
@@ -1323,7 +1338,14 @@ export function salleView(container) {
 
 `js/admin/app.js` : `import { salleView } from './views/salle.js';` et route `{ path: '/salle', view: guard(salleView) }`.
 
-`js/admin/views/dashboard.js` : ajouter
+`js/admin/views/dashboard.js` : dans `reportsList`, un signalement sans objet (état des lieux de la salle, `itemId: null`) doit rester lisible — remplacer la ligne du titre et du lien par :
+
+```js
+    <div class="list__item" data-href="${event.itemId ? `/materiel/${escapeHtml(event.itemId)}` : '/salle'}">
+      <div class="list__grow"><strong>${escapeHtml(item ? item.nom : (event.bookingId ? 'Salle photo — état des lieux' : event.itemId))}</strong>
+```
+
+(le reste de la ligne est inchangé). Ajouter aussi
 
 ```js
 function exitMissingHtml(rows) {
