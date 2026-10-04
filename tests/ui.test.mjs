@@ -1,7 +1,7 @@
 import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { escapeHtml, formatDate, formatTime, formatDateTime, relativeDay, formatSlots, initials, fullName, badge } from '../js/ui.js';
+import { escapeHtml, formatDate, formatTime, formatDateTime, relativeDay, formatSlots, initials, fullName, badge, openModal, closeModal } from '../js/ui.js';
 
 const d = new Date(2026, 8, 17, 9, 5);
 
@@ -58,4 +58,27 @@ test('badge : variante et libellé', () => {
 
 test('badge : libellé dérivé « sortie non faite » via LABELS.derived', () => {
   assert.equal(badge('booking', 'sortie_non_faite'), '<span class="badge badge--hs">Sortie non faite</span>');
+});
+
+test('badge : une réservation expirée est « Non retiré »', () => {
+  assert.match(badge('loan', 'expiree'), /badge--hs">Non retiré</);
+});
+
+test('openModal : ouvrir une modale libère d’abord la précédente, closeModal ne rappelle rien deux fois', () => {
+  const root = { innerHTML: '', querySelectorAll: () => [], querySelector: () => null };
+  const body = { classList: { add() {}, remove() {} } };
+  const avant = globalThis.document;
+  globalThis.document = { getElementById: () => root, body };
+  const appels = [];
+  try {
+    openModal({ title: 'A', body: '', onClose: () => appels.push('A') });
+    openModal({ title: 'B', body: '', onClose: () => appels.push('B') });
+    assert.deepEqual(appels, ['A'], 'l’onClose de la première modale est appelé à l’ouverture de la seconde');
+    closeModal();
+    assert.deepEqual(appels, ['A', 'B']);
+    closeModal();
+    assert.deepEqual(appels, ['A', 'B'], 'chaque onClose n’est appelé qu’une fois');
+  } finally {
+    globalThis.document = avant;
+  }
 });

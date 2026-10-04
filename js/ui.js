@@ -90,6 +90,8 @@ export function closeModal() {
 // l’appelant, qui doit échapper lui-même les données utilisateur via `escapeHtml`.
 export function openModal({ title, body, actions = [], onClose = null }) {
   const root = document.getElementById('modal-root');
+  // Une modale qui en remplace une autre libère d’abord les ressources de la précédente.
+  if (onCloseModal) { const previous = onCloseModal; onCloseModal = null; previous(); }
   onCloseModal = onClose;
   root.innerHTML = `
     <div class="modal-backdrop" data-close>
