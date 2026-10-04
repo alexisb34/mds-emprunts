@@ -9,6 +9,8 @@ import {
   openEvents, reportIssue, createIntervention, startIntervention, closeEvent,
   maintenanceRows, immobilises,
 } from '../js/actions/maintenance.js';
+import { receiveLoan } from '../js/actions/loans.js';
+import { LOAN_STATES } from '../js/models.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const PEDAGO = 'user_041';
@@ -148,4 +150,21 @@ test('immobilises : matériel en maintenance ou hors service, avec ses événeme
   assert.ok(ligne, 'l’objet immobilisé est listé');
   assert.equal(ligne.ouverts.length, 1);
   assert.ok(rows.every((r) => r.item.etat === ITEM_STATES.MAINTENANCE || r.item.etat === ITEM_STATES.HS));
+});
+
+test('un objet signalé pendant son emprunt part en maintenance au retour, checklist propre ou non', () => {
+  const loan = store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS)[0];
+  assert.ok(loan, 'le seed contient un emprunt en cours');
+  reportIssue({ itemId: loan.itemId, auteurId: PEDAGO, description: 'Signalé par un tiers pendant l’emprunt' });
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE, 'pas touché tant qu’il est dehors');
+  // Réception sans problème : l’objet ne doit pas repartir au catalogue avec un signalement ouvert.
+  receiveLoan({ loanId: loan.id, pedagoId: PEDAGO });
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.MAINTENANCE);
+  assert.equal(openEvents(loan.itemId).length, 1);
+});
+
+test('un retour sans signalement ouvert et sans problème remet bien l’objet disponible', () => {
+  const loan = store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS)[0];
+  receiveLoan({ loanId: loan.id, pedagoId: PEDAGO });
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.DISPONIBLE);
 });
