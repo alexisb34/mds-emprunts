@@ -32,7 +32,7 @@
 | 0. Fondations | `2026-09-17-phase-0-fondations.md` (rédigé) | `kit.html` fidèle au Figma, `npm test` vert, seed complet |
 | 1. Admin — inventaire & utilisateurs | `2026-09-18-phase-1-admin-inventaire.md` (exécuté) | Admin navigable : dashboard, matériel, fiche, QR, utilisateurs |
 | 2. Mobile — self-service | `2026-09-20-phase-2-mobile-self-service.md` (exécuté) | Scan → photo → emprunt → retour, visible en direct côté admin |
-| 3. Matériel de valeur | à rédiger fin phase 2 | Réservation → remise par QR → retard → réception avec checklist |
+| 3. Matériel de valeur | `2026-10-04-phase-3-materiel-valeur.md` (exécuté) | Réservation → remise par QR → retard → réception avec checklist |
 | 4. Salle photo | à rédiger fin phase 3 | Réservation multi-créneaux, états des lieux, planning admin |
 | 5. Maintenance & paramètres | à rédiger fin phase 4 | Interventions, horloge de démo, reset, PWA installable |
 | 6. Déploiement test | à rédiger fin phase 5 | URL GitHub Pages, scénarios de démo, test sur téléphone |

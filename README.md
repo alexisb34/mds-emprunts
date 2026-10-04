@@ -32,7 +32,7 @@ Aucune dépendance à installer (Node ≥ 22).
 - [x] Phase 0 — Fondations (tokens, composants, store, règles, seed)
 - [x] Phase 1 — Admin : inventaire & utilisateurs
 - [x] Phase 2 — Mobile : self-service
-- [ ] Phase 3 — Matériel de valeur
+- [x] Phase 3 — Matériel de valeur
 - [ ] Phase 4 — Salle photo
 - [ ] Phase 5 — Maintenance & paramètres
 - [ ] Phase 6 — Déploiement test
