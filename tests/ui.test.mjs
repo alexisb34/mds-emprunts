@@ -82,3 +82,12 @@ test('openModal : ouvrir une modale libère d’abord la précédente, closeModa
     globalThis.document = avant;
   }
 });
+
+test('toDate : une date seule est locale, pas UTC', () => {
+  // new Date('2026-09-17') vaut minuit UTC : à l’ouest de Greenwich, c’est le 16 au soir.
+  assert.equal(formatDate('2026-09-17'), '17 sept. 2026');
+  assert.equal(relativeDay('2026-09-17', new Date(2026, 8, 17, 23, 30)), 'Aujourd’hui');
+  assert.equal(relativeDay('2026-09-18', new Date(2026, 8, 17, 0, 10)), 'Demain');
+  // Les horodatages ISO complets restent interprétés comme avant.
+  assert.equal(formatTime('2026-09-17T09:05:00.000Z'), formatTime(new Date('2026-09-17T09:05:00.000Z')));
+});

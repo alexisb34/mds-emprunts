@@ -54,7 +54,11 @@ function notify() {
   for (const fn of listeners) fn();
 }
 
+let depth = 0;      // profondeur de transaction
+let pending = false; // des écritures attendent d’être persistées
+
 function commit() {
+  if (depth > 0) { pending = true; return; }
   persist();
   notify();
 }
@@ -130,17 +134,24 @@ export const store = {
     const bytes = (localStorage.getItem(STORAGE_KEY) || '').length * 2; // UTF-16
     return { bytes, budget: BUDGET_BYTES, percent: Math.min(100, Math.round((bytes / BUDGET_BYTES) * 100)) };
   },
-  // Exécute fn() ; si elle lève, restaure la base persistée telle qu’avant (les écritures
-  // intermédiaires sont annulées, les abonnés re-notifiés). Utilisé par les actions multi-écritures.
+  // Regroupe plusieurs écritures : une seule persistance et une seule notification à la fin.
+  // Si `fn` lève, l’état d’avant est restauré et personne n’est notifié.
   transaction(fn) {
     assertInit();
     const snapshot = localStorage.getItem(STORAGE_KEY);
+    depth += 1;
     try {
-      return fn();
+      const out = fn();
+      depth -= 1;
+      if (depth === 0 && pending) { pending = false; persist(); notify(); }
+      return out;
     } catch (err) {
-      if (snapshot === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, snapshot);
-      load();
-      notify();
+      depth -= 1;
+      if (depth === 0) {
+        pending = false;
+        if (snapshot === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, snapshot);
+        load();
+      }
       throw err;
     }
   },

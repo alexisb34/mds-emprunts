@@ -124,19 +124,63 @@ test('un seedFn qui renvoie des objets mutables est gelé après init', () => {
   assert.ok(Object.isFrozen(store.users.get('u1')));
 });
 
-test('transaction : si fn() lève, les écritures intermédiaires sont annulées et les abonnés notifiés', () => {
+test('transaction : si fn() lève, les écritures intermédiaires sont annulées sans notification', () => {
   let n = 0;
-  store.subscribe(() => n++);
+  const off = store.subscribe(() => n++);
   assert.throws(() => store.transaction(() => {
     store.users.create({ nom: 'A' });
     throw new Error('boom');
   }), /boom/);
+  off();
   assert.equal(store.users.list().length, 0);
-  assert.ok(n >= 1);
+  assert.equal(n, 0, 'aucun abonné n’a vu l’état intermédiaire');
 });
 
 test('transaction : si fn() réussit, renvoie sa valeur et conserve les écritures', () => {
   const u = store.transaction(() => store.users.create({ nom: 'A' }));
   assert.equal(u.nom, 'A');
   assert.equal(store.users.list().length, 1);
+});
+
+test('transaction : une seule persistance et une seule notification', () => {
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  const out = store.transaction(() => {
+    store.users.create({ nom: 'A' });
+    store.users.create({ nom: 'B' });
+    store.settings.update({ marqueur: 1 });
+    return 'ok';
+  });
+  off();
+  assert.equal(out, 'ok');
+  assert.equal(n, 1, 'une seule notification pour trois écritures');
+  assert.equal(store.users.list().length, 2);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, 2, 'persisté');
+});
+
+test('transaction : un échec ne notifie pas et ne laisse rien derrière', () => {
+  const before = store.users.list().length;
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  assert.throws(() => store.transaction(() => {
+    store.users.create({ nom: 'A' });
+    throw new Error('boum');
+  }), /boum/);
+  off();
+  assert.equal(n, 0, 'aucune notification pour une transaction annulée');
+  assert.equal(store.users.list().length, before);
+  assert.equal(JSON.parse(localStorage.getItem(STORAGE_KEY)).users.length, before);
+});
+
+test('transaction imbriquée : la notification part à la sortie de la plus externe', () => {
+  let n = 0;
+  const off = store.subscribe(() => n++);
+  store.transaction(() => {
+    store.users.create({ nom: 'A' });
+    store.transaction(() => { store.users.create({ nom: 'B' }); });
+    assert.equal(n, 0, 'rien pendant la transaction');
+  });
+  off();
+  assert.equal(n, 1);
+  assert.equal(store.users.list().length, 2);
 });
