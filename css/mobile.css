@@ -25,6 +25,7 @@
 .m-item__photos { display: flex; gap: var(--space-sm); }
 .m-shell .tabs { overflow-x: auto; scrollbar-width: none; }
 .m-shell .tab { white-space: nowrap; padding: var(--space-sm) var(--space-sm); font-size: 13px; }
+.m-item__cta { font-size: 12px; font-weight: 700; color: var(--text-brand); white-space: nowrap; }
 .m-actions { display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-md); }
 .m-dl { display: grid; grid-template-columns: auto 1fr; gap: var(--space-xs) var(--space-lg); margin-top: var(--space-lg); font-size: 14px; line-height: 21px; }
 .m-dl dt { color: var(--text-secondary); }

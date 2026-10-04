@@ -1,7 +1,7 @@
 import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scanStepHtml, photoStepHtml, confirmStepHtml, checklistStepHtml, resultHtml, errorHtml, friendlyError } from '../js/mobile/views/scan.js';
+import { scanStepHtml, returnListHtml, photoStepHtml, confirmStepHtml, checklistStepHtml, resultHtml, errorHtml, friendlyError } from '../js/mobile/views/scan.js';
 
 const item = { id: 'item_001', code: 'MDS-0001', nom: 'Multiprise #1', reference: 'multiprise', circuit: 'self' };
 const PHOTO = 'data:image/jpeg;base64,AAAA';
@@ -68,4 +68,31 @@ test('friendlyError : quota de stockage en français, autres erreurs inchangées
   assert.match(friendlyError({ code: 22 }), /Stockage de démonstration plein/);
   assert.equal(friendlyError(new Error('boum')), 'boum');
   assert.equal(friendlyError(null), 'Une erreur est survenue.');
+});
+
+test('returnListHtml : un bouton par emprunt en cours, badge de retard, rien si aucun', () => {
+  const loans = [
+    { loan: { id: 'l1', finPrevue: new Date(2026, 8, 17, 17, 0).toISOString() }, item: { code: 'MDS-0001', nom: 'Multiprise #1' }, late: false },
+    { loan: { id: 'l2', finPrevue: new Date(2026, 8, 16, 17, 0).toISOString() }, item: { code: 'MDS-0007', nom: 'Kit tableau <b>' }, late: true },
+  ];
+  const html = returnListHtml(loans);
+  assert.match(html, /Rendre un objet/);
+  assert.equal((html.match(/data-return="/g) || []).length, 2);
+  assert.match(html, /data-return="MDS-0007"/);
+  assert.match(html, /Kit tableau &lt;b&gt;/);
+  assert.match(html, /Retour attendu avant 17h00/);
+  assert.equal((html.match(/badge--late/g) || []).length, 1);
+  assert.equal(returnListHtml([]), '');
+});
+
+test('scanStepHtml : la liste de retour est en tête et la simulation disparaît sans objet disponible', () => {
+  const returnable = [{ loan: { id: 'l1', finPrevue: new Date(2026, 8, 17, 17, 0).toISOString() }, item: { code: 'MDS-0001', nom: 'Multiprise #1' }, late: false }];
+  const html = scanStepHtml({ codes: [{ code: 'MDS-0002', nom: 'Multiprise #2' }], camera: true, returnable });
+  assert.ok(html.indexOf('data-return="MDS-0001"') < html.indexOf('id="reader"'), 'le retour direct passe avant le scan');
+  assert.match(html, /Emprunter : scannez l’étiquette/);
+  const vide = scanStepHtml({ codes: [], camera: true, returnable: [] });
+  assert.match(vide, /Aucun objet disponible à emprunter/);
+  assert.doesNotMatch(vide, /data-action="simulate"/);
+  assert.doesNotMatch(vide, /data-return=/);
+  assert.match(vide, /data-action="manual"/);
 });

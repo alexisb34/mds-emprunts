@@ -5,7 +5,7 @@ import { auth } from '../../auth.js';
 import { now, selfReturnDeadline, withDefaults, REASON_LABELS } from '../../rules.js';
 import { CIRCUITS, ITEM_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, relativeDay, toast } from '../../ui.js';
-import { resolveScan, borrowSelf, returnSelf } from '../../actions/loans.js';
+import { resolveScan, borrowSelf, returnSelf, userLoans } from '../../actions/loans.js';
 import { hasCamera, startScanner, stopScanner, startCamera, stopCamera, capturePhoto, placeholderPhoto, normalizeScanText } from '../../scanner.js';
 import { STEPS, initialState, onScanResolved, onPhoto, setChecklistLine, onDone, onError } from '../scanFlow.js';
 import { setHeader } from '../layout.js';
@@ -19,18 +19,38 @@ export function friendlyError(e) {
   return quota ? 'Stockage de démonstration plein : demandez à la pédago de réinitialiser les données.' : (e && e.message) || 'Une erreur est survenue.';
 }
 
-export function scanStepHtml({ codes, camera }) {
+// Les emprunts en cours de l’utilisateur : un bouton par objet, qui mène directement au retour
+// (photo puis checklist) sans passer par le scan ni la liste de simulation.
+export function returnListHtml(loans) {
+  if (!loans.length) return '';
+  return `
+    <div class="card">
+      <div class="card__header"><h3 class="card__title">Rendre un objet</h3><span class="body-sm text-secondary">${loans.length}</span></div>
+      <div class="m-list">${loans.map(({ loan, item, late }) => `
+        <button type="button" class="m-item m-item--button" data-return="${escapeHtml(item.code)}">
+          <span class="m-item__body"><strong>${escapeHtml(item.nom)}</strong><span class="body-tiny text-secondary">Retour attendu avant ${escapeHtml(formatTime(loan.finPrevue))}</span></span>
+          ${late ? badge('loan', 'en_retard') : ''}
+          <span class="m-item__cta">Rendre →</span>
+        </button>`).join('')}</div>
+    </div>`;
+}
+
+export function scanStepHtml({ codes, camera, returnable = [] }) {
   const reader = camera
     ? '<div id="reader" class="reader"><p class="reader__hint">Visez l’étiquette QR de l’objet</p></div>'
     : '<div class="reader"><p class="body-sm">Caméra indisponible — utilisez la simulation ci-dessous.</p></div>';
+  const simulation = codes.length
+    ? `<label class="field"><span class="field__label">Objet disponible</span><select class="select" name="code-sim">${codes.map((c) => `<option value="${escapeHtml(c.code)}">${escapeHtml(c.code)} — ${escapeHtml(c.nom)}</option>`).join('')}</select></label>
+        <button type="button" class="btn btn--secondary btn--block" data-action="simulate">Simuler le scan</button>`
+    : '<p class="body-sm text-secondary">Aucun objet disponible à emprunter pour le moment.</p>';
   return `
-    ${stepTitle(1, 'Scannez l’étiquette de l’objet')}
+    ${returnListHtml(returnable)}
+    ${stepTitle(1, 'Emprunter : scannez l’étiquette de l’objet')}
     ${reader}
     <div class="card">
       <div class="card__header"><h3 class="card__title">Simuler un scan</h3></div>
       <div class="stack">
-        <label class="field"><span class="field__label">Objet</span><select class="select" name="code-sim">${codes.map((c) => `<option value="${escapeHtml(c.code)}">${escapeHtml(c.code)} — ${escapeHtml(c.nom)}</option>`).join('')}</select></label>
-        <button type="button" class="btn btn--secondary btn--block" data-action="simulate">Simuler le scan</button>
+        ${simulation}
         <label class="field"><span class="field__label">Ou saisir un code</span><input class="input" name="code-manual" placeholder="MDS-0001" autocapitalize="characters"></label>
         <button type="button" class="btn btn--ghost btn--block" data-action="manual">Valider le code</button>
       </div>
@@ -119,7 +139,11 @@ export function scanView(container) {
   let camera = false;
   let alive = true;
 
-  const codes = () => store.items.list((i) => i.etat !== ITEM_STATES.HS).sort((a, b) => a.code.localeCompare(b.code)).map((i) => ({ code: i.code, nom: i.nom }));
+  // La simulation ne propose que ce qui peut réellement être emprunté : un objet déjà emprunté,
+  // réservé, en maintenance ou hors service n’a rien à faire dans cette liste.
+  const codes = () => store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE).sort((a, b) => a.code.localeCompare(b.code)).map((i) => ({ code: i.code, nom: i.nom }));
+  // Objets que l’utilisateur peut rendre en self-service (le matériel de valeur se rend à la pédago).
+  const returnable = () => userLoans(user.id, now()).enCours.filter((x) => x.item && x.item.circuit === CIRCUITS.SELF);
   const set = (next) => { state = next; render(); };
   const on = (selector, fn) => { const el = container.querySelector(selector); if (el) el.addEventListener('click', fn); };
   // stopScanner() n’est pas attendu : le jeton de génération du module neutralise déjà les lectures
@@ -132,6 +156,7 @@ export function scanView(container) {
 
   const bindScan = async () => {
     stopCamera();
+    container.querySelectorAll('[data-return]').forEach((b) => b.addEventListener('click', () => handleCode(b.dataset.return)));
     on('[data-action="simulate"]', () => handleCode(container.querySelector('[name="code-sim"]').value));
     on('[data-action="manual"]', () => handleCode(container.querySelector('[name="code-manual"]').value));
     if (!camera) return;
@@ -199,7 +224,7 @@ export function scanView(container) {
   const render = () => {
     setHeader({ title: 'Scanner', back: '/accueil' });
     switch (state.step) {
-      case STEPS.SCAN: container.innerHTML = scanStepHtml({ codes: codes(), camera }); bindScan(); break;
+      case STEPS.SCAN: container.innerHTML = scanStepHtml({ codes: codes(), camera, returnable: returnable() }); bindScan(); break;
       case STEPS.PHOTO: container.innerHTML = photoStepHtml({ mode: state.mode, item: state.item, camera }); bindPhoto(); break;
       case STEPS.CONFIRM: {
         const deadline = selfReturnDeadline(now(), withDefaults(store.settings.get()).heureRetourSelf);
