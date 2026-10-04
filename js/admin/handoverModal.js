@@ -33,6 +33,17 @@ export function readChecklistForm(root, reference) {
 
 // Modale de remise : la pédago scanne le QR affiché par l’emprunteur, ou saisit son code à 6 caractères.
 export function openHandoverModal({ onDone } = {}) {
+  // Le scanner relit le même QR plusieurs fois par seconde : on n’affiche pas deux fois
+  // la même erreur à moins de 3 secondes d’intervalle.
+  let dernierMessage = '';
+  let dernierAffichage = 0;
+  const signaler = (message) => {
+    const t = Date.now();
+    if (message === dernierMessage && t - dernierAffichage < 3000) return;
+    dernierMessage = message;
+    dernierAffichage = t;
+    toast(message, 'error');
+  };
   const close = openModal({
     title: 'Remettre le matériel',
     onClose: () => { stopScanner(); },
@@ -74,7 +85,7 @@ export function openHandoverModal({ onDone } = {}) {
         close();
         if (onDone) onDone(loan);
       } catch (e) {
-        toast(e.message, 'error');
+        signaler(e.message);
       }
     }).catch(() => { reader.innerHTML = '<p class="body-sm">Caméra indisponible : saisissez le code.</p>'; });
   });

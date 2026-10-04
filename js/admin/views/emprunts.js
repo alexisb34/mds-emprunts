@@ -19,12 +19,20 @@ export const TABS_ADMIN_LOANS = [
 
 const ACTIVE = [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS];
 
+// Tri initial de chaque onglet : les retraits à venir en premier, les pires retards en premier.
+export const DEFAULT_SORT = {
+  enCours: { key: 'debut', dir: 'desc' },
+  reserves: { key: 'debut', dir: 'asc' },
+  retards: { key: 'fin', dir: 'asc' },
+  historique: { key: 'debut', dir: 'desc' },
+};
+
 export function loanRows(tab, date) {
   const items = store.items.list();
   const users = store.users.list();
   const join = (loan) => ({ loan, item: items.find((i) => i.id === loan.itemId) || null, user: users.find((u) => u.id === loan.userId) || null, late: isLate(loan, date) });
   const all = store.loans.list();
-  if (tab === 'reserves') return sortByDateDesc(all.filter((l) => l.statut === LOAN_STATES.RESERVEE), (l) => l.debutPrevu).reverse().map(join);
+  if (tab === 'reserves') return all.filter((l) => l.statut === LOAN_STATES.RESERVEE).sort((a, b) => a.debutPrevu.localeCompare(b.debutPrevu)).map(join);
   if (tab === 'retards') return all.filter((l) => isLate(l, date)).map(join).sort((a, b) => a.loan.finPrevue.localeCompare(b.loan.finPrevue));
   if (tab === 'historique') return sortByDateDesc(all.filter((l) => !ACTIVE.includes(l.statut)), (l) => l.dateRetourReelle || l.dateRetrait || l.debutPrevu).map(join);
   return sortByDateDesc(all.filter((l) => l.statut === LOAN_STATES.EN_COURS && !isLate(l, date)), (l) => l.dateRetrait).map(join);
@@ -61,7 +69,7 @@ export function empruntsHtml({ tab, rows, counts, sort, date }) {
   const columns = [...LOAN_COLUMNS, actionsColumn(tab)];
   return `
     <div class="page-header">
-      <div><h2 class="h6">Emprunts</h2><p class="page-header__meta">${plural(counts.enCours + counts.reserves, 'dossier actif', 'dossiers actifs')} · ${plural(counts.retards, 'retard', 'retards')}</p></div>
+      <div><h2 class="h6">Emprunts</h2><p class="page-header__meta">${plural(counts.enCours + counts.reserves + counts.retards, 'dossier actif', 'dossiers actifs')} · ${plural(counts.retards, 'retard', 'retards')}</p></div>
     </div>
     <div class="card">
       <div class="tabs">${tabs}</div>
@@ -71,7 +79,7 @@ export function empruntsHtml({ tab, rows, counts, sort, date }) {
 
 export function empruntsView(container) {
   let tab = 'enCours';
-  let sort = { key: 'debut', dir: 'desc' };
+  let sort = { ...DEFAULT_SORT.enCours };
 
   const counts = (date) => ({
     enCours: loanRows('enCours', date).length, reserves: loanRows('reserves', date).length,
@@ -124,7 +132,7 @@ export function empruntsView(container) {
     const rows = sortRows(loanRows(tab, date), sort, LOAN_COLUMNS);
     setTopbar({ title: 'Emprunts', subtitle: 'Suivi des prêts et des réservations', action: { label: 'Remettre un matériel', onClick: () => openHandoverModal({}) } });
     container.innerHTML = empruntsHtml({ tab, rows, counts: counts(date), sort, date });
-    container.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; render(); }));
+    container.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; sort = { ...DEFAULT_SORT[tab] }; render(); }));
     bindTable(container, { onSort: (key) => { sort = toggleSort(sort, key); render(); }, onRow: navigate });
     const rowOf = (id) => rows.find((r) => r.loan.id === id);
     container.querySelectorAll('[data-action="receive"]').forEach((b) => b.addEventListener('click', () => askReceive(rowOf(b.dataset.loan))));

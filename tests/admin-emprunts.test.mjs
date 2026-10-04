@@ -3,8 +3,8 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { TABS_ADMIN_LOANS, LOAN_COLUMNS, loanRows, empruntsHtml } from '../js/admin/views/emprunts.js';
-import { checklistFormHtml, readChecklistForm, openHandoverModal } from '../js/admin/handoverModal.js';
+import { TABS_ADMIN_LOANS, LOAN_COLUMNS, DEFAULT_SORT, loanRows, empruntsHtml } from '../js/admin/views/emprunts.js';
+import { checklistFormHtml, readChecklistForm } from '../js/admin/handoverModal.js';
 import { sortRows } from '../js/admin/table.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
@@ -68,6 +68,21 @@ test('checklistFormHtml et readChecklistForm', () => {
   assert.equal(read.commentaire, 'à nettoyer');
 });
 
-test('openHandoverModal est exposée', () => {
-  assert.equal(typeof openHandoverModal, 'function');
+test('DEFAULT_SORT : un tri initial par onglet, les retards par date de retour croissante', () => {
+  assert.deepEqual(Object.keys(DEFAULT_SORT), TABS_ADMIN_LOANS.map((t) => t.key));
+  assert.deepEqual(DEFAULT_SORT.retards, { key: 'fin', dir: 'asc' });
+  assert.deepEqual(DEFAULT_SORT.reserves, { key: 'debut', dir: 'asc' });
+  assert.ok(Object.values(DEFAULT_SORT).every((s) => LOAN_COLUMNS.some((c) => c.key === s.key)), 'chaque clé de tri est une colonne');
+});
+
+test('loanRows : les réservés sont triés par retrait croissant', () => {
+  const rows = loanRows('reserves', NOW);
+  assert.ok(rows.length >= 2);
+  const debuts = rows.map((r) => r.loan.debutPrevu);
+  assert.deepEqual(debuts, [...debuts].sort((a, b) => a.localeCompare(b)));
+});
+
+test('empruntsHtml : les dossiers actifs incluent les retards', () => {
+  const html = empruntsHtml({ tab: 'enCours', rows: [], counts: { enCours: 8, reserves: 2, retards: 2, historique: 0 }, sort: null, date: NOW });
+  assert.match(html, /12 dossiers actifs · 2 retards/);
 });
