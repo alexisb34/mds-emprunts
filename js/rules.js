@@ -26,6 +26,9 @@ export const REASONS = {
   DUREE_TROP_LONGUE: 'duree_trop_longue',
   UTILISATEUR_INACTIF: 'utilisateur_inactif',
   CODE_INCONNU: 'code_inconnu',
+  FENETRE_RETRAIT: 'fenetre_retrait',
+  DEJA_RESERVE: 'deja_reserve',
+  DATE_PASSEE: 'date_passee',
   RENDU_A_LA_PEDAGO: 'rendu_a_la_pedago',
 };
 
@@ -42,6 +45,9 @@ export const REASON_LABELS = {
   duree_trop_longue: 'La durée demandée dépasse le maximum autorisé.',
   utilisateur_inactif: 'Ce compte est désactivé.',
   code_inconnu: 'Code non reconnu : scannez l’étiquette MDS-XXXX collée sur l’objet.',
+  fenetre_retrait: 'Hors de la fenêtre de retrait : le matériel se retire dans l’heure qui suit le début de la réservation.',
+  deja_reserve: 'Vous avez déjà une réservation en cours pour ce matériel.',
+  date_passee: 'La date de début est déjà passée.',
   rendu_a_la_pedago: 'Ce matériel se rend directement à la pédago, qui vérifie son état.',
 };
 
