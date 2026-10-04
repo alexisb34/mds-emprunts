@@ -194,3 +194,18 @@ test('returnSelf : refuse le matériel de valeur (rendu_a_la_pedago), emprunt et
   assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.EN_COURS);
   assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE);
 });
+
+test('borrowSelf sans photo : refus, rien n’est créé', () => {
+  const kit = freeSelf('kit-tableau');
+  const before = store.loans.list().length;
+  assert.throws(() => borrowSelf({ itemCode: kit.code, userId: 'user_010' }), /photo de l’objet est obligatoire/);
+  assert.equal(store.items.get(kit.id).etat, ITEM_STATES.DISPONIBLE);
+  assert.equal(store.loans.list().length, before);
+});
+
+test('returnSelf sans photo : refus, emprunt toujours en cours', () => {
+  const loan = store.loans.get('loan_041');
+  assert.throws(() => returnSelf({ loanId: loan.id, userId: LEA }), /photo de l’objet est obligatoire/);
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.EN_COURS);
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE);
+});

@@ -11,6 +11,11 @@ import { fullName } from '../ui.js';
 
 const ACTIVE = [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS];
 
+// La photo atteste de l’état de l’objet : aucune action d’emprunt ou de retour sans elle (spec §5.1).
+function assertPhoto(photo) {
+  if (typeof photo !== 'string' || !photo.startsWith('data:image/')) throw new Error('Une photo de l’objet est obligatoire.');
+}
+
 function refusal(reason) {
   return Object.assign(new Error(REASON_LABELS[reason] || reason), { reason });
 }
@@ -42,6 +47,7 @@ export function borrowSelf({ itemCode, userId, photo = null }) {
   const date = now();
   const r = resolveScan(itemCode, userId, date);
   if (r.mode !== 'emprunt') throw refusal(r.reason || REASONS.INDISPONIBLE);
+  assertPhoto(photo);
   const { item } = r;
   const user = store.users.get(userId);
   const heure = withDefaults(store.settings.get()).heureRetourSelf;
@@ -66,6 +72,7 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
   if (loan.userId !== userId) throw new Error('Cet emprunt ne vous appartient pas.');
   const item = store.items.get(loan.itemId);
   if (item.circuit !== CIRCUITS.SELF) throw refusal(REASONS.RENDU_A_LA_PEDAGO);
+  assertPhoto(photo);
   const date = now();
   const lines = checklist || buildChecklist(item.reference);
   const problem = hasProblem(lines);
