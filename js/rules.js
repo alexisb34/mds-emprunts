@@ -78,6 +78,16 @@ export function withDefaults(settings) {
   return { ...DEFAULT_SETTINGS, ...(settings || {}) };
 }
 
+// Les horaires viennent des réglages, que la pédago peut modifier : une liste absente,
+// vide ou mal formée retombe sur la valeur par défaut plutôt que de fermer le bureau pour toujours.
+export function openHours(settings) {
+  const brut = (settings && settings.horaires) || null;
+  if (!Array.isArray(brut) || !brut.length) return DEFAULT_SETTINGS.horaires;
+  const plages = brut.filter((r) => r && Number.isFinite(Number(r.debut)) && Number.isFinite(Number(r.fin)) && Number(r.debut) < Number(r.fin))
+    .map((r) => ({ debut: Number(r.debut), fin: Number(r.fin) }));
+  return plages.length ? plages : DEFAULT_SETTINGS.horaires;
+}
+
 const MIN = 60 * 1000;
 const DAY = 24 * 60 * MIN;
 // Une date seule « AAAA-MM-JJ » est interprétée en heure locale, comme dans ui.js.
@@ -99,11 +109,35 @@ export function isWeekday(date) {
 }
 
 export function isOfficeOpen(date, horaires) {
-  const h0 = horaires ?? DEFAULT_SETTINGS.horaires;
+  const h0 = openHours({ horaires });
   const d = toDate(date);
   if (!isWeekday(d)) return false;
   const h = d.getHours() + d.getMinutes() / 60;
   return h0.some((r) => h >= r.debut && h < r.fin);
+}
+
+// Les heures réglées, écrites comme on les lit : « 8h-12h et 13h-17h », « 9h30-12h ».
+function formatHeure(h) {
+  const entier = Math.floor(h);
+  const minutes = Math.round((h - entier) * 60);
+  return minutes ? `${entier}h${String(minutes).padStart(2, '0')}` : `${entier}h`;
+}
+
+export function formatOpenHours(settings) {
+  return openHours(settings).map((r) => `${formatHeure(r.debut)}-${formatHeure(r.fin)}`).join(' et ');
+}
+
+// Le message d’un refus. `hors_ouverture` et `bureau_ferme` citent les horaires RÉGLÉS ;
+// les autres gardent le texte figé de REASON_LABELS.
+export function reasonLabel(reason, settings = null) {
+  if (!settings) return REASON_LABELS[reason] || '';
+  if (reason === REASONS.HORS_OUVERTURE) {
+    return `Le retrait doit tomber pendant les heures d’ouverture du bureau (jours ouvrés, ${formatOpenHours(settings)}).`;
+  }
+  if (reason === REASONS.BUREAU_FERME) {
+    return `Le bureau de la pédagogie est fermé (jours ouvrés, ${formatOpenHours(settings)}) : le self-service reprendra à l’ouverture.`;
+  }
+  return REASON_LABELS[reason] || '';
 }
 
 export function atHour(date, hour, minute = 0) {

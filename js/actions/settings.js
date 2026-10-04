@@ -52,3 +52,50 @@ export function resetDemoData(date, auteurId) {
   logAction({ auteurId, action: ACTIONS.DEMO_RESET, detail: `Données régénérées autour du ${formatDateTime(d)}` });
   return store.settings.get();
 }
+
+// Réglages modifiables par la pédago. L’horloge de démo n’est jamais touchée ici :
+// elle a son propre chemin (`setDemoClock`), pour qu’un enregistrement de formulaire
+// ne la remette pas au temps réel par surprise.
+export function updateSettings(patch, pedagoId) {
+  const actuel = withDefaults(store.settings.get());
+  const suivant = { ...actuel, ...patch };
+  delete suivant.horlogeDemo;
+
+  if (patch.horaires !== undefined) {
+    if (!Array.isArray(patch.horaires) || !patch.horaires.length) throw new Error('Il faut au moins une plage horaire.');
+    for (const r of patch.horaires) {
+      const debut = Number(r?.debut);
+      const fin = Number(r?.fin);
+      if (!Number.isFinite(debut) || !Number.isFinite(fin) || debut >= fin || debut < 0 || fin > 24) {
+        throw new Error('Plage horaire invalide : l’heure de fin doit suivre l’heure de début.');
+      }
+    }
+    suivant.horaires = patch.horaires.map((r) => ({ debut: Number(r.debut), fin: Number(r.fin) }));
+  }
+  if (patch.dureeMaxReservationJours !== undefined) {
+    const jours = Number(patch.dureeMaxReservationJours);
+    if (!Number.isInteger(jours) || jours < 1 || jours > 60) throw new Error('La durée maximale doit être un nombre de jours entre 1 et 60.');
+    suivant.dureeMaxReservationJours = jours;
+  }
+  if (patch.fenetreRetraitMinutes !== undefined) {
+    const minutes = Number(patch.fenetreRetraitMinutes);
+    if (!Number.isInteger(minutes) || minutes < 5 || minutes > 480) throw new Error('La fenêtre de retrait doit être comprise entre 5 et 480 minutes.');
+    suivant.fenetreRetraitMinutes = minutes;
+  }
+  if (patch.salle !== undefined) {
+    const debut = Number(patch.salle?.heureDebut);
+    const fin = Number(patch.salle?.heureFin);
+    if (!Number.isInteger(debut) || !Number.isInteger(fin) || debut < 0 || fin > 24 || debut >= fin) {
+      throw new Error('Horaires de la salle invalides : la fin doit suivre le début.');
+    }
+    suivant.salle = { heureDebut: debut, heureFin: fin };
+  }
+  suivant.bloquerSiRetard = !!suivant.bloquerSiRetard;
+
+  const { horlogeDemo } = store.settings.get();
+  return store.transaction(() => {
+    const enregistre = store.settings.update({ ...suivant, horlogeDemo });
+    logAction({ auteurId: pedagoId, action: ACTIONS.SETTINGS_MODIFIES, detail: 'Règles d’emprunt mises à jour' });
+    return enregistre;
+  });
+}

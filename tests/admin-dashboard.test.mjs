@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeed } from '../js/seed.js';
 import { computeKpis, lateLoans, dueTodayReservations, openReports } from '../js/admin/kpi.js';
-import { dashboardHtml, demoClockHtml } from '../js/admin/views/dashboard.js';
+import { dashboardHtml } from '../js/admin/views/dashboard.js';
+import { demoClockHtml } from '../js/admin/demoClock.js';
 import { officeStatus } from '../js/actions/settings.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);

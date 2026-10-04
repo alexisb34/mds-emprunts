@@ -5,7 +5,7 @@ import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { now } from '../js/rules.js';
 import { ACTIONS } from '../js/log.js';
-import { toDatetimeLocal, fromDatetimeLocal, officeStatus, setDemoClock, resetDemoData } from '../js/actions/settings.js';
+import { toDatetimeLocal, fromDatetimeLocal, officeStatus, setDemoClock, resetDemoData, updateSettings } from '../js/actions/settings.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0); // jeudi 10h
 const PEDAGO = 'user_041';
@@ -78,4 +78,27 @@ test('resetDemoData sans date : temps réel', () => {
   resetDemoData(null, PEDAGO);
   assert.equal(store.settings.get().horlogeDemo, null);
   assert.ok(Math.abs(now() - Date.now()) < 1000);
+});
+
+test('updateSettings : enregistre des horaires valides et journalise', () => {
+  const avant = store.log.list().length;
+  const s = updateSettings({ horaires: [{ debut: 9, fin: 12 }, { debut: 14, fin: 18 }], dureeMaxReservationJours: 7 }, PEDAGO);
+  assert.deepEqual(s.horaires, [{ debut: 9, fin: 12 }, { debut: 14, fin: 18 }]);
+  assert.equal(s.dureeMaxReservationJours, 7);
+  assert.equal(store.log.list().length, avant + 1);
+  assert.equal(store.log.list().at(-1).action, ACTIONS.SETTINGS_MODIFIES);
+});
+
+test('updateSettings : refuse une plage inversée, une liste vide et une durée nulle', () => {
+  assert.throws(() => updateSettings({ horaires: [{ debut: 12, fin: 9 }] }, PEDAGO), /plage horaire/i);
+  assert.throws(() => updateSettings({ horaires: [] }, PEDAGO), /au moins une plage/i);
+  assert.throws(() => updateSettings({ dureeMaxReservationJours: 0 }, PEDAGO), /durée/i);
+  assert.throws(() => updateSettings({ fenetreRetraitMinutes: 0 }, PEDAGO), /fenêtre/i);
+  assert.throws(() => updateSettings({ salle: { heureDebut: 17, heureFin: 8 } }, PEDAGO), /salle/i);
+});
+
+test('updateSettings : ne touche pas à l’horloge de démo', () => {
+  const horloge = store.settings.get().horlogeDemo;
+  updateSettings({ dureeMaxReservationJours: 4 }, PEDAGO);
+  assert.equal(store.settings.get().horlogeDemo, horloge);
 });

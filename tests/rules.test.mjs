@@ -8,6 +8,7 @@ import {
   bookingStart, bookingEnd, isBookingActive, isExitMissing,
   slotsAreContiguous, slotsInRoomHours, slotsConflict,
   hasActiveLoanOfReference, userHasLateLoan, canBorrowSelf, canReserveValeur, withDefaults, sortByDateDesc,
+  openHours, reasonLabel, formatOpenHours,
 } from '../js/rules.js';
 
 const jeudi10h = new Date(2026, 8, 17, 10, 0);
@@ -212,4 +213,30 @@ test('dates seules « AAAA-MM-JJ » lues en heure locale, quel que soit le fusea
   assert.equal(ymd('2026-09-17'), '2026-09-17');
   assert.equal(isWeekday('2026-09-19'), false, 'samedi');
   assert.equal(isWeekday('2026-09-18'), true, 'vendredi');
+});
+
+test('openHours : tolère une liste nulle, vide ou mal formée', () => {
+  assert.deepEqual(openHours(null), DEFAULT_SETTINGS.horaires);
+  assert.deepEqual(openHours({ horaires: [] }), DEFAULT_SETTINGS.horaires);
+  assert.deepEqual(openHours({ horaires: null }), DEFAULT_SETTINGS.horaires);
+  assert.deepEqual(openHours({ horaires: [{ debut: 9, fin: 'midi' }] }), DEFAULT_SETTINGS.horaires);
+  assert.deepEqual(openHours({ horaires: [{ debut: 9.5, fin: 12 }] }), [{ debut: 9.5, fin: 12 }]);
+});
+
+test('isOfficeOpen : horaires fractionnaires et réglages cassés', () => {
+  const S = { horaires: [{ debut: 9.5, fin: 12 }] };
+  assert.equal(isOfficeOpen(new Date(2026, 8, 17, 9, 20), S.horaires), false);
+  assert.equal(isOfficeOpen(new Date(2026, 8, 17, 9, 40), S.horaires), true);
+  // Une liste vide retombe sur les horaires par défaut au lieu de fermer le bureau pour toujours.
+  assert.equal(isOfficeOpen(new Date(2026, 8, 17, 10, 0), []), true);
+});
+
+test('reasonLabel : le message hors ouverture reprend les horaires réglés', () => {
+  const S = { horaires: [{ debut: 9, fin: 12 }, { debut: 14, fin: 18 }] };
+  const texte = reasonLabel(REASONS.HORS_OUVERTURE, S);
+  assert.match(texte, /9h-12h/);
+  assert.match(texte, /14h-18h/);
+  assert.doesNotMatch(texte, /8h-12h/);
+  // Sans réglages, le libellé statique reste celui de REASON_LABELS.
+  assert.equal(reasonLabel(REASONS.BUREAU_FERME), REASON_LABELS[REASONS.BUREAU_FERME]);
 });

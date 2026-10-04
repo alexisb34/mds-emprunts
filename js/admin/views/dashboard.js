@@ -1,23 +1,14 @@
 // js/admin/views/dashboard.js — tableau de bord : KPI, retards, remises du jour, signalements, journal.
 import { store } from '../../store.js';
-import { now, isWeekday } from '../../rules.js';
+import { now } from '../../rules.js';
 import { recentLog, ACTION_LABELS } from '../../log.js';
 import { navigate } from '../../router.js';
-import { auth } from '../../auth.js';
-import { escapeHtml, badge, avatar, formatDate, formatTime, formatDateTime, relativeDay, formatSlots, fullName, toast, openModal } from '../../ui.js';
-import { setDemoClock, resetDemoData, toDatetimeLocal, fromDatetimeLocal, officeStatus } from '../../actions/settings.js';
+import { escapeHtml, badge, avatar, formatDate, formatTime, relativeDay, formatSlots, fullName } from '../../ui.js';
+import { officeStatus } from '../../actions/settings.js';
 import { setTopbar } from '../layout.js';
+import { demoClockHtml, bindDemoClock } from '../demoClock.js';
 import { openHandoverModal } from '../handoverModal.js';
 import { computeKpis, lateLoans, dueTodayReservations, openReports, exitMissingRows } from '../kpi.js';
-
-// Prochain jour ouvré à 9h (aujourd’hui si c’est un jour ouvré avant 9h).
-function nextOpenDay(date) {
-  const d = new Date(date);
-  d.setHours(9, 0, 0, 0);
-  if (d <= date) d.setDate(d.getDate() + 1);
-  while (!isWeekday(d)) d.setDate(d.getDate() + 1);
-  return d;
-}
 
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 
@@ -75,28 +66,6 @@ function activityList(activity, users, date) {
     </div>`).join('')}</div>`;
 }
 
-// Horloge de démonstration : décale le « maintenant » de toute l’application (les deux interfaces
-// partagent le même store), pour montrer un retard, une expiration ou un jour ouvré.
-export function demoClockHtml({ date, horlogeDemo, status }) {
-  return `
-    <div class="card demo-clock">
-      <div class="card__header">
-        <h2 class="card__title">Horloge de démonstration</h2>
-        ${horlogeDemo ? badge('derived', 'horloge_demo') : badge('derived', 'temps_reel')}
-      </div>
-      <p class="body-sm text-secondary">Maintenant : <strong>${escapeHtml(formatDateTime(date))}</strong></p>
-      <div class="alert alert--${status.open ? 'info' : 'warning'}">${escapeHtml(status.text)}</div>
-      <div class="demo-clock__row">
-        <label class="field"><span class="field__label">Date et heure simulées</span><input class="input" type="datetime-local" name="horloge" value="${escapeHtml(toDatetimeLocal(date))}"></label>
-        <button type="button" class="btn btn--primary" data-action="set-clock">Appliquer</button>
-        <button type="button" class="btn btn--ghost" data-action="next-open" title="Prochain jour ouvré à 9h">Jour ouvré 9h</button>
-        <button type="button" class="btn btn--ghost" data-action="real-clock"${horlogeDemo ? '' : ' disabled'}>Temps réel</button>
-        <button type="button" class="btn btn--secondary" data-action="reset-demo" title="Recharge l’inventaire et les emprunts autour de la date ci-dessus">Régénérer les données</button>
-      </div>
-      <p class="body-tiny text-secondary">Les emprunts du jeu de démonstration sont calés sur la date de génération : après un grand saut dans le temps, régénérez les données pour retrouver un état cohérent.</p>
-    </div>`;
-}
-
 export function dashboardHtml({ kpis, late, due, reports, activity, users, date, horlogeDemo, status, exitMissing = [] }) {
   return `
     ${demoClockHtml({ date, horlogeDemo, status })}
@@ -136,40 +105,7 @@ export function dashboardView(container) {
     });
     container.querySelectorAll('[data-href]').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.href)));
     container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); openHandoverModal({}); }));
-    const apply = (value) => {
-      try {
-        setDemoClock(value, auth.currentUserId());
-        toast(value ? 'Horloge de démo appliquée' : 'Retour au temps réel', 'success');
-      } catch (e) {
-        toast(e.message, 'error');
-      }
-    };
-    container.querySelector('[data-action="set-clock"]').addEventListener('click', () => {
-      const value = fromDatetimeLocal(container.querySelector('[name="horloge"]').value);
-      if (!value) { toast('Date invalide.', 'error'); return; }
-      apply(value);
-    });
-    container.querySelector('[data-action="next-open"]').addEventListener('click', () => apply(nextOpenDay(date)));
-    container.querySelector('[data-action="real-clock"]').addEventListener('click', () => apply(null));
-    container.querySelector('[data-action="reset-demo"]').addEventListener('click', () => {
-      const value = fromDatetimeLocal(container.querySelector('[name="horloge"]').value);
-      openModal({
-        title: 'Régénérer les données de démonstration',
-        body: `<p class="body-sm">L’inventaire, les emprunts, les réservations et le journal seront remplacés par un jeu neuf calé sur le ${escapeHtml(formatDateTime(value || date))}. Les photos prises pendant la démonstration seront perdues.</p>`,
-        actions: [
-          { label: 'Annuler', variant: 'ghost' },
-          { label: 'Régénérer', variant: 'danger', onClick: () => {
-            try {
-              resetDemoData(value, auth.currentUserId());
-              toast('Données de démonstration régénérées', 'success');
-            } catch (e) {
-              toast(e.message, 'error');
-              return false;
-            }
-          } },
-        ],
-      });
-    });
+    bindDemoClock(container, { date });
   };
   render();
   return store.subscribe(render);

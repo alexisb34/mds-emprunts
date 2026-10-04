@@ -10,7 +10,6 @@ import { sweepExpirations } from '../actions/loans.js';
 import { sweepBookings } from '../actions/bookings.js';
 import { mountSidebar } from './layout.js';
 import { loginView } from './views/login.js';
-import { aVenirView } from './views/aVenir.js';
 // Les tâches suivantes ajoutent leurs imports ici :
 import { dashboardView } from './views/dashboard.js';
 import { materielView } from './views/materiel.js';
@@ -20,6 +19,7 @@ import { utilisateurFicheView } from './views/utilisateurFiche.js';
 import { empruntsView } from './views/emprunts.js';
 import { salleView } from './views/salle.js';
 import { maintenanceView } from './views/maintenance.js';
+import { parametresView } from './views/parametres.js';
 
 store.init(buildSeed);
 
@@ -63,7 +63,7 @@ const routes = [
   { path: '/maintenance', view: guard(maintenanceView) },
   { path: '/utilisateurs', view: guard(utilisateursView) },
   { path: '/utilisateurs/:id', view: guard(utilisateurFicheView) },
-  { path: '/parametres', view: guard(aVenirView('Paramètres', 5)) },
+  { path: '/parametres', view: guard(parametresView) },
 ];
 
 const router = createRouter({
