@@ -4,13 +4,12 @@ import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { ACTIONS } from '../js/log.js';
-import { ITEM_STATES, MAINT_STATES, MAINT_TYPES } from '../js/models.js';
+import { ITEM_STATES, LOAN_STATES, MAINT_STATES, MAINT_TYPES } from '../js/models.js';
 import {
   openEvents, reportIssue, createIntervention, startIntervention, closeEvent,
   maintenanceRows, immobilises,
 } from '../js/actions/maintenance.js';
-import { receiveLoan } from '../js/actions/loans.js';
-import { LOAN_STATES } from '../js/models.js';
+import { receiveLoan, returnSelf } from '../js/actions/loans.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const PEDAGO = 'user_041';
@@ -70,6 +69,10 @@ test('createIntervention : une externe exige un prestataire, un coût négatif e
   assert.throws(() => createIntervention({
     itemId: item.id, type: MAINT_TYPES.INTERNE, description: 'Révision', cout: -5, pedagoId: PEDAGO,
   }), /coût/i);
+  assert.throws(() => createIntervention({
+    itemId: item.id, type: MAINT_TYPES.INTERNE, description: 'Révision', cout: '12o', pedagoId: PEDAGO,
+  }), /coût/i);
+  assert.equal(openEvents(item.id).length, 0, 'aucune intervention créée par les refus');
 });
 
 test('startIntervention : ouvert → en cours, puis refus de recommencer', () => {
@@ -148,7 +151,7 @@ test('immobilises : matériel en maintenance ou hors service, avec ses événeme
   const rows = immobilises();
   const ligne = rows.find((r) => r.item.id === item.id);
   assert.ok(ligne, 'l’objet immobilisé est listé');
-  assert.equal(ligne.ouverts.length, 1);
+  assert.equal(ligne.aTraiter.length, 1);
   assert.ok(rows.every((r) => r.item.etat === ITEM_STATES.MAINTENANCE || r.item.etat === ITEM_STATES.HS));
 });
 
@@ -167,4 +170,48 @@ test('un retour sans signalement ouvert et sans problème remet bien l’objet d
   const loan = store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS)[0];
   receiveLoan({ loanId: loan.id, pedagoId: PEDAGO });
   assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.DISPONIBLE);
+});
+
+test('closeEvent : hors service refusé tant que l’objet est dehors, rien n’est écrit', () => {
+  const loan = store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS)[0];
+  const ev = reportIssue({ itemId: loan.itemId, auteurId: PEDAGO, description: 'Signalé comme irréparable' });
+  const logs = store.log.list().length;
+  assert.throws(() => closeEvent(ev.id, PEDAGO, { remettreEnService: false }), /encore dehors/i);
+  assert.equal(store.maintenance.get(ev.id).statut, MAINT_STATES.OUVERT, 'l’événement reste ouvert');
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE);
+  assert.equal(store.log.list().length, logs);
+});
+
+test('closeEvent : sans choix explicite, l’état de l’objet n’est pas touché', () => {
+  const item = itemDispo();
+  const ev = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Test' });
+  store.items.update(item.id, { etat: ITEM_STATES.HS });
+  closeEvent(ev.id, PEDAGO);
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.HS, 'un objet hors service n’est pas ressuscité par défaut');
+});
+
+test('maintenanceRows : horloge figée, le dernier événement créé passe en premier', () => {
+  const item = itemDispo();
+  const premier = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Premier' });
+  const second = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Second' });
+  assert.equal(premier.date, second.date, 'même instant sous l’horloge de démo');
+  const rows = maintenanceRows();
+  assert.equal(rows[0].event.id, second.id);
+  assert.equal(rows[1].event.id, premier.id);
+});
+
+test('reportIssue : un identifiant d’objet vide vaut « sans objet »', () => {
+  const ev = reportIssue({ itemId: '', auteurId: PEDAGO, description: 'Chaises renversées', bookingId: 'book_0001' });
+  assert.equal(ev.itemId, null);
+  assert.throws(() => reportIssue({ itemId: 'item_inconnu', auteurId: PEDAGO, description: 'x' }), /introuvable/i);
+});
+
+test('returnSelf : un objet signalé pendant son emprunt part en maintenance, checklist propre', () => {
+  const loan = store.loans.get('loan_041');
+  reportIssue({ itemId: loan.itemId, auteurId: PEDAGO, description: 'Signalé par un tiers pendant l’emprunt' });
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE);
+  const r = returnSelf({ loanId: loan.id, userId: loan.userId, photo: 'data:image/jpeg;base64,AAAA' });
+  assert.equal(r.maintenance, null, 'checklist propre : pas de nouveau signalement');
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.MAINTENANCE);
+  assert.equal(openEvents(loan.itemId).length, 1);
 });

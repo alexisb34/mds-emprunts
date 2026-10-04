@@ -84,8 +84,8 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
     // que s’il est encore « emprunté ».
     // Un signalement déposé pendant l’emprunt immobilise l’objet à son retour même si la
     // checklist est propre : sinon l’événement resterait ouvert sur un objet remis au catalogue.
-    const aSignalementOuvert = openEvents(item.id).length > 0;
-    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, (problem || aSignalementOuvert) ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
+    const aEvenementOuvert = openEvents(item.id).length > 0;
+    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, (problem || aEvenementOuvert) ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
     logAction({ auteurId: userId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId, detail: `${item.nom} rendu${problem ? ' avec un problème' : ''}` });
     if (!problem) return { loan: updated, maintenance: null };
     const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
@@ -203,8 +203,8 @@ export function receiveLoan({ loanId, pedagoId, checklist = null, commentaire = 
     });
     // Un signalement déposé pendant l’emprunt immobilise l’objet à son retour même si la
     // checklist est propre : sinon l’événement resterait ouvert sur un objet remis au catalogue.
-    const aSignalementOuvert = openEvents(item.id).length > 0;
-    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, (problem || aSignalementOuvert) ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
+    const aEvenementOuvert = openEvents(item.id).length > 0;
+    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, (problem || aEvenementOuvert) ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
     logAction({ auteurId: pedagoId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId: loan.userId, detail: `${item.nom} réceptionné${problem ? ' avec un problème' : ''}` });
     if (!problem) return { loan: updated, maintenance: null };
     const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
