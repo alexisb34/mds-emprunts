@@ -82,10 +82,11 @@ export function withDefaults(settings) {
 // vide ou mal formée retombe sur la valeur par défaut plutôt que de fermer le bureau pour toujours.
 export function openHours(settings) {
   const brut = (settings && settings.horaires) || null;
-  if (!Array.isArray(brut) || !brut.length) return DEFAULT_SETTINGS.horaires;
+  const parDefaut = () => DEFAULT_SETTINGS.horaires.map((r) => ({ ...r }));
+  if (!Array.isArray(brut) || !brut.length) return parDefaut();
   const plages = brut.filter((r) => r && Number.isFinite(Number(r.debut)) && Number.isFinite(Number(r.fin)) && Number(r.debut) < Number(r.fin))
     .map((r) => ({ debut: Number(r.debut), fin: Number(r.fin) }));
-  return plages.length ? plages : DEFAULT_SETTINGS.horaires;
+  return plages.length ? plages : parDefaut();
 }
 
 const MIN = 60 * 1000;
@@ -123,11 +124,21 @@ function formatHeure(h) {
   return minutes ? `${entier}h${String(minutes).padStart(2, '0')}` : `${entier}h`;
 }
 
+// Les heures de la salle réglées ; une valeur absente ou mal formée retombe sur la valeur par défaut.
+function openRoomHours(settings) {
+  const salle = (settings && settings.salle) || {};
+  const heureDebut = Number(salle.heureDebut);
+  const heureFin = Number(salle.heureFin);
+  return Number.isFinite(heureDebut) && Number.isFinite(heureFin) && heureDebut < heureFin
+    ? { heureDebut, heureFin }
+    : { ...DEFAULT_SETTINGS.salle };
+}
+
 export function formatOpenHours(settings) {
   return openHours(settings).map((r) => `${formatHeure(r.debut)}-${formatHeure(r.fin)}`).join(' et ');
 }
 
-// Le message d’un refus. `hors_ouverture` et `bureau_ferme` citent les horaires RÉGLÉS ;
+// Le message d’un refus. `hors_ouverture`, `bureau_ferme` et `salle_fermee` citent les horaires RÉGLÉS ;
 // les autres gardent le texte figé de REASON_LABELS.
 export function reasonLabel(reason, settings = null) {
   if (!settings) return REASON_LABELS[reason] || '';
@@ -136,6 +147,10 @@ export function reasonLabel(reason, settings = null) {
   }
   if (reason === REASONS.BUREAU_FERME) {
     return `Le bureau de la pédagogie est fermé (jours ouvrés, ${formatOpenHours(settings)}) : le self-service reprendra à l’ouverture.`;
+  }
+  if (reason === REASONS.SALLE_FERMEE) {
+    const { heureDebut, heureFin } = openRoomHours(settings);
+    return `La salle photo est ouverte du lundi au vendredi, de ${formatHeure(heureDebut)} à ${formatHeure(heureFin)}.`;
   }
   return REASON_LABELS[reason] || '';
 }

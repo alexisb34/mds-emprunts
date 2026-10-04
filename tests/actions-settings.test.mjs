@@ -31,7 +31,7 @@ test('officeStatus : ouvert, pause déjeuner, week-end', () => {
   assert.match(officeStatus(NOW, s).text, /Bureau ouvert/);
   const pause = officeStatus(new Date(2026, 8, 17, 12, 30), s);
   assert.equal(pause.open, false);
-  assert.match(pause.text, /hors des heures d’ouverture/);
+  assert.match(pause.text, /Bureau fermé : ouvert les jours ouvrés de 8h-12h et 13h-17h\./);
   const samedi = officeStatus(new Date(2026, 8, 19, 10, 0), s);
   assert.equal(samedi.open, false);
   assert.match(samedi.text, /week-end/);
@@ -108,6 +108,7 @@ test('officeStatus : le texte « fermé » cite les horaires réglés, pas des h
   const ferme = officeStatus(new Date(2026, 8, 17, 13, 0), S); // jeudi, entre les deux plages
   assert.equal(ferme.open, false);
   assert.match(ferme.text, /9h-12h et 14h-18h/);
+  assert.doesNotMatch(ferme.text, /\(.*\(/, 'pas de parenthèses imbriquées');
   assert.doesNotMatch(ferme.text, /8h-12h/);
   // Le week-end ne mentionne pas d’horaires : la raison est le jour, pas l’heure.
   const weekend = officeStatus(new Date(2026, 8, 19, 10, 0), S);

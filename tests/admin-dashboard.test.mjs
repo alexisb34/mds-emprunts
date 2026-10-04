@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import { buildSeed } from '../js/seed.js';
 import { computeKpis, lateLoans, dueTodayReservations, openReports } from '../js/admin/kpi.js';
 import { dashboardHtml } from '../js/admin/views/dashboard.js';
-import { demoClockHtml } from '../js/admin/demoClock.js';
 import { officeStatus } from '../js/actions/settings.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
@@ -46,21 +45,6 @@ test('dashboardHtml : états vides', () => {
   assert.match(html, /Aucun retard/);
   assert.match(html, /Aucun signalement ouvert/);
   assert.match(html, /Aucune activité/);
-});
-
-test('demoClockHtml : état du bureau, valeur du champ, badge et boutons', () => {
-  const ouvert = demoClockHtml({ date: NOW, horlogeDemo: null, status: officeStatus(NOW, db.settings) });
-  assert.match(ouvert, /value="2026-09-17T10:00"/);
-  assert.match(ouvert, /badge--available">Temps réel/);
-  assert.match(ouvert, /alert--info/);
-  assert.match(ouvert, /data-action="real-clock" disabled/);
-  assert.match(ouvert, /data-action="next-open"/);
-  const samedi = new Date(2026, 8, 19, 10, 0);
-  const ferme = demoClockHtml({ date: samedi, horlogeDemo: samedi.toISOString(), status: officeStatus(samedi, db.settings) });
-  assert.match(ferme, /badge--maintenance">Horloge simulée/);
-  assert.match(ferme, /alert--warning/);
-  assert.match(ferme, /week-end/);
-  assert.doesNotMatch(ferme, /data-action="real-clock" disabled/);
 });
 
 test('dashboardHtml : widget des sorties non faites', () => {

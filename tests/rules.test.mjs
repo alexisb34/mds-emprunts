@@ -240,3 +240,25 @@ test('reasonLabel : le message hors ouverture reprend les horaires réglés', ()
   // Sans réglages, le libellé statique reste celui de REASON_LABELS.
   assert.equal(reasonLabel(REASONS.BUREAU_FERME), REASON_LABELS[REASONS.BUREAU_FERME]);
 });
+
+test('formatOpenHours : heures entières et fractionnaires', () => {
+  assert.equal(formatOpenHours({ horaires: [{ debut: 9.5, fin: 12 }] }), '9h30-12h');
+  assert.equal(formatOpenHours(null), '8h-12h et 13h-17h');
+});
+
+test('openHours : le repli est une copie, pas les horaires par défaut eux-mêmes', () => {
+  const repli = openHours({ horaires: [] });
+  assert.notEqual(repli, DEFAULT_SETTINGS.horaires);
+  assert.notEqual(repli[0], DEFAULT_SETTINGS.horaires[0]);
+  repli[0].debut = 3;
+  assert.equal(DEFAULT_SETTINGS.horaires[0].debut, 8, 'modifier le résultat ne corrompt pas les défauts');
+});
+
+test('reasonLabel : salle_fermee reprend les heures de la salle réglées', () => {
+  const texte = reasonLabel(REASONS.SALLE_FERMEE, { salle: { heureDebut: 9, heureFin: 18 } });
+  assert.match(texte, /de 9h à 18h/);
+  assert.doesNotMatch(texte, /8h à 17h/);
+  // Réglage absent ou cassé : retour aux heures par défaut ; sans réglages : texte figé.
+  assert.match(reasonLabel(REASONS.SALLE_FERMEE, {}), /de 8h à 17h/);
+  assert.equal(reasonLabel(REASONS.SALLE_FERMEE), REASON_LABELS[REASONS.SALLE_FERMEE]);
+});

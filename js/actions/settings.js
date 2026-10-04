@@ -25,9 +25,10 @@ export function fromDatetimeLocal(value) {
 export function officeStatus(date, settings) {
   const S = withDefaults(settings);
   if (isOfficeOpen(date, S.horaires)) return { open: true, text: 'Bureau ouvert : les emprunts en self-service sont possibles.' };
+  const suite = 'Les emprunts en self-service sont refusés, les retours restent possibles.';
   // Les horaires sont réglables depuis l’écran Paramètres : ce texte ne doit pas les figer.
-  const raison = isWeekday(date) ? `hors des heures d’ouverture (${formatOpenHours(S)})` : 'week-end';
-  return { open: false, text: `Bureau fermé (${raison}) : les emprunts en self-service sont refusés, les retours restent possibles.` };
+  if (!isWeekday(date)) return { open: false, text: `Bureau fermé (week-end). ${suite}` };
+  return { open: false, text: `Bureau fermé : ouvert les jours ouvrés de ${formatOpenHours(S)}. ${suite}` };
 }
 
 export function setDemoClock(date, auteurId) {

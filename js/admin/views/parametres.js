@@ -2,7 +2,7 @@
 // de démonstration, espace occupé et réinitialisation.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, withDefaults } from '../../rules.js';
+import { now, withDefaults, openHours } from '../../rules.js';
 import { escapeHtml, toast } from '../../ui.js';
 import { officeStatus, updateSettings } from '../../actions/settings.js';
 import { demoClockHtml, bindDemoClock } from '../demoClock.js';
@@ -29,7 +29,9 @@ const nombre = (label, name, value, attrs = '') =>
 
 export function settingsFormHtml(settings) {
   const S = withDefaults(settings);
-  const [matin, apresMidi] = [S.horaires[0] || { debut: 8, fin: 12 }, S.horaires[1] || { debut: 13, fin: 17 }];
+  // `openHours` répare une liste absente ou mal formée : l’écran qui sert à corriger le réglage doit rester ouvrable.
+  const plages = openHours(S);
+  const [matin, apresMidi] = [plages[0] || { debut: 8, fin: 12 }, plages[1] || { debut: 13, fin: 17 }];
   return `
     <div class="card">
       <div class="card__header"><h2 class="card__title">Règles d’emprunt</h2></div>
@@ -49,7 +51,11 @@ export function settingsFormHtml(settings) {
 }
 
 export function readSettingsForm(root) {
-  const num = (name) => Number(root.querySelector(`[name="${name}"]`).value);
+  // Un champ vidé vaut NaN, pas 0 : `Number('')` ferait passer 0 pour une heure valide.
+  const num = (name) => {
+    const v = root.querySelector(`[name="${name}"]`).value.trim();
+    return v === '' ? NaN : Number(v);
+  };
   return {
     horaires: [
       { debut: num('matinDebut'), fin: num('matinFin') },
@@ -75,8 +81,21 @@ export function parametresView(container) {
   // Un ré-rendu pendant la saisie écraserait les champs : on ne redessine pas
   // tant que le formulaire est modifié et non enregistré.
   let dirty = false;
+  // Pendant la saisie, seule la carte horloge est redessinée : l’heure, l’état du bureau et le
+  // « Jour ouvré 9h » (calculé depuis `date`) ne doivent pas rester figés sur le dernier rendu.
+  const refreshClock = () => {
+    const card = container.querySelector('.demo-clock');
+    if (!card) return;
+    const date = now();
+    const settings = store.settings.get();
+    const gabarit = document.createElement('div');
+    gabarit.innerHTML = demoClockHtml({ date, horlogeDemo: settings.horlogeDemo || null, status: officeStatus(date, settings) });
+    const fraiche = gabarit.firstElementChild;
+    card.replaceWith(fraiche);
+    bindDemoClock(fraiche, { date });
+  };
   const render = () => {
-    if (dirty) return;
+    if (dirty) { refreshClock(); return; }
     const date = now();
     const settings = store.settings.get();
     setTopbar({ title: 'Paramètres', subtitle: 'Règles, horloge de démonstration et espace' });

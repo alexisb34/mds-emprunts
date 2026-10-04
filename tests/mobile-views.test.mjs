@@ -117,3 +117,11 @@ test('accueilHtml : avis de refus avec le motif, échappé', () => {
   assert.match(html, /Canon R10 : réservation refusée — Réservé pour un &lt;cours&gt;/);
   assert.doesNotMatch(accueilHtml(base), /alert--error/);
 });
+
+test('ficheHtml : l’aide du self-service cite les horaires réglés', () => {
+  const group = groupByReference(store.items.list()).find((g) => g.reference === 'multiprise');
+  const regle = ficheHtml({ group, date: NOW, settings: { horaires: [{ debut: 9, fin: 11 }, { debut: 14, fin: 18 }] } });
+  assert.match(regle, /9h-11h et 14h-18h/);
+  assert.doesNotMatch(regle, /8h-12h/);
+  assert.match(ficheHtml({ group, date: NOW }), /8h-12h et 13h-17h/, 'sans réglages : horaires par défaut');
+});
