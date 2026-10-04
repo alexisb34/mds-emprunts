@@ -43,7 +43,7 @@ Chaque tâche se termine par un livrable testable indépendamment.
 
 ---
 
-### Tâche 1 : Actions de maintenance
+### Task 1 : Actions de maintenance
 
 **Fichiers :**
 - Créer : `js/actions/maintenance.js`
@@ -394,7 +394,7 @@ git commit -m "feat(actions): signalements, interventions et clôture de la main
 
 ---
 
-### Tâche 2 : Écran admin Maintenance
+### Task 2 : Écran admin Maintenance
 
 **Fichiers :**
 - Créer : `js/admin/views/maintenance.js`
@@ -753,7 +753,7 @@ git commit -m "feat(admin): écran de maintenance, interventions et matériel im
 
 ---
 
-### Tâche 3 : Écran admin Paramètres, horloge partagée, horaires robustes
+### Task 3 : Écran admin Paramètres, horloge partagée, horaires robustes
 
 **Fichiers :**
 - Créer : `js/admin/demoClock.js`, `js/admin/views/parametres.js`
@@ -1232,7 +1232,7 @@ git commit -m "feat(admin): écran de paramètres, horloge partagée et horaires
 
 ---
 
-### Tâche 4 : Reprises — modale de scan partagée, remise pré-remplie, recherche par code
+### Task 4 : Reprises — modale de scan partagée, remise pré-remplie, recherche par code
 
 **Fichiers :**
 - Créer : `js/scanModal.js`
@@ -1628,7 +1628,7 @@ git commit -m "refactor: modale de scan partagée, remise pré-remplie et repris
 
 ---
 
-### Tâche 5 : PWA légère — installable sur un téléphone
+### Task 5 : PWA légère — installable sur un téléphone
 
 **Fichiers :**
 - Créer : `manifest.json`, `scripts/make-icons.mjs`, `assets/icon-192.png`, `assets/icon-512.png`
@@ -1831,7 +1831,7 @@ git commit -m "feat(pwa): manifeste, icônes générées et zones sûres"
 
 ---
 
-### Tâche 6 : Vérification de fin de phase
+### Task 6 : Vérification de fin de phase
 
 **Fichiers :**
 - Modifier : `README.md`, `docs/superpowers/plans/2026-09-17-mds-emprunts-roadmap.md`
