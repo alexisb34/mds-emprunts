@@ -134,10 +134,23 @@ test('canReserveValeur : durée max et circuit', () => {
   const base = { item: items[2], user, loans: [], items, settings: S, debutPrevu: debut, finPrevue: addDays(debut, 3), date: jeudi10h };
   assert.equal(canReserveValeur(base).ok, true);
   assert.equal(canReserveValeur({ ...base, finPrevue: addDays(debut, 6) }).reason, REASONS.DUREE_TROP_LONGUE);
-  assert.equal(canReserveValeur({ ...base, finPrevue: addDays(debut, -1) }).reason, REASONS.DUREE_TROP_LONGUE);
+  assert.equal(canReserveValeur({ ...base, finPrevue: addDays(debut, -1) }).reason, REASONS.DATES_INCOHERENTES);
   assert.equal(canReserveValeur({ ...base, item: items[0] }).reason, REASONS.MAUVAIS_CIRCUIT);
   assert.equal(canReserveValeur({ ...base, item: items[3] }).reason, REASONS.MAUVAIS_CIRCUIT);
   assert.equal(canReserveValeur({ ...base, item: { ...items[2], etat: 'reserve' } }).reason, REASONS.RESERVE_PAR_AUTRE);
+  // Le doublon de référence prime sur l’état : son propre exemplaire réservé n’est pas « réservé par quelqu’un d’autre ».
+  const sienne = [{ userId: 'u1', itemId: 'i3', statut: 'reservee' }];
+  assert.equal(canReserveValeur({ ...base, item: { ...items[2], etat: 'reserve' }, loans: sienne }).reason, REASONS.DEJA_UN_EXEMPLAIRE);
+});
+
+test('canReserveValeur : cohérence des dates et heures d’ouverture du retrait', () => {
+  const jeudi9h = new Date(2026, 8, 17, 9);
+  const base = { item: items[2], user, loans: [], items, settings: S, debutPrevu: jeudi9h, finPrevue: jeudi9h, date: jeudi10h };
+  assert.deepEqual(canReserveValeur(base), { ok: true, reason: null });
+  assert.equal(canReserveValeur({ ...base, debutPrevu: new Date(2026, 8, 19, 9), finPrevue: new Date(2026, 8, 19, 17) }).reason, REASONS.HORS_OUVERTURE, 'samedi');
+  assert.equal(canReserveValeur({ ...base, debutPrevu: new Date(2026, 8, 17, 12, 30) }).reason, REASONS.HORS_OUVERTURE, 'pause de midi');
+  assert.equal(canReserveValeur({ ...base, finPrevue: new Date(2026, 8, 16, 17) }).reason, REASONS.DATES_INCOHERENTES, 'retour la veille du retrait');
+  assert.equal(canReserveValeur({ ...base, finPrevue: new Date(2026, 8, 17, 8) }).ok, true, 'même jour, heure antérieure : permis');
 });
 
 test('canReserveValeur : durée max et circuit (jours calendaires)', () => {

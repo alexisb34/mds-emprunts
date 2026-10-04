@@ -73,16 +73,26 @@ export function avatar(user, size = 'sm') {
 
 // ---- DOM ----
 
+let onCloseModal = null;
+
 export function closeModal() {
+  const cb = onCloseModal;
+  onCloseModal = null;
   const root = document.getElementById('modal-root');
   if (root) root.innerHTML = '';
   document.body.classList.remove('has-modal');
+  // Après le nettoyage du DOM : l’appelant libère ses ressources (caméra, minuteur…)
+  // quelle que soit la façon dont la modale a été fermée (bouton, croix, fond).
+  if (cb) cb();
 }
 
 // `title` et les libellés d’actions sont échappés ; `body` est du HTML brut fourni par
 // l’appelant, qui doit échapper lui-même les données utilisateur via `escapeHtml`.
-export function openModal({ title, body, actions = [] }) {
+export function openModal({ title, body, actions = [], onClose = null }) {
   const root = document.getElementById('modal-root');
+  // Une modale qui en remplace une autre libère d’abord les ressources de la précédente.
+  if (onCloseModal) { const previous = onCloseModal; onCloseModal = null; previous(); }
+  onCloseModal = onClose;
   root.innerHTML = `
     <div class="modal-backdrop" data-close>
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">

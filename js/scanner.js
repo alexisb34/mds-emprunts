@@ -92,6 +92,14 @@ export function startScanner(elementId, onCode) {
     const Lib = typeof window !== 'undefined' ? window.Html5Qrcode : null;
     if (!Lib) throw new Error('Bibliothèque de scan indisponible.');
     if (gen !== scannerGen) return;
+    // Une instance encore active (appelant qui n’a pas arrêté le lecteur) doit être relâchée,
+    // sinon la caméra reste allumée.
+    if (scanner) {
+      const prev = scanner;
+      scanner = null;
+      try { await prev.stop(); } catch { /* déjà arrêté */ }
+      try { prev.clear(); } catch { /* conteneur retiré */ }
+    }
     const s = new Lib(elementId, { verbose: false });
     await s.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, (text) => { if (gen === scannerGen) onCode(normalizeScanText(text)); }, () => {});
     // Arrêt demandé pendant le démarrage : on arrête ce qui vient d’être lancé.

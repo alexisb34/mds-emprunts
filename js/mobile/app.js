@@ -3,7 +3,9 @@ import { store } from '../store.js';
 import { buildSeed } from '../seed.js';
 import { auth } from '../auth.js';
 import { createRouter, navigate, currentPath } from '../router.js';
+import { now } from '../rules.js';
 import { escapeHtml } from '../ui.js';
+import { sweepExpirations } from '../actions/loans.js';
 import { mountNav } from './layout.js';
 import { loginView } from './views/login.js';
 import { profilView } from './views/profil.js';
@@ -13,6 +15,7 @@ import { catalogueView } from './views/catalogue.js';
 import { ficheView } from './views/fiche.js';
 import { scanView } from './views/scan.js';
 import { empruntsView } from './views/emprunts.js';
+import { reserverView } from './views/reserver.js';
 
 store.init(buildSeed);
 
@@ -25,6 +28,7 @@ const guard = (view) => (container, params) => {
   if (!user || user.actif === false) { auth.logout(); navigate('/login'); return undefined; }
   document.body.classList.remove('is-login');
   mountNav(navEl, currentPath());
+  sweepExpirations(now());
   return view(container, params);
 };
 
@@ -36,7 +40,7 @@ const routes = [
   { path: '/scan', view: guard(scanView) },
   { path: '/emprunts', view: guard(empruntsView) },
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
-  { path: '/reserver/:id', view: guard(aVenirView('Réserver', 3, '/catalogue')) },
+  { path: '/reserver/:id', view: guard(reserverView) },
   { path: '/profil', view: guard(profilView) },
 ];
 

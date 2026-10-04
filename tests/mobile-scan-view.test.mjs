@@ -96,3 +96,14 @@ test('scanStepHtml : la liste de retour est en tête et la simulation disparaît
   assert.doesNotMatch(vide, /data-return=/);
   assert.match(vide, /data-action="manual"/);
 });
+
+test('errorHtml : pas de bouton « Réserver » quand l’objet est déjà entre les mains de l’emprunteur', () => {
+  const valeur = { ...item, circuit: 'valeur', reference: 'canon-r10', nom: 'Canon R10' };
+  const refus = errorHtml({ reason: 'rendu_a_la_pedago', error: null, item: valeur });
+  assert.match(refus, /se rend directement à la pédago/);
+  assert.doesNotMatch(refus, /href="#\/catalogue\/canon-r10"/);
+  assert.match(refus, /data-action="restart"/);
+  // Un refus « mauvais circuit » (objet qu’il ne détient pas) garde l’aide vers le catalogue.
+  const autre = errorHtml({ reason: 'mauvais_circuit', error: null, item: valeur });
+  assert.match(autre, /href="#\/catalogue\/canon-r10"/);
+});

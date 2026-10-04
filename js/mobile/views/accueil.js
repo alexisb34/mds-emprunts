@@ -4,7 +4,7 @@ import { auth } from '../../auth.js';
 import { now, isBookingActive } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, formatDate, formatSlots, relativeDay } from '../../ui.js';
-import { userLoans } from '../../actions/loans.js';
+import { userLoans, sweepExpirations } from '../../actions/loans.js';
 import { setHeader } from '../layout.js';
 
 function loansCard(enCours, date) {
@@ -26,7 +26,18 @@ function bookingCard(nextBooking, date) {
     </a>`;
 }
 
-export function accueilHtml({ user, enCours, nextBooking, date }) {
+function noticesHtml(reservations, expireesRecentes, refuseesRecentes) {
+  const open = reservations.filter((r) => r.pickupOpen);
+  if (!open.length && !expireesRecentes.length && !refuseesRecentes.length) return '';
+  const lignes = [
+    ...open.map((r) => `<div class="alert alert--info">${escapeHtml(r.item ? r.item.nom : '')} : à retirer avant ${escapeHtml(formatTime(r.window.end))} — <a href="#/emprunts">voir mon code</a>.</div>`),
+    ...expireesRecentes.map((r) => `<div class="alert alert--warning">${escapeHtml(r.item ? r.item.nom : '')} : réservation expirée, le matériel est reparti dans le catalogue.</div>`),
+    ...refuseesRecentes.map((r) => `<div class="alert alert--error">${escapeHtml(r.item ? r.item.nom : '')} : réservation refusée — ${escapeHtml(r.loan.motifRefus)}</div>`),
+  ];
+  return `<section class="stack">${lignes.join('')}</section>`;
+}
+
+export function accueilHtml({ user, enCours, nextBooking, date, reservations = [], expireesRecentes = [], refuseesRecentes = [] }) {
   const lateCount = enCours.filter((x) => x.late).length;
   return `
     <section class="m-hero">
@@ -35,6 +46,7 @@ export function accueilHtml({ user, enCours, nextBooking, date }) {
       <p class="m-hero__sub">${lateCount ? `${lateCount} emprunt${lateCount > 1 ? 's' : ''} en retard — pensez à le rendre.` : 'Scannez l’étiquette d’un objet pour l’emprunter ou le rendre.'}</p>
       <a class="btn btn--primary btn--block" href="#/scan">Scanner un QR code</a>
     </section>
+    ${noticesHtml(reservations, expireesRecentes, refuseesRecentes)}
     <section class="card">
       <div class="card__header"><h3 class="card__title">Mes emprunts en cours</h3><a class="body-sm" href="#/emprunts">Tout voir →</a></div>
       ${loansCard(enCours, date)}
@@ -49,10 +61,12 @@ export function accueilView(container) {
   const render = () => {
     const user = auth.currentUser();
     const date = now();
+    sweepExpirations(date);
     const bookings = store.bookings.list((b) => b.userId === user.id && (b.statut === BOOKING_STATES.A_VENIR || b.statut === BOOKING_STATES.EN_COURS))
       .sort((a, b) => a.date.localeCompare(b.date) || a.creneaux[0] - b.creneaux[0]);
+    const loans = userLoans(user.id, date);
     setHeader({ title: 'MDS Emprunts' });
-    container.innerHTML = accueilHtml({ user, enCours: userLoans(user.id, date).enCours, nextBooking: bookings[0] || null, date });
+    container.innerHTML = accueilHtml({ user, enCours: loans.enCours, reservations: loans.reservations, expireesRecentes: loans.expireesRecentes, refuseesRecentes: loans.refuseesRecentes, nextBooking: bookings[0] || null, date });
   };
   render();
   return store.subscribe(render);

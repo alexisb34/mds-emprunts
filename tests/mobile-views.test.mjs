@@ -58,3 +58,30 @@ test('ficheHtml : exemplaires et bouton selon le circuit', () => {
   assert.match(allOut, /Aucun exemplaire disponible/);
   assert.doesNotMatch(allOut, /href="#\/reserver/);
 });
+
+test('ficheHtml : réservation déjà faite → lien vers Mes emprunts, pas de bouton Réserver', () => {
+  const group = groupByReference(store.items.list()).find((g) => g.reference === 'sd-256');
+  const html = ficheHtml({ group, date: NOW, reserved: { loan: { debutPrevu: new Date(2026, 8, 18, 9).toISOString() } } });
+  assert.match(html, /Voir ma réservation/);
+  assert.doesNotMatch(html, /href="#\/reserver\//);
+});
+
+test('accueilHtml : avis de retrait et d’expiration', () => {
+  const base = { user: store.users.get('user_010'), enCours: [], nextBooking: null, date: NOW };
+  const item = { nom: 'Canon R10' };
+  const w = { end: new Date(2026, 8, 17, 11, 0) };
+  const open = accueilHtml({ ...base, reservations: [{ loan: {}, item, pickupOpen: true, expired: false, window: w }] });
+  assert.match(open, /à retirer avant 11h00/);
+  assert.match(open, /href="#\/emprunts"/);
+  const exp = accueilHtml({ ...base, expireesRecentes: [{ loan: {}, item }] });
+  assert.match(exp, /réservation expirée/);
+  assert.doesNotMatch(accueilHtml(base), /alert--info|alert--warning/);
+});
+
+test('accueilHtml : avis de refus avec le motif, échappé', () => {
+  const base = { user: store.users.get('user_010'), enCours: [], nextBooking: null, date: NOW };
+  const html = accueilHtml({ ...base, refuseesRecentes: [{ loan: { motifRefus: 'Réservé pour un <cours>' }, item: { nom: 'Canon R10' } }] });
+  assert.match(html, /alert--error/);
+  assert.match(html, /Canon R10 : réservation refusée — Réservé pour un &lt;cours&gt;/);
+  assert.doesNotMatch(accueilHtml(base), /alert--error/);
+});

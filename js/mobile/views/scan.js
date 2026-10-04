@@ -2,7 +2,7 @@
 // confirmation d’emprunt ou checklist de retour, résultat. Le flux est piloté par scanFlow.js.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, selfReturnDeadline, withDefaults, REASON_LABELS } from '../../rules.js';
+import { now, selfReturnDeadline, withDefaults, REASON_LABELS, REASONS } from '../../rules.js';
 import { CIRCUITS, ITEM_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, relativeDay, toast } from '../../ui.js';
 import { resolveScan, borrowSelf, returnSelf, userLoans } from '../../actions/loans.js';
@@ -119,8 +119,12 @@ export function resultHtml({ mode, item, result }) {
 export function errorHtml({ reason, error, item }) {
   const message = reason ? (REASON_LABELS[reason] || reason) : (error || 'Une erreur est survenue.');
   let hint = '';
-  if (item && item.circuit === CIRCUITS.VALEUR) hint = `<a class="btn btn--secondary btn--block" href="#/catalogue/${escapeHtml(item.reference)}">Réserver depuis le catalogue</a>`;
-  if (item && item.circuit === CIRCUITS.SALLE) hint = '<a class="btn btn--secondary btn--block" href="#/salle">Réserver la salle photo</a>';
+  // L’aide ne vaut que pour un objet que l’emprunteur ne détient pas : sur un refus
+  // « rendu à la pédago », il l’a déjà entre les mains.
+  if (reason !== REASONS.RENDU_A_LA_PEDAGO) {
+    if (item && item.circuit === CIRCUITS.VALEUR) hint = `<a class="btn btn--secondary btn--block" href="#/catalogue/${escapeHtml(item.reference)}">Réserver depuis le catalogue</a>`;
+    if (item && item.circuit === CIRCUITS.SALLE) hint = '<a class="btn btn--secondary btn--block" href="#/salle">Réserver la salle photo</a>';
+  }
   return `
     <div class="card result">
       <div class="result__icon result__icon--error">✕</div>
@@ -189,8 +193,12 @@ export function scanView(container) {
       await startCamera(video);
       if (!alive) stopCamera();
     } catch (e) {
+      // startCamera lève « Caméra annulée. » quand l’utilisateur a quitté l’étape entre-temps :
+      // ce n’est pas une panne, il n’y a rien à signaler.
+      if (!alive || (e && e.message === 'Caméra annulée.')) return;
       capture.disabled = true;
-      container.querySelector('.video-box').hidden = true;
+      const box = container.querySelector('.video-box');
+      if (box) box.hidden = true;
       toast('Caméra indisponible : utilisez l’image de démonstration.', 'warning');
     }
   };

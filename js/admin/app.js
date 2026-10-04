@@ -4,7 +4,9 @@ import { buildSeed } from '../seed.js';
 import { auth } from '../auth.js';
 import { createRouter, navigate, currentPath } from '../router.js';
 import { LOAN_STATES, MAINT_STATES } from '../models.js';
+import { now } from '../rules.js';
 import { escapeHtml } from '../ui.js';
+import { sweepExpirations } from '../actions/loans.js';
 import { mountSidebar } from './layout.js';
 import { loginView } from './views/login.js';
 import { aVenirView } from './views/aVenir.js';
@@ -14,6 +16,7 @@ import { materielView } from './views/materiel.js';
 import { materielFicheView } from './views/materielFiche.js';
 import { utilisateursView } from './views/utilisateurs.js';
 import { utilisateurFicheView } from './views/utilisateurFiche.js';
+import { empruntsView } from './views/emprunts.js';
 
 store.init(buildSeed);
 
@@ -42,6 +45,7 @@ const guard = (view) => (container, params) => {
   if (!auth.isPedago()) { navigate('/login'); return undefined; }
   document.body.classList.remove('is-login');
   refreshSidebar();
+  sweepExpirations(now());
   return view(container, params);
 };
 
@@ -50,7 +54,7 @@ const routes = [
   { path: '/dashboard', view: guard(dashboardView) },
   { path: '/materiel', view: guard(materielView) },
   { path: '/materiel/:id', view: guard(materielFicheView) },
-  { path: '/emprunts', view: guard(aVenirView('Emprunts', 3)) },
+  { path: '/emprunts', view: guard(empruntsView) },
   { path: '/salle', view: guard(aVenirView('Salle photo', 4)) },
   { path: '/maintenance', view: guard(aVenirView('Maintenance', 5)) },
   { path: '/utilisateurs', view: guard(utilisateursView) },

@@ -26,12 +26,17 @@ export const REASONS = {
   DUREE_TROP_LONGUE: 'duree_trop_longue',
   UTILISATEUR_INACTIF: 'utilisateur_inactif',
   CODE_INCONNU: 'code_inconnu',
+  CODE_RETRAIT_INCONNU: 'code_retrait_inconnu',
+  FENETRE_RETRAIT: 'fenetre_retrait',
+  DATE_PASSEE: 'date_passee',
+  DATES_INCOHERENTES: 'dates_incoherentes',
+  HORS_OUVERTURE: 'hors_ouverture',
   RENDU_A_LA_PEDAGO: 'rendu_a_la_pedago',
 };
 
 export const REASON_LABELS = {
   bureau_ferme: 'Le bureau des pédago est fermé : retrait possible uniquement aux heures d’ouverture.',
-  deja_un_exemplaire: 'Vous avez déjà un exemplaire de ce matériel en cours.',
+  deja_un_exemplaire: 'Vous avez déjà un exemplaire de ce matériel (emprunt ou réservation en cours).',
   indisponible: 'Ce matériel n’est pas disponible actuellement.',
   emprunte_par_autre: 'Ce matériel est déjà emprunté par quelqu’un d’autre.',
   reserve_par_autre: 'Ce matériel est réservé par quelqu’un d’autre.',
@@ -42,6 +47,11 @@ export const REASON_LABELS = {
   duree_trop_longue: 'La durée demandée dépasse le maximum autorisé.',
   utilisateur_inactif: 'Ce compte est désactivé.',
   code_inconnu: 'Code non reconnu : scannez l’étiquette MDS-XXXX collée sur l’objet.',
+  code_retrait_inconnu: 'Aucune réservation en attente ne correspond à ce code de retrait.',
+  fenetre_retrait: 'Hors de la fenêtre de retrait : le matériel se retire dans l’heure qui suit le début de la réservation.',
+  date_passee: 'La date de début est déjà passée.',
+  dates_incoherentes: 'La date de retour doit être postérieure ou égale à la date de retrait.',
+  hors_ouverture: 'Le retrait doit tomber pendant les heures d’ouverture du bureau (jours ouvrés, 8h-12h et 13h-17h).',
   rendu_a_la_pedago: 'Ce matériel se rend directement à la pédago, qui vérifie son état.',
 };
 
@@ -198,9 +208,9 @@ function commonChecks({ item, user, loans, items, settings, date, circuit }) {
   const S = withDefaults(settings);
   if (!user || user.actif === false) return REASONS.UTILISATEUR_INACTIF;
   if (item.circuit !== circuit) return REASONS.MAUVAIS_CIRCUIT;
+  if (hasActiveLoanOfReference(loans, items, user.id, item.reference)) return REASONS.DEJA_UN_EXEMPLAIRE;
   if (item.etat !== ITEM_STATES.DISPONIBLE) return UNAVAILABLE_REASON[item.etat] || REASONS.INDISPONIBLE;
   if (circuit === CIRCUITS.SELF && !isOfficeOpen(date, S.horaires)) return REASONS.BUREAU_FERME;
-  if (hasActiveLoanOfReference(loans, items, user.id, item.reference)) return REASONS.DEJA_UN_EXEMPLAIRE;
   if (S.bloquerSiRetard && userHasLateLoan(loans, user.id, date)) return REASONS.RETARD_EN_COURS;
   return null;
 }
@@ -213,8 +223,10 @@ export function canBorrowSelf(ctx) {
 export function canReserveValeur(ctx) {
   const { debutPrevu, finPrevue, settings } = ctx;
   const S = withDefaults(settings);
+  if (toDate(finPrevue) < fromYmd(ymd(debutPrevu))) return { ok: false, reason: REASONS.DATES_INCOHERENTES };
+  if (!isOfficeOpen(debutPrevu, S.horaires)) return { ok: false, reason: REASONS.HORS_OUVERTURE };
   const days = Math.round((fromYmd(ymd(finPrevue)) - fromYmd(ymd(debutPrevu))) / DAY);
-  if (days < 0 || days > S.dureeMaxReservationJours) {
+  if (days > S.dureeMaxReservationJours) {
     return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };
   }
   const reason = commonChecks({ ...ctx, settings: S, circuit: CIRCUITS.VALEUR });

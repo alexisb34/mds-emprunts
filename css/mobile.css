@@ -23,6 +23,9 @@
 .m-item--stacked { flex-direction: column; align-items: stretch; }
 .m-item__row { display: flex; align-items: center; gap: var(--space-md); }
 .m-item__photos { display: flex; gap: var(--space-sm); }
+.m-item--pickup { border: var(--stroke-thin) solid var(--border-brand); }
+.pickup { display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); padding: var(--space-lg) 0; text-align: center; }
+.pickup [data-role="qr"] img, .pickup [data-role="qr"] canvas { image-rendering: pixelated; }
 .m-shell .tabs { overflow-x: auto; scrollbar-width: none; }
 .m-shell .tab { white-space: nowrap; padding: var(--space-sm) var(--space-sm); font-size: 13px; }
 .m-item__cta { font-size: 12px; font-weight: 700; color: var(--text-brand); white-space: nowrap; }
