@@ -34,8 +34,9 @@ test('salleCardBooking : un créneau passé resté ouvert ne masque pas la rése
   assert.equal(salleCardBooking(salle, NOW).id, 'book_demain', 'le créneau à venir est celui de la carte');
   const html = accueilHtml({ user: store.users.get('user_010'), enCours: [], nextBooking: salleCardBooking(salle, NOW), date: NOW, salle });
   assert.match(html, /Demain · 9h-10h/);
-  assert.doesNotMatch(html, /Hier/);
-  assert.match(html, /Faire l’état des lieux de sortie/, 'la sortie manquante reste proposée');
+  assert.doesNotMatch(html, /<strong>Hier/, 'le créneau passé ne prend pas la ligne de la carte');
+  // Le bouton porte sur le créneau d’hier, pas sur la ligne affichée : il le nomme.
+  assert.match(html, /Faire l’état des lieux de sortie — Hier 11h-12h/, 'la sortie manquante reste proposée et nomme son créneau');
   // Sans réservation à venir, le créneau passé n’est pas affiché comme une carte.
   assert.equal(salleCardBooking({ ...salle, aVenir: [] }, NOW), null);
   // Un créneau réellement en cours garde la carte.

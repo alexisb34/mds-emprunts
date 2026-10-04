@@ -33,7 +33,7 @@ export function gridHtml({ grid, selection }) {
       const cls = slotClass(cell, selection);
       const libelle = cell.booking ? (cell.mine ? 'Vous' : 'Pris') : '';
       const disabled = cell.booking || cell.past ? ' disabled' : '';
-      return `<td><button type="button" data-slot="${escapeHtml(d.ymd)}:${heure}" class="${cls}"${disabled} aria-label="${escapeHtml(d.label)} ${heure}h, ${slotEtat(cell, selection)}">${escapeHtml(libelle)}</button></td>`;
+      return `<td><button type="button" data-slot="${escapeHtml(d.ymd)}:${heure}" class="${cls}"${disabled} aria-label="${escapeHtml(d.label)} ${heure}h, ${escapeHtml(slotEtat(cell, selection))}">${escapeHtml(libelle)}</button></td>`;
     }).join('');
     return `<tr><th>${heure}h</th>${cases}</tr>`;
   }).join('');

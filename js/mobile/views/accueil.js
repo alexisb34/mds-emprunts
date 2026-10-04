@@ -18,8 +18,16 @@ function loansCard(enCours, date) {
 
 function bookingCard(nextBooking, date, active = null) {
   // L’état des lieux attendu (entrée, puis sortie) est proposé tant que le créneau en cours n’est pas bouclé.
+  // Quand il porte sur un AUTRE créneau que celui de la carte (créneau passé resté ouvert), il le nomme :
+  // sinon le bouton semble appartenir à la réservation affichée juste au-dessus.
   const aFaire = active && !(active.entreeFaite && active.sortieFaite)
-    ? `<a class="btn btn--primary btn--block" href="#/salle">${active.entreeFaite ? 'Faire l’état des lieux de sortie' : 'Faire l’état des lieux d’entrée'}</a>`
+    ? (() => {
+      const b = active.booking;
+      const autre = !nextBooking || nextBooking.id !== b.id;
+      const quoi = active.entreeFaite ? 'de sortie' : 'd’entrée';
+      const precision = autre ? ` — ${relativeDay(b.date, date)} ${formatSlots(b.creneaux)}` : '';
+      return `<a class="btn btn--primary btn--block" href="#/salle">${escapeHtml(`Faire l’état des lieux ${quoi}${precision}`)}</a>`;
+    })()
     : '';
   if (!nextBooking) return aFaire || '<div class="empty-state">Aucune réservation de la salle photo.</div>';
   const enCours = isBookingActive(nextBooking, date);

@@ -21,6 +21,7 @@ test('planningHtml : 5 colonnes, initiales de l’occupant, créneau cliquable',
   // dans le document (le `title` les contiendrait aussi).
   const initiales = `${user.prenom[0]}${user.nom[0]}`.toUpperCase();
   assert.match(html, new RegExp(`class="slot slot--taken" data-booking="${actif.id}"[^>]*>${initiales}</button>`));
+  assert.doesNotMatch(html, /week-grid--admin/, 'classe morte retirée');
 });
 
 test('exitMissingRows : une réservation dont la sortie manque depuis plus d’une heure', () => {
@@ -44,7 +45,6 @@ test('bookingDetailHtml : créneaux, états des lieux, bouton d’annulation', (
   const tard = new Date(2026, 8, 17, 13, 0);
   const manquante = bookingDetailHtml({ booking: actif, user: store.users.get(actif.userId), date: tard });
   assert.match(manquante, /badge--late">Sortie non faite/, 'une heure après la fin, la sortie manque');
-  assert.doesNotMatch(planningHtml({ grid: grid(), users: store.users.list() }), /week-grid--admin/);
   const terminee = store.bookings.list((b) => b.statut === 'terminee')[0];
   const html2 = bookingDetailHtml({ booking: terminee, user: store.users.get(terminee.userId) });
   assert.doesNotMatch(html2, /data-cancel-booking/);
