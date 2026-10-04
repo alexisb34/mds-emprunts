@@ -3,12 +3,12 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { REASONS, now } from '../js/rules.js';
+import { REASONS, now, isExitMissing } from '../js/rules.js';
 import { ACTIONS } from '../js/log.js';
 import { BOOKING_STATES, ITEM_STATES, MAINT_STATES } from '../js/models.js';
 import {
   roomItems, roomChecklist, createBooking, cancelBooking, recordEntry, recordExit,
-  closeDueBookings, sweepBookings, userBookings, weekBookings,
+  closeDueBookings, sweepBookings, userBookings, weekBookings, forceCloseBooking,
 } from '../js/actions/bookings.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);    // jeudi 17 sept. 10h
@@ -145,4 +145,66 @@ test('userBookings et weekBookings', () => {
   const semaine = weekBookings(NOW);
   assert.ok(semaine.every((b) => b.date >= '2026-09-14' && b.date <= '2026-09-18'));
   assert.ok(semaine.some((b) => b.id === active.id));
+});
+
+test('cancelBooking : l’emprunteur avant le début, la pédago à tout moment, pas un autre élève', () => {
+  const b = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
+  assert.throws(() => cancelBooking(b.id, 'user_011'), /ne vous appartient pas/);
+  clock(new Date(2026, 8, 17, 11, 5));
+  assert.throws(() => cancelBooking(b.id, ELEVE), /a commencé/);
+  assert.equal(store.bookings.get(b.id).statut, BOOKING_STATES.A_VENIR);
+  assert.equal(cancelBooking(b.id, PEDAGO).statut, BOOKING_STATES.ANNULEE);
+  const c = createBooking({ userId: ELEVE, date: '2026-09-23', creneaux: [9] });
+  assert.equal(cancelBooking(c.id, ELEVE).statut, BOOKING_STATES.ANNULEE);
+});
+
+test('userBookings : une réservation en cours sans sortie reste active après la fin du créneau', () => {
+  const b = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
+  clock(new Date(2026, 8, 17, 11, 5));
+  recordEntry({ bookingId: b.id, userId: ELEVE, checklist: roomChecklist() });
+  clock(new Date(2026, 8, 17, 15, 0));
+  const u = userBookings(ELEVE);
+  assert.equal(u.active.booking.id, b.id);
+  assert.equal(u.active.sortieFaite, false);
+  assert.equal(recordExit({ bookingId: b.id, userId: ELEVE, checklist: roomChecklist() }).booking.statut, BOOKING_STATES.TERMINEE);
+  assert.equal(userBookings(ELEVE).active, null);
+});
+
+test('forceCloseBooking : clôt une sortie manquante, refuse un créneau non en cours', () => {
+  const b = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
+  clock(new Date(2026, 8, 17, 11, 5));
+  assert.throws(() => forceCloseBooking(b.id, PEDAGO), /pas en cours/);
+  recordEntry({ bookingId: b.id, userId: ELEVE, checklist: roomChecklist() });
+  clock(new Date(2026, 8, 17, 15, 0));
+  const avant = store.bookings.get(b.id);
+  assert.equal(avant.statut === BOOKING_STATES.EN_COURS && isExitMissing(avant, now()), true);
+  const before = store.log.list().length;
+  const closed = forceCloseBooking(b.id, PEDAGO);
+  assert.equal(closed.statut, BOOKING_STATES.TERMINEE);
+  assert.equal(store.log.list().length, before + 1);
+  assert.equal(store.log.list().at(-1).action, ACTIONS.BOOKING_SORTIE);
+  // L’alerte du planning est `en_cours && isExitMissing` : elle disparaît avec le statut.
+  const apres = store.bookings.get(b.id);
+  assert.equal(apres.statut === BOOKING_STATES.EN_COURS && isExitMissing(apres, now()), false);
+  assert.throws(() => forceCloseBooking(b.id, PEDAGO), /pas en cours/);
+});
+
+test('recordEntry avec deux lignes en problème : un signalement par ligne', () => {
+  const b = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [11] });
+  clock(new Date(2026, 8, 17, 11, 5));
+  const lignes = roomChecklist();
+  lignes[0].ok = false;
+  lignes[0].commentaire = 'une ampoule grillée';
+  lignes.at(-1).ok = false;
+  lignes.at(-1).commentaire = 'sol sale';
+  const before = store.log.list().length;
+  const r = recordEntry({ bookingId: b.id, userId: ELEVE, checklist: lignes });
+  assert.equal(r.maintenances.length, 2);
+  assert.equal(r.maintenance.id, r.maintenances[0].id);
+  assert.equal(r.maintenances[0].itemId, lignes[0].itemId);
+  assert.equal(r.maintenances[1].itemId, null);
+  assert.equal(r.maintenances[1].bookingId, b.id);
+  assert.match(r.maintenances[1].description, /sol sale/);
+  assert.equal(store.items.get(lignes[0].itemId).etat, ITEM_STATES.MAINTENANCE);
+  assert.equal(store.log.list().length, before + 3, '1 état des lieux + 2 signalements');
 });
