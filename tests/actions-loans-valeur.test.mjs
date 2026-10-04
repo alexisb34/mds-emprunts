@@ -3,7 +3,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { REASONS, now, addDays } from '../js/rules.js';
+import { REASONS, now, addDays, isLate, pickupWindow } from '../js/rules.js';
 import { ACTIONS } from '../js/log.js';
 import { ITEM_STATES, LOAN_STATES, MAINT_STATES } from '../js/models.js';
 import { buildChecklist } from '../js/checklists.js';
@@ -276,4 +276,56 @@ test('userLoans.reservations : le retrait le plus proche en premier', () => {
   const loanLoin = reserveValeur({ itemId: a.id, userId: ELEVE, debutPrevu: lundi, finPrevue: lundi, motif: '' });
   const loanProche = reserveValeur({ itemId: b.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN9, motif: '' });
   assert.deepEqual(userLoans(ELEVE, NOW).reservations.map((r) => r.loan.id), [loanProche.id, loanLoin.id]);
+});
+
+test('reserveValeur : un emprunteur en retard ne peut pas réserver', () => {
+  const retard = store.loans.list((l) => isLate(l, NOW))[0];
+  const item = freeValeur('hoya-nd');
+  const nb = store.loans.list().length;
+  assert.throws(() => reserveValeur({ itemId: item.id, userId: retard.userId, debutPrevu: DEMAIN9, finPrevue: DEMAIN9 }), (e) => e.reason === REASONS.RETARD_EN_COURS);
+  assert.equal(store.loans.list().length, nb);
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
+});
+
+test('bornes de la fenêtre de retrait : remise à l’instant de fin, expiration une minute après', () => {
+  const item = freeValeur('hoya-nd');
+  const loan = reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  const autre = freeValeur('sd-256');
+  const l2 = reserveValeur({ itemId: autre.id, userId: 'user_011', debutPrevu: DEMAIN9, finPrevue: DEMAIN9, motif: '' });
+  const { end } = pickupWindow(loan, 60);
+  clock(end);
+  assert.equal(expireDueLoans(end), 0, 'à l’instant exact de fin, la réservation tient encore');
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.RESERVEE);
+  assert.equal(handOver({ code: loan.codeRetrait, pedagoId: PEDAGO, date: end }).statut, LOAN_STATES.EN_COURS);
+
+  const apres = new Date(pickupWindow(l2, 60).end.getTime() + 60 * 1000);
+  clock(apres);
+  assert.equal(expireDueLoans(apres), 1, 'une minute après la fin, elle expire');
+  assert.equal(store.loans.get(l2.id).statut, LOAN_STATES.EXPIREE);
+});
+
+test('handOver : mauvais code court dans un QR, ou réservation déjà refusée', () => {
+  const item = freeValeur('hoya-nd');
+  const loan = reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  clock(new Date(2026, 8, 18, 9, 30));
+  const mauvais = loan.codeRetrait === 'ZZZZZZ' ? 'YYYYYY' : 'ZZZZZZ';
+  assert.throws(() => handOver({ code: `LOAN-${loan.id}-${mauvais}`, pedagoId: PEDAGO }), (e) => e.reason === REASONS.CODE_RETRAIT_INCONNU);
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.RESERVEE, 'rien n’a bougé');
+  refuseLoan(loan.id, PEDAGO, 'Matériel réservé pour un cours');
+  assert.throws(() => handOver({ code: loanQrPayload(loan), pedagoId: PEDAGO }), /plus en attente de remise/);
+  assert.throws(() => handOver({ code: loan.codeRetrait, pedagoId: PEDAGO }), /plus en attente de remise/);
+});
+
+test('reserveValeur est transactionnel : un échec sur l’objet ne laisse aucun emprunt', () => {
+  const item = freeValeur('hoya-nd');
+  const nb = store.loans.list().length;
+  const orig = store.items.update;
+  store.items.update = () => { throw new Error('quota'); };
+  try {
+    assert.throws(() => reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN9 }), /quota/);
+  } finally {
+    store.items.update = orig;
+  }
+  assert.equal(store.loans.list().length, nb, 'aucun emprunt créé');
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
 });
