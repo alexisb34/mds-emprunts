@@ -2,7 +2,7 @@
 import { store } from '../store.js';
 import { CIRCUITS, ITEM_STATES, LOAN_STATES, MAINT_TYPES, MAINT_STATES } from '../models.js';
 import {
-  now, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, ymd, REASONS, REASON_LABELS,
+  now, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, REASONS, REASON_LABELS,
 } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
@@ -101,7 +101,8 @@ export function userLoans(userId, date = now()) {
   const mine = store.loans.list((l) => l.userId === userId);
   return {
     enCours: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.EN_COURS), (l) => l.dateRetrait).map((loan) => ({ loan, item: itemOf(loan), late: isLate(loan, date) })),
-    reservations: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.RESERVEE), (l) => l.debutPrevu).map((loan) => ({
+    // Le retrait le plus proche en premier.
+    reservations: mine.filter((l) => l.statut === LOAN_STATES.RESERVEE).sort((a, b) => a.debutPrevu.localeCompare(b.debutPrevu)).map((loan) => ({
       loan, item: itemOf(loan),
       window: pickupWindow(loan, minutes),
       pickupOpen: isInPickupWindow(loan, date, minutes),
@@ -277,22 +278,4 @@ export function sweepExpirations(date = now()) {
     console.error('Expiration des réservations impossible :', e);
     return 0;
   }
-}
-
-// Réservations à remettre le jour de `date`, avec leur fenêtre de retrait.
-export function pendingHandovers(date = now()) {
-  const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
-  const items = store.items.list();
-  const users = store.users.list();
-  const jour = ymd(date);
-  return store.loans
-    .list((l) => l.statut === LOAN_STATES.RESERVEE && ymd(l.debutPrevu) === jour)
-    .sort((a, b) => a.debutPrevu.localeCompare(b.debutPrevu))
-    .map((loan) => ({
-      loan,
-      item: items.find((i) => i.id === loan.itemId) || null,
-      user: users.find((u) => u.id === loan.userId) || null,
-      window: pickupWindow(loan, minutes),
-      open: isInPickupWindow(loan, date, minutes),
-    }));
 }

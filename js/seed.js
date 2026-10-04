@@ -82,6 +82,8 @@ function makeRandom(seed) {
 export function buildSeed(now = new Date()) {
   const rand = makeRandom(42);
   const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+  // Duplication volontaire de `code6` (js/actions/loans.js) : celui-ci tire dans le générateur `rand`
+  // pour que le seed reste déterministe, alors que l’action utilise Math.random.
   const code6 = () => Array.from({ length: 6 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(rand() * 31)]).join('');
 
   const db = { settings: { ...DEFAULT_SETTINGS, salle: { ...DEFAULT_SETTINGS.salle }, horaires: DEFAULT_SETTINGS.horaires.map((h) => ({ ...h })) },

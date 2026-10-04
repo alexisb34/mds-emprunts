@@ -10,7 +10,7 @@ import { buildChecklist } from '../js/checklists.js';
 import { loanQrPayload } from '../js/qr.js';
 import {
   reserveValeur, handOver, receiveLoan, refuseLoan, cancelLoan, extendLoan,
-  expireDueLoans, sweepExpirations, pendingHandovers, userLoans,
+  expireDueLoans, sweepExpirations, userLoans,
 } from '../js/actions/loans.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);   // jeudi 10h
@@ -94,18 +94,6 @@ test('expireDueLoans : libère après la fenêtre, idempotent, n’touche pas le
   assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
   assert.equal(store.log.list().at(-1).action, ACTIONS.LOAN_EXPIREE);
   assert.equal(expireDueLoans(), 0, 'idempotent');
-});
-
-test('pendingHandovers : réservations du jour, fenêtre ouverte ou non', () => {
-  const item = freeValeur('hoya-nd');
-  const loan = reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
-  assert.equal(pendingHandovers(NOW).length, 0, 'pas aujourd’hui');
-  const demainTot = new Date(2026, 8, 18, 8, 0);
-  const avant = pendingHandovers(demainTot);
-  assert.equal(avant.length, 1);
-  assert.equal(avant[0].open, false);
-  assert.equal(avant[0].user.id, ELEVE);
-  assert.equal(pendingHandovers(new Date(2026, 8, 18, 9, 30))[0].open, true);
 });
 
 test('receiveLoan : checklist complète, objet disponible, signalement si problème, emprunt self accepté', () => {
@@ -279,4 +267,13 @@ test('sweepExpirations : comme expireDueLoans, mais une écriture qui échoue ne
   assert.equal(store.items.get(item.id).etat, ITEM_STATES.RESERVE);
   assert.equal(sweepExpirations(), 1, 'sans panne, le prochain balayage libère la réservation');
   assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.EXPIREE);
+});
+
+test('userLoans.reservations : le retrait le plus proche en premier', () => {
+  const a = freeValeur('hoya-nd');
+  const b = freeValeur('sd-256');
+  const lundi = new Date(2026, 8, 21, 9, 0);
+  const loanLoin = reserveValeur({ itemId: a.id, userId: ELEVE, debutPrevu: lundi, finPrevue: lundi, motif: '' });
+  const loanProche = reserveValeur({ itemId: b.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN9, motif: '' });
+  assert.deepEqual(userLoans(ELEVE, NOW).reservations.map((r) => r.loan.id), [loanProche.id, loanLoin.id]);
 });
