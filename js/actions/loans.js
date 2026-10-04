@@ -112,7 +112,7 @@ export function userLoans(userId, date = now()) {
     // (elles ne sont plus dans `reservations`, qui ne contient que les réservations en attente).
     expireesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.EXPIREE && (date - pickupWindow(l, minutes).end) < 24 * 60 * 60 * 1000), (l) => l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
     // Réservations refusées dans les dernières 24 h : l’accueil en informe l’emprunteur avec le motif.
-    refuseesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.REFUSEE && (date - new Date(l.updatedAt)) < 24 * 60 * 60 * 1000), (l) => l.updatedAt).map((loan) => ({ loan, item: itemOf(loan) })),
+    refuseesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.REFUSEE && l.dateRefus && (date - new Date(l.dateRefus)) < 24 * 60 * 60 * 1000), (l) => l.dateRefus).map((loan) => ({ loan, item: itemOf(loan) })),
     historique: sortByDateDesc(mine.filter((l) => !ACTIVE.includes(l.statut)), (l) => l.dateRetourReelle || l.dateRetrait || l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
   };
 }
@@ -148,7 +148,7 @@ export function reserveValeur({ itemId, userId, debutPrevu, finPrevue, motif = '
   if (!check.ok) throw refusal(check.reason);
   return store.transaction(() => {
     const loan = store.loans.create({
-      itemId, userId, statut: LOAN_STATES.RESERVEE, motif: String(motif || '').trim(), motifRefus: '', codeRetrait: code6(),
+      itemId, userId, statut: LOAN_STATES.RESERVEE, motif: String(motif || '').trim(), motifRefus: '', dateRefus: null, codeRetrait: code6(),
       dateReservation: date.toISOString(), debutPrevu: debut.toISOString(), finPrevue: fin.toISOString(),
       dateRetrait: null, dateRetourReelle: null, remisPar: null, receptionnePar: null,
       photoEmprunt: null, photoRetour: null, checklistRetour: null, commentaire: '',
@@ -226,7 +226,7 @@ export function refuseLoan(loanId, pedagoId, motifRefus) {
   const motif = String(motifRefus || '').trim();
   if (!motif) throw new Error('Le motif du refus est obligatoire.');
   const item = store.items.get(loan.itemId);
-  return releaseReservation(loan, { statut: LOAN_STATES.REFUSEE, action: ACTIONS.LOAN_REFUSEE, auteurId: pedagoId, detail: `${item ? item.nom : loan.itemId} — ${motif}`, patch: { motifRefus: motif } });
+  return releaseReservation(loan, { statut: LOAN_STATES.REFUSEE, action: ACTIONS.LOAN_REFUSEE, auteurId: pedagoId, detail: `${item ? item.nom : loan.itemId} — ${motif}`, patch: { motifRefus: motif, dateRefus: now().toISOString() } });
 }
 
 export function cancelLoan(loanId, userId) {

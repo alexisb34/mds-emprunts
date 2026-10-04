@@ -237,14 +237,15 @@ test('userLoans : refuseesRecentes porte le motif de refus et s’efface après 
   const item = freeValeur('hoya-nd');
   const loan = reserveValeur({ itemId: item.id, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
   refuseLoan(loan.id, PEDAGO, 'Réservé pour un cours');
-  const recent = userLoans(ELEVE, now()).refuseesRecentes;
+  const recent = userLoans(ELEVE, NOW).refuseesRecentes;
   assert.equal(recent.length, 1);
   assert.equal(recent[0].loan.motifRefus, 'Réservé pour un cours');
   assert.equal(recent[0].item.id, item.id);
-  // `updatedAt` est posé par le store à l’horloge réelle (le patch ne peut pas le forcer) :
-  // on simule le temps qui passe en interrogeant 25 h après l’écriture.
-  const plusTard = new Date(new Date(store.loans.get(loan.id).updatedAt).getTime() + 25 * 60 * 60 * 1000);
-  assert.equal(userLoans(ELEVE, plusTard).refuseesRecentes.length, 0);
+  assert.equal(userLoans(ELEVE, new Date(2026, 8, 19, 10, 0)).refuseesRecentes.length, 0, 'plus de 24 h après, sur l’horloge de démo');
+  assert.equal(userLoans(ELEVE, new Date(2026, 8, 18, 9, 0)).refuseesRecentes.length, 1, 'moins de 24 h après');
+  // Un refus sans `dateRefus` (antérieur à ce champ) n’est jamais « récent ».
+  store.loans.update(loan.id, { dateRefus: null });
+  assert.equal(userLoans(ELEVE, NOW).refuseesRecentes.length, 0);
 });
 
 test('sweepExpirations : comme expireDueLoans, mais une écriture qui échoue ne lève jamais', () => {

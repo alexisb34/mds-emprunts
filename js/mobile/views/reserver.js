@@ -2,7 +2,7 @@
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
 import { navigate } from '../../router.js';
-import { now, addDays, ymd, fromYmd, withDefaults } from '../../rules.js';
+import { now, addDays, ymd, fromYmd, isWeekday, withDefaults } from '../../rules.js';
 import { escapeHtml, badge, formatTime, toast } from '../../ui.js';
 import { reserveValeur } from '../../actions/loans.js';
 import { setHeader } from '../layout.js';
@@ -19,7 +19,10 @@ export function openHours(settings) {
 
 // Horizon de réservation : 60 jours ; le jour même est permis par les règles.
 export function defaultDates(date, dureeMax) {
-  const debut = ymd(addDays(date, 1));
+  // Le retrait doit tomber un jour ouvré : on propose le prochain, pas simplement demain.
+  let d = addDays(date, 1);
+  while (!isWeekday(d)) d = addDays(d, 1);
+  const debut = ymd(d);
   return { debut, fin: debut, min: ymd(date), max: ymd(addDays(date, 60)) };
 }
 

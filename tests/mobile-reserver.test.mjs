@@ -12,6 +12,16 @@ test('defaultDates : demain, même jour par défaut, aujourd’hui permis, horiz
   assert.deepEqual(defaultDates(NOW, 5), { debut: '2026-09-18', fin: '2026-09-18', min: '2026-09-17', max: '2026-11-16' });
 });
 
+test('defaultDates : le retrait proposé tombe toujours un jour ouvré', () => {
+  const vendredi = defaultDates(new Date(2026, 8, 18, 10, 0), 5);
+  assert.equal(vendredi.debut, '2026-09-21', 'un vendredi → le lundi suivant');
+  assert.equal(vendredi.fin, '2026-09-21');
+  assert.equal(vendredi.min, '2026-09-18', 'min reste le jour courant');
+  assert.equal(vendredi.max, '2026-11-17');
+  assert.equal(defaultDates(new Date(2026, 8, 19, 10, 0), 5).debut, '2026-09-21', 'un samedi → le lundi suivant');
+  assert.equal(defaultDates(new Date(2026, 8, 20, 10, 0), 5).debut, '2026-09-21', 'un dimanche → le lundi suivant');
+});
+
 test('openHours : les heures entières de chaque plage d’ouverture', () => {
   assert.deepEqual(openHours({ horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 17 }] }), [8, 9, 10, 11, 13, 14, 15, 16]);
   assert.deepEqual(openHours({ horaires: [{ debut: 9, fin: 11 }] }), [9, 10]);
