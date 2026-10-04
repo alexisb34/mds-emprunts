@@ -102,3 +102,14 @@ test('updateSettings : ne touche pas à l’horloge de démo', () => {
   updateSettings({ dureeMaxReservationJours: 4 }, PEDAGO);
   assert.equal(store.settings.get().horlogeDemo, horloge);
 });
+
+test('officeStatus : le texte « fermé » cite les horaires réglés, pas des heures figées', () => {
+  const S = { horaires: [{ debut: 9, fin: 12 }, { debut: 14, fin: 18 }] };
+  const ferme = officeStatus(new Date(2026, 8, 17, 13, 0), S); // jeudi, entre les deux plages
+  assert.equal(ferme.open, false);
+  assert.match(ferme.text, /9h-12h et 14h-18h/);
+  assert.doesNotMatch(ferme.text, /8h-12h/);
+  // Le week-end ne mentionne pas d’horaires : la raison est le jour, pas l’heure.
+  const weekend = officeStatus(new Date(2026, 8, 19, 10, 0), S);
+  assert.match(weekend.text, /week-end/);
+});

@@ -2,7 +2,7 @@
 // de toute l’application (règles, journaux, affichages) sans toucher aux données.
 import { store } from '../store.js';
 import { buildSeed } from '../seed.js';
-import { withDefaults, isOfficeOpen, isWeekday } from '../rules.js';
+import { withDefaults, isOfficeOpen, isWeekday, formatOpenHours } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { formatDateTime } from '../ui.js';
 
@@ -25,7 +25,8 @@ export function fromDatetimeLocal(value) {
 export function officeStatus(date, settings) {
   const S = withDefaults(settings);
   if (isOfficeOpen(date, S.horaires)) return { open: true, text: 'Bureau ouvert : les emprunts en self-service sont possibles.' };
-  const raison = isWeekday(date) ? 'hors des heures d’ouverture (8h-12h, 13h-17h)' : 'week-end';
+  // Les horaires sont réglables depuis l’écran Paramètres : ce texte ne doit pas les figer.
+  const raison = isWeekday(date) ? `hors des heures d’ouverture (${formatOpenHours(S)})` : 'week-end';
   return { open: false, text: `Bureau fermé (${raison}) : les emprunts en self-service sont refusés, les retours restent possibles.` };
 }
 
