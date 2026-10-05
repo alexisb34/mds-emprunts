@@ -7,6 +7,7 @@ import { REASONS } from '../js/rules.js';
 import { ACTIONS } from '../js/log.js';
 import { ITEM_STATES, LOAN_STATES, MAINT_STATES } from '../js/models.js';
 import { findOpenLoanForItem, resolveScan, borrowSelf, returnSelf, userLoans } from '../js/actions/loans.js';
+import { updateSettings } from '../js/actions/settings.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0); // jeudi 10h
 const LEA = 'user_001';
@@ -232,4 +233,18 @@ test('userLoans : une réservation annulée à finPrevue future ne passe pas dev
   const hist = userLoans('user_011', NOW).historique;
   assert.equal(hist.length, before.length + 1);
   assert.equal(hist.at(-1).loan.id, cancelled.id);
+});
+
+test('le message de refus cite les horaires réglés, pas des heures figées', () => {
+  updateSettings({ horaires: [{ debut: 9, fin: 11 }] }, 'user_041');
+  store.settings.update({ horlogeDemo: new Date(2026, 8, 17, 11, 30).toISOString() }); // jeudi, après 11h
+  const item = store.items.list((i) => i.circuit === 'self' && i.etat === ITEM_STATES.DISPONIBLE)[0];
+  const sansEmprunt = store.users.list((u) => u.role === 'eleve'
+    && !store.loans.list().some((l) => l.userId === u.id && (l.statut === 'en_cours' || l.statut === 'reservee')))[0];
+  let erreur = null;
+  try { borrowSelf({ itemCode: item.code, userId: sansEmprunt.id, photo: PHOTO }); } catch (e) { erreur = e; }
+  assert.ok(erreur, 'l’emprunt est bien refusé');
+  assert.equal(erreur.reason, REASONS.BUREAU_FERME);
+  assert.match(erreur.message, /9h-11h/, 'le refus annonce l’horaire réglé');
+  assert.doesNotMatch(erreur.message, /8h-12h/);
 });

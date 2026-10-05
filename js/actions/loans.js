@@ -2,7 +2,7 @@
 import { store } from '../store.js';
 import { CIRCUITS, ITEM_STATES, LOAN_STATES, MAINT_TYPES, MAINT_STATES } from '../models.js';
 import {
-  now, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, REASONS, REASON_LABELS,
+  now, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, REASONS, reasonLabel,
 } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
@@ -19,7 +19,8 @@ function assertPhoto(photo) {
 }
 
 function refusal(reason) {
-  return Object.assign(new Error(REASON_LABELS[reason] || reason), { reason });
+  // Le libellé cite les horaires RÉGLÉS : un message figé mentirait dès que la pédago les change.
+  return Object.assign(new Error(reasonLabel(reason, store.settings.get()) || reason), { reason });
 }
 
 export function findOpenLoanForItem(itemId) {

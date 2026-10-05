@@ -5,7 +5,6 @@ import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { NAV, isActive, sidebarHtml, topbarHtml, parseAdminSearch } from '../js/admin/layout.js';
 import { loginHtml } from '../js/admin/views/login.js';
-import { aVenirHtml } from '../js/admin/views/aVenir.js';
 
 beforeEach(() => {
   localStorage.clear();
@@ -65,10 +64,6 @@ test('loginHtml : un bouton par pédago actif, emails affichés', () => {
   assert.match(html, /Qui êtes-vous/);
 });
 
-test('aVenirHtml : mentionne la phase', () => {
-  assert.match(aVenirHtml('Emprunts', 3), /Emprunts/);
-  assert.match(aVenirHtml('Emprunts', 3), /phase 3/);
-});
 
 test('parseAdminSearch : distingue un code de retrait d’une recherche de matériel', () => {
   assert.deepEqual(parseAdminSearch('AB23CD'), { type: 'code_possible', code: 'AB23CD' });

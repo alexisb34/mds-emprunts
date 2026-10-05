@@ -3,7 +3,7 @@
 // ne fait pas l’objet d’emprunts individuels, il est contrôlé à l’entrée et à la sortie.
 import { store } from '../store.js';
 import { BOOKING_STATES, CIRCUITS, ITEM_STATES, MAINT_TYPES, MAINT_STATES, ROLES } from '../models.js';
-import { now, ymd, bookingStart, bookingEnd, isBookingActive, sortByDateDesc, REASONS, REASON_LABELS } from '../rules.js';
+import { now, ymd, bookingStart, bookingEnd, isBookingActive, sortByDateDesc, REASONS, reasonLabel } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
 import { buildRoomChecklist, hasProblem, problemLines } from '../checklists.js';
@@ -11,7 +11,8 @@ import { selectionIsValid, startOfWeek, weekDays } from '../weekGrid.js';
 import { fullName, formatSlots } from '../ui.js';
 
 function refusal(reason) {
-  return Object.assign(new Error(REASON_LABELS[reason] || reason), { reason });
+  // Le libellé cite les horaires RÉGLÉS : un message figé mentirait dès que la pédago les change.
+  return Object.assign(new Error(reasonLabel(reason, store.settings.get()) || reason), { reason });
 }
 
 function requireBooking(id) {

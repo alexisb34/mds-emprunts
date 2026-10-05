@@ -2,7 +2,7 @@
 // confirmation d’emprunt ou checklist de retour, résultat. Le flux est piloté par scanFlow.js.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, selfReturnDeadline, withDefaults, REASON_LABELS, REASONS } from '../../rules.js';
+import { now, selfReturnDeadline, withDefaults, reasonLabel, REASONS } from '../../rules.js';
 import { CIRCUITS, ITEM_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, relativeDay, toast } from '../../ui.js';
 import { resolveScan, borrowSelf, returnSelf, userLoans } from '../../actions/loans.js';
@@ -116,8 +116,8 @@ export function resultHtml({ mode, item, result }) {
     </div>`;
 }
 
-export function errorHtml({ reason, error, item }) {
-  const message = reason ? (REASON_LABELS[reason] || reason) : (error || 'Une erreur est survenue.');
+export function errorHtml({ reason, error, item, settings = null }) {
+  const message = reason ? (reasonLabel(reason, settings) || reason) : (error || 'Une erreur est survenue.');
   let hint = '';
   // L’aide ne vaut que pour un objet que l’emprunteur ne détient pas : sur un refus
   // « rendu à la pédago », il l’a déjà entre les mains.
@@ -240,7 +240,7 @@ export function scanView(container) {
       }
       case STEPS.CHECKLIST: container.innerHTML = checklistStepHtml({ item: state.item, photo: state.photo, checklist: state.checklist }); bindChecklist(); break;
       case STEPS.DONE: container.innerHTML = resultHtml({ mode: state.mode, item: state.item, result: state.result }); on('[data-action="restart"]', () => set(initialState())); break;
-      default: container.innerHTML = errorHtml({ reason: state.reason, error: state.error, item: state.item }); on('[data-action="restart"]', () => set(initialState()));
+      default: container.innerHTML = errorHtml({ reason: state.reason, error: state.error, item: state.item, settings: store.settings.get() }); on('[data-action="restart"]', () => set(initialState()));
     }
   };
 

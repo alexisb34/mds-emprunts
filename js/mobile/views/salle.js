@@ -2,7 +2,7 @@
 // mes réservations et états des lieux d’entrée et de sortie.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, addDays, isBookingActive, isWeekday, REASONS, REASON_LABELS } from '../../rules.js';
+import { now, addDays, isBookingActive, isWeekday, REASONS, reasonLabel } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatDate, formatSlots, relativeDay, openModal, toast } from '../../ui.js';
 import { buildWeekGrid, toggleSlot, selectionIsValid, startOfWeek, weekLabel } from '../../weekGrid.js';
@@ -40,13 +40,13 @@ export function gridHtml({ grid, selection }) {
   return `<table class="week-grid"><thead><tr><th></th>${entetes}</tr></thead><tbody>${lignes}</tbody></table>`;
 }
 
-export function selectionBarHtml({ selection, check }) {
+export function selectionBarHtml({ selection, check, settings = null }) {
   const n = selection.creneaux.length;
   const resume = n
     ? `<strong>${escapeHtml(formatSlots(selection.creneaux))}</strong> · ${n} créneau${n > 1 ? 'x' : ''}`
     : 'Touchez un ou plusieurs créneaux qui se suivent.';
   // Sélection vide : le résumé invite déjà à choisir, inutile d’empiler un second message.
-  const message = check.ok || check.reason === REASONS.CRENEAU_VIDE ? '' : `<p class="body-tiny text-secondary">${escapeHtml(REASON_LABELS[check.reason] || '')}</p>`;
+  const message = check.ok || check.reason === REASONS.CRENEAU_VIDE ? '' : `<p class="body-tiny text-secondary">${escapeHtml(reasonLabel(check.reason, settings) || '')}</p>`;
   return `
     <div class="selection-bar">
       <div class="selection-bar__resume body-sm">${resume}</div>
@@ -114,7 +114,7 @@ export function openingWeek(date) {
 }
 
 // `semaine` : une date de la semaine affichée ; `date` : l’instant présent, référence des jours relatifs.
-export function salleHtml({ grid, selection, check, mine, semaine, date }) {
+export function salleHtml({ grid, selection, check, mine, semaine, date, settings = null }) {
   return `
     <section class="card">
       <div class="card__header">
@@ -124,7 +124,7 @@ export function salleHtml({ grid, selection, check, mine, semaine, date }) {
       </div>
       ${gridHtml({ grid, selection })}
     </section>
-    ${selectionBarHtml({ selection, check })}
+    ${selectionBarHtml({ selection, check, settings })}
     <section class="m-section">
       <h2 class="label-caps text-secondary">Mes réservations</h2>
       ${myBookingsHtml(mine, date)}
@@ -174,7 +174,7 @@ export function salleView(container) {
     const grid = buildWeekGrid({ date: semaine, bookings, settings, userId: user.id, now: date });
     const check = selectionIsValid(selection, { bookings, settings, date });
     setHeader({ title: 'Salle photo' });
-    container.innerHTML = salleHtml({ grid, selection, check, mine: userBookings(user.id, date), semaine, date });
+    container.innerHTML = salleHtml({ grid, selection, check, mine: userBookings(user.id, date), semaine, date, settings });
     container.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => {
       const [jour, heure] = b.dataset.slot.split(':');
       selection = toggleSlot(selection, { ymd: jour, heure: Number(heure) });
