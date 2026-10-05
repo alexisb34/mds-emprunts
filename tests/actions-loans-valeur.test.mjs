@@ -10,7 +10,7 @@ import { buildChecklist } from '../js/checklists.js';
 import { loanQrPayload } from '../js/qr.js';
 import {
   reserveValeur, handOver, receiveLoan, refuseLoan, cancelLoan, extendLoan,
-  expireDueLoans, sweepExpirations, userLoans,
+  expireDueLoans, sweepExpirations, userLoans, setLoanStatus,
 } from '../js/actions/loans.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);   // jeudi 10h
@@ -331,12 +331,13 @@ test('reserveValeur est transactionnel : un échec sur l’objet ne laisse aucun
   assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
 });
 
-test('setLoanStatus : une transition absente de LOAN_TRANSITIONS lève avant d’écrire', () => {
+test('setLoanStatus : le filet de la table arrête une transition interdite avant d’écrire', () => {
   const loan = store.loans.list((l) => l.statut === LOAN_STATES.RETOURNEE)[0];
   assert.ok(loan, 'le seed contient un emprunt rendu');
-  // `retournee` est terminal : aucune action ne doit pouvoir le rouvrir.
-  assert.throws(() => handOver({ code: loan.codeRetrait, pedagoId: PEDAGO }), /./);
-  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.RETOURNEE);
+  const avant = store.loans.get(loan.id);
+  // `retournee` est terminal : la table interdit de le rouvrir, quoi que disent les gardes.
+  assert.throws(() => setLoanStatus(loan.id, LOAN_STATES.EN_COURS, { remisPar: PEDAGO }), /Transition emprunt interdite : retournee → en_cours/);
+  assert.deepEqual(store.loans.get(loan.id), avant, 'rien n’a été écrit');
 });
 
 test('les messages des gardes métier priment sur celui de la table', () => {

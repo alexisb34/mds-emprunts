@@ -248,11 +248,23 @@ test('recordEntry avec deux lignes en problème : un signalement par ligne', () 
   assert.equal(store.log.list().length, before + 3, '1 état des lieux + 2 signalements');
 });
 
-test('setBookingStatus : une transition absente de BOOKING_TRANSITIONS lève avant d’écrire', () => {
+test('cancelBooking : une réservation annulée ne se rouvre pas, la garde métier parle d’abord', () => {
   const b = createBooking({ userId: ELEVE, date: DEMAIN, creneaux: [13] });
   cancelBooking(b.id, PEDAGO);
   assert.equal(store.bookings.get(b.id).statut, BOOKING_STATES.ANNULEE);
-  // `annulee` est terminal : la garde métier refuse d’abord, et la table couvre le reste.
   assert.throws(() => cancelBooking(b.id, PEDAGO), /plus annulable/);
   assert.equal(store.bookings.get(b.id).statut, BOOKING_STATES.ANNULEE);
+});
+
+test('setBookingStatus : le filet de la table arrête une transition que les gardes ne couvrent pas', () => {
+  const b = createBooking({ userId: ELEVE, date: '2026-09-17', creneaux: [13] });
+  // Incohérence qu’aucune garde métier ne peut produire : `en_cours` sans état des lieux
+  // d’entrée. `recordEntry` la laisse passer — c’est la table qui doit arrêter le coup.
+  store.bookings.update(b.id, { statut: BOOKING_STATES.EN_COURS });
+  clock(new Date(2026, 8, 17, 13, 5));
+  assert.throws(
+    () => recordEntry({ bookingId: b.id, userId: ELEVE, checklist: roomChecklist() }),
+    /Transition réservation interdite : en_cours → en_cours/,
+  );
+  assert.equal(store.bookings.get(b.id).etatEntree, null, 'rien n’a été écrit');
 });

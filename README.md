@@ -43,6 +43,8 @@ git remote add origin https://github.com/<compte>/mds-emprunts.git
 git push -u origin main
 ```
 
+Publier `main` une fois la branche de phase fusionnée (aujourd’hui `phase-6-deploiement`) : sinon les phases 4 à 6 ne seraient pas en ligne.
+
 Puis, dans le dépôt : **Settings → Pages → Source : Deploy from a branch → `main` / `/ (root)`**. L’URL `https://<compte>.github.io/mds-emprunts/` répond au bout d’une minute ou deux.
 
 Pour montrer une version en cours sans rien publier, un tunnel suffit :

@@ -93,6 +93,8 @@ function recordEtatDesLieux({ booking, userId, checklist, moment }) {
     if (!problem) return { booking: updated, maintenance: null };
     const lignesProblemes = problemLines(lignes);
     const libelleMoment = entree ? 'd’entrée' : 'de sortie';
+    // Une ligne dont l’objet n’existe plus fait échouer tout l’état des lieux (`reportIssue`
+    // exige l’objet) : choix assumé, le cas est inatteignable (aucun code ne supprime un objet).
     const events = lignesProblemes.map((ligne) => {
       const description = `Signalé à l’état des lieux ${libelleMoment} : ${ligne.ligne}${ligne.commentaire ? ` → ${ligne.commentaire}` : ''}`;
       return reportIssue({

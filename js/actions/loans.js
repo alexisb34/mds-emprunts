@@ -135,7 +135,8 @@ function requireLoan(id) {
 // Spec §9 : la couche d’actions vérifie les transitions déclarées dans `models.js`.
 // Les gardes métier en amont restent : elles donnent le message lisible, la table n’est
 // qu’un filet pour un chemin imprévu.
-function setLoanStatus(loanId, statut, patch = {}) {
+// Exportée pour que le filet puisse être testé : aucune action publique ne peut l’atteindre (les gardes métier couvrent exactement les mêmes états de départ que la table).
+export function setLoanStatus(loanId, statut, patch = {}) {
   const loan = requireLoan(loanId);
   assertTransition(LOAN_TRANSITIONS, loan.statut, statut, 'emprunt');
   return store.loans.update(loanId, { statut, ...patch });

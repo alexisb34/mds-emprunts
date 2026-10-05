@@ -150,7 +150,11 @@ export const store = {
   // et `persist()` doit rester le seul écrivain de `localStorage` (l’instantané est pris en mémoire).
   // Imbrication : seule la transaction la plus externe restaure. Une transaction imbriquée
   // qui lève remonte l’erreur ; si l’externe la rattrape et continue, les écritures de
-  // l’imbriquée sont conservées. Les actions de ce projet n’imbriquent pas.
+  // l’imbriquée sont conservées.
+  // Les actions imbriquent désormais : `returnSelf`, `receiveLoan` et `recordEtatDesLieux`
+  // appellent `reportIssue`, qui ouvre sa propre transaction. Seule la trame la plus externe
+  // restaure, persiste et notifie : ne pas simplifier `depth`/`pending`, l’atomicité de ces
+  // trois chemins en dépend.
   transaction(fn) {
     assertInit();
     const snapshot = depth === 0 ? JSON.stringify(db) : null;
