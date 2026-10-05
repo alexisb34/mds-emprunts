@@ -14,12 +14,16 @@ const lire = (f) => readFileSync(new URL(f, RACINE), 'utf8');
 // doubles), imports de modules en ligne (statiques et dynamiques) et `url(…)`.
 function references(html) {
   const motifs = [
-    /\b(?:src|href)\s*=\s*(["'])(.*?)\1/g,
+    // `i` : un attribut en capitales compte autant. La seconde alternative couvre une
+    // valeur sans guillemets, que HTML tolère et qu’un motif à guillemets ne verrait pas.
+    /\b(?:src|href|srcset)\s*=\s*(["'])(.*?)\1/gi,
+    /\b(?:src|href)\s*=\s*(?!["'])([^\s>]+)/gi,
     /\bimport\s*(?:[^'"()]*?\bfrom\s*)?(["'])(.*?)\1/g,
     /\bimport\s*\(\s*(["'])(.*?)\1\s*\)/g,
     /\burl\(\s*(["']?)(.*?)\1\s*\)/g,
   ];
-  return motifs.flatMap((re) => [...html.matchAll(re)].map((m) => m[2].trim()));
+  // Selon le motif, la référence est dans le groupe 2 (après le guillemet) ou le groupe 1.
+  return motifs.flatMap((re) => [...html.matchAll(re)].map((m) => (m[2] ?? m[1]).trim()));
 }
 
 // Une référence externe (`https:`, `data:`, `mailto:`, `//cdn…`) n’est pas notre affaire.
@@ -113,4 +117,13 @@ test('la page d’accueil mène aux quatre interfaces', () => {
   for (const cible of ['admin.html', 'mobile.html', 'etiquettes.html', 'kit.html']) {
     assert.match(html, new RegExp(`href="${cible}"`), `index.html ne mène pas à ${cible}`);
   }
+});
+
+test('le détecteur voit un attribut sans guillemets ou en capitales', () => {
+  // HTML tolère les deux ; un motif qui exige des guillemets minuscules les manquerait.
+  assert.deepEqual(problemes('<link href=/css/base.css>').length, 1);
+  assert.deepEqual(problemes('<script SRC="/js/store.js"></script>').length, 1);
+  assert.deepEqual(problemes('<img srcset="/assets/icon-192.png 1x">').length, 1);
+  // Et rien d’inventé sur du balisage légitime.
+  assert.deepEqual(problemes('<link href=css/base.css><a href="#/materiel">x</a>'), []);
 });
