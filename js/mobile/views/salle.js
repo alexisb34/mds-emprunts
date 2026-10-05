@@ -2,7 +2,7 @@
 // mes réservations et états des lieux d’entrée et de sortie.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, addDays, ymd, isWeekday, REASONS, REASON_LABELS } from '../../rules.js';
+import { now, addDays, isBookingActive, isWeekday, REASONS, REASON_LABELS } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatDate, formatSlots, relativeDay, openModal, toast } from '../../ui.js';
 import { buildWeekGrid, toggleSlot, selectionIsValid, startOfWeek, weekLabel } from '../../weekGrid.js';
@@ -59,8 +59,9 @@ export function myBookingsHtml({ active, aVenir }, date) {
   const bloc = [];
   if (active) {
     const { booking, entreeFaite, sortieFaite } = active;
-    // Un créneau d’un autre jour resté ouvert n’est pas « en cours » : il attend sa sortie.
-    const titre = booking.date === ymd(date) && booking.statut === BOOKING_STATES.EN_COURS
+    // Un créneau resté ouvert hors de ses heures (autre jour, ou terminé depuis) n’est pas
+    // « en cours » : il attend sa sortie.
+    const titre = isBookingActive(booking, date) && booking.statut === BOOKING_STATES.EN_COURS
       ? 'Créneau en cours'
       : (booking.statut === BOOKING_STATES.EN_COURS ? 'Créneau non clôturé' : 'Créneau du jour');
     const action = !entreeFaite

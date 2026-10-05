@@ -117,4 +117,8 @@ test('myBookingsHtml : un créneau d’un autre jour resté ouvert est dit « no
   const aujourdhui = { ...hier, id: 'book_now', date: '2026-09-17', creneaux: [9, 10] };
   const html2 = myBookingsHtml({ active: { booking: aujourdhui, entreeFaite: true, sortieFaite: false }, aVenir: [] }, NOW);
   assert.match(html2, /Créneau en cours/);
+  // Même jour mais créneau terminé depuis (9h-11h, il est 15h) : la sortie manque, il n’est plus « en cours ».
+  const html3 = myBookingsHtml({ active: { booking: aujourdhui, entreeFaite: true, sortieFaite: false }, aVenir: [] }, new Date(2026, 8, 17, 15, 0));
+  assert.match(html3, /Créneau non clôturé/);
+  assert.doesNotMatch(html3, /Créneau en cours/);
 });

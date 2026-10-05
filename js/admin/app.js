@@ -20,9 +20,15 @@ import { empruntsView } from './views/emprunts.js';
 import { salleView } from './views/salle.js';
 import { maintenanceView } from './views/maintenance.js';
 import { parametresView } from './views/parametres.js';
-import { openHandoverModal } from './handoverModal.js';
+import { openHandoverModal, isKnownRetraitCode } from './handoverModal.js';
 
-setSearchCodeHandler((code) => openHandoverModal({ code }));
+// Un code court possible n’ouvre la remise que s’il correspond à un emprunt ; sinon la saisie
+// reste une recherche de matériel (un mot comme « camera » est aussi un jeton de six lettres valides).
+setSearchCodeHandler((parsed) => {
+  if (parsed.type === 'code_possible' && !isKnownRetraitCode(parsed.code, store.loans.list())) return false;
+  openHandoverModal({ code: parsed.code });
+  return true;
+});
 
 store.init(buildSeed);
 

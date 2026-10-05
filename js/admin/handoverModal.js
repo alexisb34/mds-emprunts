@@ -4,6 +4,7 @@ import { auth } from '../auth.js';
 import { escapeHtml, toast } from '../ui.js';
 import { checklistFor } from '../checklists.js';
 import { handOver } from '../actions/loans.js';
+import { parseLoanCode } from '../qr.js';
 import { openScanModal } from '../scanModal.js';
 
 export function checklistFormHtml(reference) {
@@ -31,6 +32,28 @@ export function readChecklistForm(root, reference) {
   return { checklist, commentaire: c ? c.value.trim() : '' };
 }
 
+// Le code saisi désigne-t-il bien la réservation d’où la modale a été ouverte ?
+// À vérifier AVANT `handOver`, qui écrit puis rend l’emprunt : comparer après coup
+// remettrait pour de bon une réservation qu’on prétend refuser.
+export function codeMatchesLoan(saisi, loan) {
+  if (!loan) return true;
+  const parsed = parseLoanCode(String(saisi || '').trim());
+  if (parsed) return parsed.loanId === loan.id;
+  return String(saisi || '').trim().toUpperCase() === loan.codeRetrait;
+}
+
+// Un code court tapé dans la recherche globale est-il celui d’un emprunt connu ?
+// (Un emprunt déjà remis compte : la remise répondra alors « plus en attente ».)
+export function isKnownRetraitCode(code, loans) {
+  return loans.some((l) => l.codeRetrait === code);
+}
+
+// Refuse le code d’une autre réservation sans rien écrire, puis remet.
+export function handOverChecked({ saisi, loan = null, pedagoId }) {
+  if (!codeMatchesLoan(saisi, loan)) throw new Error('Ce code correspond à une autre réservation.');
+  return handOver({ code: saisi, pedagoId });
+}
+
 // Modale de remise : la pédago scanne le QR affiché par l’emprunteur, ou saisit son code à 6 caractères.
 // `loan` : l’emprunt de la ligne cliquée. Son code est pré-rempli, et on refuse un code
 // qui ne lui correspond pas — sinon le bouton d’une ligne pourrait en remettre une autre.
@@ -48,8 +71,7 @@ export function openHandoverModal({ loan = null, code = '', onDone } = {}) {
     value: attendu || code || '',
     submitLabel: 'Remettre',
     onCode: (saisi) => {
-      const remis = handOver({ code: saisi, pedagoId: auth.currentUserId() });
-      if (loan && remis.id !== loan.id) throw new Error('Ce code correspond à une autre réservation.');
+      const remis = handOverChecked({ saisi, loan, pedagoId: auth.currentUserId() });
       toast('Matériel remis', 'success');
       if (onDone) onDone(remis);
     },

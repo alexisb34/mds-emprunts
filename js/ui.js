@@ -105,6 +105,9 @@ export function openModal({ title, body, actions = [], onClose = null }) {
   if (onCloseModal) { const previous = onCloseModal; onCloseModal = null; previous(); }
   onCloseModal = onClose;
   const token = (modalToken += 1); // après la libération de la précédente : c’est le jeton de CETTE modale
+  // La fermeture n’agit que si CETTE modale est encore à l’écran ; c’est aussi celle que
+  // l’on emploie après un `await`, quand une autre modale a pu s’ouvrir entre-temps.
+  const closeThis = () => { if (token === modalToken) closeModal(); };
   root.innerHTML = `
     <div class="modal-backdrop" data-close>
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -123,10 +126,9 @@ export function openModal({ title, body, actions = [], onClose = null }) {
   root.querySelectorAll('.modal__footer [data-action]').forEach((btn) => btn.addEventListener('click', async () => {
     const a = actions[Number(btn.dataset.action)];
     const keepOpen = a.onClick ? (await a.onClick(root.querySelector('.modal'))) === false : false;
-    if (a.close !== false && !keepOpen) closeModal();
+    if (a.close !== false && !keepOpen) closeThis();
   }));
-  // La fermeture renvoyée n’agit que si CETTE modale est encore à l’écran.
-  return () => { if (token === modalToken) closeModal(); };
+  return closeThis;
 }
 
 export function toast(message, variant = 'info', ms = 3000) {

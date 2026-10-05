@@ -71,12 +71,26 @@ test('aVenirHtml : mentionne la phase', () => {
 });
 
 test('parseAdminSearch : distingue un code de retrait d’une recherche de matériel', () => {
-  assert.deepEqual(parseAdminSearch('AB12CD'), { type: 'code', code: 'AB12CD' });
-  assert.deepEqual(parseAdminSearch('  ab12cd '), { type: 'code', code: 'AB12CD' });
+  assert.deepEqual(parseAdminSearch('AB23CD'), { type: 'code_possible', code: 'AB23CD' });
+  assert.deepEqual(parseAdminSearch('  ab23cd '), { type: 'code_possible', code: 'AB23CD' });
   assert.deepEqual(parseAdminSearch('LOAN-loan_0007-AB12CD'), { type: 'code', code: 'LOAN-loan_0007-AB12CD' });
   assert.deepEqual(parseAdminSearch('canon'), { type: 'texte', texte: 'canon' });
   assert.deepEqual(parseAdminSearch('Canon R10'), { type: 'texte', texte: 'Canon R10' });
   assert.deepEqual(parseAdminSearch(''), { type: 'texte', texte: '' });
-  // Six caractères mais pas un code : un mot de six lettres reste une recherche.
-  assert.deepEqual(parseAdminSearch('trepie'), { type: 'texte', texte: 'trepie' });
+});
+
+test('parseAdminSearch : un code sans chiffre reste un code possible, l’alphabet des codes tranche', () => {
+  // 17 % des codes émis n’ont aucun chiffre : exiger un chiffre en perdrait un sur six.
+  assert.deepEqual(parseAdminSearch('ZKMNPQ'), { type: 'code_possible', code: 'ZKMNPQ' });
+  // Un mot de six lettres de l’alphabet est un candidat : c’est le store qui décidera.
+  assert.deepEqual(parseAdminSearch('camera'), { type: 'code_possible', code: 'CAMERA' });
+  // I, L, O, 0 et 1 ne figurent jamais dans un code émis : recherche de matériel.
+  for (const t of ['trepie', 'ABCDEI', 'ABCDEL', 'ABCDEO', 'ABCDE0', 'ABCDE1', 'ab12c', 'AB12CDE']) {
+    assert.deepEqual(parseAdminSearch(t), { type: 'texte', texte: t }, t);
+  }
+});
+
+test('parseAdminSearch : le préfixe LOAN- est exigé en majuscules, la casse du reste est conservée', () => {
+  assert.deepEqual(parseAdminSearch(' LOAN-Loan_0007-AB12CD '), { type: 'code', code: 'LOAN-Loan_0007-AB12CD' });
+  assert.deepEqual(parseAdminSearch('loan-loan_0007-ab12cd'), { type: 'texte', texte: 'loan-loan_0007-ab12cd' });
 });
