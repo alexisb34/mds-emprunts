@@ -1,5 +1,6 @@
 // js/router.js — routing par #hash. Une vue = fonction (container, params) qui peut
 // renvoyer une fonction de nettoyage (désabonnement du store, arrêt de caméra…).
+import { closeModal } from './ui.js';
 
 export function matchRoute(pattern, path) {
   const p = pattern.split('/').filter(Boolean);
@@ -25,11 +26,18 @@ export function navigate(path) {
 export function createRouter({ routes, container, defaultPath = '/', notFound }) {
   let cleanup = null;
 
+  // Quitter une vue ferme aussi la modale qu’elle a pu laisser ouverte : sans cela, la caméra
+  // d’une modale de scan resterait allumée et la modale resterait posée sur la vue suivante.
+  function teardown() {
+    if (typeof cleanup === 'function') cleanup();
+    cleanup = null;
+    closeModal();
+  }
+
   function render() {
     const path = currentPath();
     if (path === '/' && defaultPath !== '/') { navigate(defaultPath); return; }
-    if (typeof cleanup === 'function') cleanup();
-    cleanup = null;
+    teardown();
     for (const route of routes) {
       const params = matchRoute(route.path, path);
       if (params) {
@@ -50,7 +58,7 @@ export function createRouter({ routes, container, defaultPath = '/', notFound })
 
   return {
     start() { window.addEventListener('hashchange', render); render(); },
-    stop() { window.removeEventListener('hashchange', render); if (typeof cleanup === 'function') cleanup(); },
+    stop() { window.removeEventListener('hashchange', render); teardown(); },
     render,
   };
 }

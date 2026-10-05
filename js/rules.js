@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS = {
   fenetreRetraitMinutes: 60,
   bloquerSiRetard: true,
   horlogeDemo: null, // ISO string ou null = temps réel
-  heureRetourSelf: 17,
+  // `heureRetourSelf` n’a pas de défaut : absente, l’heure de retour se déduit des horaires (voir `returnHour`).
   salle: { heureDebut: 8, heureFin: 17 }, // créneaux 8 … 16 (16 = 16h-17h)
 };
 
@@ -39,6 +39,17 @@ export const REASONS = {
   SALLE_FERMEE: 'salle_fermee',
 };
 
+// Les messages qui citent des horaires : un seul gabarit, rempli avec les horaires RÉGLÉS par `reasonLabel`
+// et avec les valeurs par défaut dans `REASON_LABELS` (le repli sans réglages ne peut donc pas diverger).
+function horsOuvertureLabel(settings) {
+  return `Le retrait doit tomber pendant les heures d’ouverture du bureau (jours ouvrés, ${formatOpenHours(settings)}).`;
+}
+
+function salleFermeeLabel(settings) {
+  const { heureDebut, heureFin } = openRoomHours(settings);
+  return `La salle photo est ouverte du lundi au vendredi, de ${formatHeure(heureDebut)} à ${formatHeure(heureFin)}.`;
+}
+
 export const REASON_LABELS = {
   bureau_ferme: 'Le bureau des pédago est fermé : retrait possible uniquement aux heures d’ouverture.',
   deja_un_exemplaire: 'Vous avez déjà un exemplaire de ce matériel (emprunt ou réservation en cours).',
@@ -56,13 +67,13 @@ export const REASON_LABELS = {
   fenetre_retrait: 'Hors de la fenêtre de retrait : le matériel se retire dans l’heure qui suit le début de la réservation.',
   date_passee: 'La date de début est déjà passée.',
   dates_incoherentes: 'La date de retour doit être postérieure ou égale à la date de retrait.',
-  hors_ouverture: 'Le retrait doit tomber pendant les heures d’ouverture du bureau (jours ouvrés, 8h-12h et 13h-17h).',
+  hors_ouverture: horsOuvertureLabel(DEFAULT_SETTINGS),
   rendu_a_la_pedago: 'Ce matériel se rend directement à la pédago, qui vérifie son état.',
   creneau_vide: 'Choisissez au moins un créneau.',
   creneaux_non_contigus: 'Les créneaux doivent se suivre sans interruption.',
   creneau_occupe: 'Un de ces créneaux est déjà réservé.',
   creneau_passe: 'Ce créneau est déjà passé.',
-  salle_fermee: 'La salle photo est ouverte du lundi au vendredi, de 8h à 17h.',
+  salle_fermee: salleFermeeLabel(DEFAULT_SETTINGS),
 };
 
 const UNAVAILABLE_REASON = {
@@ -118,14 +129,14 @@ export function isOfficeOpen(date, horaires) {
 }
 
 // Les heures réglées, écrites comme on les lit : « 8h-12h et 13h-17h », « 9h30-12h ».
-function formatHeure(h) {
+export function formatHeure(h) {
   const entier = Math.floor(h);
   const minutes = Math.round((h - entier) * 60);
   return minutes ? `${entier}h${String(minutes).padStart(2, '0')}` : `${entier}h`;
 }
 
 // Les heures de la salle réglées ; une valeur absente ou mal formée retombe sur la valeur par défaut.
-function openRoomHours(settings) {
+export function openRoomHours(settings) {
   const salle = (settings && settings.salle) || {};
   const heureDebut = Number(salle.heureDebut);
   const heureFin = Number(salle.heureFin);
@@ -142,16 +153,11 @@ export function formatOpenHours(settings) {
 // les autres gardent le texte figé de REASON_LABELS.
 export function reasonLabel(reason, settings = null) {
   if (!settings) return REASON_LABELS[reason] || '';
-  if (reason === REASONS.HORS_OUVERTURE) {
-    return `Le retrait doit tomber pendant les heures d’ouverture du bureau (jours ouvrés, ${formatOpenHours(settings)}).`;
-  }
+  if (reason === REASONS.HORS_OUVERTURE) return horsOuvertureLabel(settings);
   if (reason === REASONS.BUREAU_FERME) {
     return `Le bureau de la pédagogie est fermé (jours ouvrés, ${formatOpenHours(settings)}) : le self-service reprendra à l’ouverture.`;
   }
-  if (reason === REASONS.SALLE_FERMEE) {
-    const { heureDebut, heureFin } = openRoomHours(settings);
-    return `La salle photo est ouverte du lundi au vendredi, de ${formatHeure(heureDebut)} à ${formatHeure(heureFin)}.`;
-  }
+  if (reason === REASONS.SALLE_FERMEE) return salleFermeeLabel(settings);
   return REASON_LABELS[reason] || '';
 }
 
@@ -179,8 +185,17 @@ export function fromYmd(s, hour = 0) {
   return new Date(y, m - 1, d, hour, 0, 0, 0);
 }
 
-export function selfReturnDeadline(date, heureRetourSelf = DEFAULT_SETTINGS.heureRetourSelf) {
-  return atHour(date, heureRetourSelf);
+// L’heure limite de retour d’un emprunt self : une valeur enregistrée dans les réglages l’emporte ;
+// sinon, la dernière fermeture des horaires réglés (un retour dû après la fermeture n’aurait aucun sens).
+export function returnHour(settings) {
+  const brut = settings ? settings.heureRetourSelf : null;
+  if (brut !== null && brut !== undefined && brut !== '' && Number.isFinite(Number(brut))) return Number(brut);
+  return Math.max(...openHours(settings).map((r) => r.fin));
+}
+
+export function selfReturnDeadline(date, heureRetourSelf = returnHour(null)) {
+  const entier = Math.floor(heureRetourSelf);
+  return atHour(date, entier, Math.round((heureRetourSelf - entier) * 60));
 }
 
 // ---- Emprunts ----

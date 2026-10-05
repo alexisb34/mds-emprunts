@@ -5,7 +5,9 @@ import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { ITEM_STATES, MAINT_STATES, MAINT_TYPES } from '../js/models.js';
 import { maintenanceRows, immobilises, reportIssue } from '../js/actions/maintenance.js';
-import { eventsTableHtml, immobilisesHtml, maintenanceHtml, interventionFormHtml, readInterventionForm } from '../js/admin/views/maintenance.js';
+import {
+  eventsTableHtml, immobilisesHtml, maintenanceHtml, interventionFormHtml, readInterventionForm, signalementFormHtml, readSignalementForm,
+} from '../js/admin/views/maintenance.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const PEDAGO = 'user_041';
@@ -95,6 +97,7 @@ test('maintenanceHtml : onglets de statut, compteur et les deux sections', () =>
   assert.notEqual(compte('clos'), compte('ouvert'), 'les compteurs ne sont pas tous égaux');
   assert.match(html, /Matériel immobilisé/);
   assert.match(html, /data-action="new-intervention"/);
+  assert.match(html, /data-action="new-signalement"[^>]*>Signaler une panne</, 'spec §5.4 : un signalement peut être créé à la main');
 });
 
 test('interventionFormHtml : type, prestataire, coût, description', () => {
@@ -135,4 +138,24 @@ test('readInterventionForm : rogne les textes et normalise la virgule décimale 
   assert.equal(lu('').cout, '');
   assert.equal(lu('12o').cout, '12o', 'une saisie invalide n’est pas devinée : createIntervention la refuse');
   assert.equal(lu('12.5').cout, '12.5');
+});
+
+test('signalementFormHtml : une option par matériel et une description, sans type ni coût', () => {
+  const items = store.items.list().slice(0, 3);
+  const html = signalementFormHtml(items);
+  assert.match(html, /<select class="select" name="itemId">/);
+  for (const i of items) assert.ok(html.includes(`<option value="${i.id}">${i.nom}</option>`), `option pour ${i.id}`);
+  assert.equal((html.match(/<option value="item_/g) || []).length, items.length);
+  assert.match(html, /name="description"/);
+  assert.doesNotMatch(html, /name="(type|prestataire|cout)"/);
+});
+
+test('signalementFormHtml : les noms de matériel sont échappés', () => {
+  const html = signalementFormHtml([{ id: 'item_x', nom: '<b>Boîtier</b> & co' }]);
+  assert.doesNotMatch(html, /<b>/);
+  assert.match(html, /&lt;b&gt;Boîtier&lt;\/b&gt; &amp; co/);
+});
+
+test('readSignalementForm : l’objet choisi et la description rognée', () => {
+  assert.deepEqual(readSignalementForm(stubRoot({ itemId: 'item_001', description: '  Câble manquant  ' })), { itemId: 'item_001', description: 'Câble manquant' });
 });

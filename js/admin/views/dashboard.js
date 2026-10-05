@@ -39,7 +39,7 @@ function dueList(due) {
 }
 
 function reportsList(reports) {
-  if (!reports.length) return '<div class="empty-state">Aucun signalement ouvert.</div>';
+  if (!reports.length) return '<div class="empty-state">Aucun signalement à traiter.</div>';
   return `<div class="list">${reports.map(({ event, item, auteur }) => `
     <div class="list__item" data-href="${event.itemId ? `/materiel/${escapeHtml(event.itemId)}` : '/salle'}">
       <div class="list__grow"><strong>${escapeHtml(item ? item.nom : (event.bookingId ? 'Salle photo — état des lieux' : event.itemId))}</strong><span class="activity__detail">${escapeHtml(event.description)}</span><span class="activity__detail">${escapeHtml(formatDate(event.date))}${auteur ? ` · ${escapeHtml(fullName(auteur))}` : ''}</span></div>
@@ -73,7 +73,7 @@ export function dashboardHtml({ kpis, late, due, reports, activity, users, date,
       ${kpiCard('Matériel disponible', kpis.disponibles, 'exemplaires prêts à être empruntés')}
       ${kpiCard('Emprunts en cours', kpis.enCours, `${plural(kpis.aRemettre, 'remise prévue', 'remises prévues')} aujourd’hui`, 'kpi--brand')}
       ${kpiCard('Retards', kpis.retards, kpis.retards ? 'à relancer' : 'tout est rentré', kpis.retards ? 'kpi--alert' : '')}
-      ${kpiCard('Réservations salle à venir', kpis.reservationsSalle, `${plural(kpis.signalements, 'signalement ouvert', 'signalements ouverts')}`, 'kpi--teal')}
+      ${kpiCard('Réservations salle à venir', kpis.reservationsSalle, `${plural(kpis.signalements, 'signalement à traiter', 'signalements à traiter')}`, 'kpi--teal')}
     </div>
     <div class="grid-2">
       <div class="stack">
@@ -81,7 +81,7 @@ export function dashboardHtml({ kpis, late, due, reports, activity, users, date,
         <div class="card"><div class="card__header"><h2 class="card__title">À remettre aujourd’hui</h2></div>${dueList(due)}</div>
       </div>
       <div class="stack">
-        <div class="card"><div class="card__header"><h2 class="card__title">Signalements ouverts</h2><a class="body-sm" href="#/maintenance">Tout voir →</a></div>${reportsList(reports)}</div>
+        <div class="card"><div class="card__header"><h2 class="card__title">Signalements à traiter</h2><a class="body-sm" href="#/maintenance">Tout voir →</a></div>${reportsList(reports)}</div>
         ${exitMissingHtml(exitMissing)}
         <div class="card"><div class="card__header"><h2 class="card__title">Dernières activités</h2></div>${activityList(activity, users, date)}</div>
       </div>

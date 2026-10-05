@@ -61,6 +61,14 @@ test('settingsFormHtml : une liste d’horaires cassée n’empêche pas d’aff
   assert.doesNotThrow(() => settingsFormHtml({ horaires: [{ debut: 9, fin: 12 }] }), 'une seule plage');
 });
 
+test('settingsFormHtml : des heures de salle absentes ou cassées n’empêchent pas d’ouvrir l’écran', () => {
+  for (const salle of [null, undefined, {}, { heureDebut: 17, heureFin: 8 }, { heureDebut: 'tôt', heureFin: 'tard' }]) {
+    const html = settingsFormHtml({ ...DEFAULT_SETTINGS, salle });
+    assert.match(html, /name="salleHeureDebut"[^>]*value="8"/, 'repli sur les heures par défaut');
+    assert.match(html, /name="salleHeureFin"[^>]*value="17"/);
+  }
+});
+
 // Un stub de `querySelector` suffit : `readSettingsForm` ne lit que `value` et `checked`.
 function stubForm(values, checked = true) {
   return {

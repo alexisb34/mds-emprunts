@@ -54,3 +54,15 @@ test('exitMissingRows : une réservation dont la sortie manque depuis plus d’u
   assert.equal(rows[0].booking.id, actif.id);
   assert.equal(rows[0].user.id, actif.userId);
 });
+
+test('« à traiter » : ouverts et en cours comptent partout, comme dans la barre latérale et l’écran Maintenance', () => {
+  const base = { type: 'signalement', auteurId: 'user_041', date: NOW.toISOString(), description: 'x', prestataire: '', cout: 0, loanId: null, bookingId: null };
+  const maintenance = [
+    { ...base, id: 'm1', itemId: db.items[0].id, statut: 'ouvert' },
+    { ...base, id: 'm2', itemId: db.items[1].id, statut: 'en_cours' },
+    { ...base, id: 'm3', itemId: db.items[2].id, statut: 'en_cours' },
+    { ...base, id: 'm4', itemId: db.items[3].id, statut: 'clos' },
+  ];
+  assert.equal(computeKpis({ ...db, maintenance }, NOW).signalements, 3);
+  assert.deepEqual(openReports({ ...db, maintenance }).map((r) => r.event.id).sort(), ['m1', 'm2', 'm3']);
+});

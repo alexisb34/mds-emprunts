@@ -248,3 +248,17 @@ test('le message de refus cite les horaires réglés, pas des heures figées', (
   assert.match(erreur.message, /9h-11h/, 'le refus annonce l’horaire réglé');
   assert.doesNotMatch(erreur.message, /8h-12h/);
 });
+
+test('borrowSelf : sans heure de retour enregistrée, l’échéance suit la fermeture réglée du bureau', () => {
+  // La pédago ferme à 16h l’après-midi : l’emprunt ne peut pas être dû une heure après la fermeture.
+  updateSettings({ horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 16 }] }, 'user_041');
+  assert.equal(store.settings.get().heureRetourSelf, undefined, 'aucune heure figée par l’enregistrement des réglages');
+  const loan = borrowSelf({ itemCode: freeSelf('kit-tableau').code, userId: LEA, photo: PHOTO });
+  assert.equal(new Date(loan.finPrevue).getHours(), 16);
+});
+
+test('borrowSelf : une heure de retour enregistrée l’emporte sur les horaires', () => {
+  store.settings.update({ heureRetourSelf: 15 });
+  const loan = borrowSelf({ itemCode: freeSelf('kit-tableau').code, userId: LEA, photo: PHOTO });
+  assert.equal(new Date(loan.finPrevue).getHours(), 15);
+});

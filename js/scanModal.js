@@ -8,7 +8,7 @@ export function scanModalBodyHtml({ hint, label, placeholder = '', readerId, val
   return `
     <p class="body-sm text-secondary">${escapeHtml(hint)}</p>
     <div id="${escapeHtml(readerId)}" class="reader reader--admin"></div>
-    <label class="field"><span class="field__label">${escapeHtml(label)}</span><input class="input" name="code" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}" autocapitalize="characters" maxlength="24"></label>`;
+    <label class="field"><span class="field__label">${escapeHtml(label)}</span><input class="input" name="code" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}" autocapitalize="characters" maxlength="48"></label>`;
 }
 
 /**

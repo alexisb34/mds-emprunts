@@ -5,7 +5,7 @@ import { auth } from '../../auth.js';
 import { navigate } from '../../router.js';
 import { MAINT_STATES, MAINT_TYPES, LABELS } from '../../models.js';
 import { escapeHtml, badge, fullName, formatDate, openModal, toast } from '../../ui.js';
-import { createIntervention, startIntervention, closeEvent, maintenanceRows, immobilises } from '../../actions/maintenance.js';
+import { reportIssue, createIntervention, startIntervention, closeEvent, maintenanceRows, immobilises } from '../../actions/maintenance.js';
 import { setTopbar } from '../layout.js';
 
 const FILTRES = [
@@ -75,7 +75,10 @@ export function maintenanceHtml({ rows, bloques, filtre }) {
       <div class="card">
         <div class="card__header">
           <div class="tabs">${onglets}</div>
-          <button type="button" class="btn btn--primary btn--sm" data-action="new-intervention">Créer une intervention</button>
+          <div class="table__actions">
+            <button type="button" class="btn btn--secondary btn--sm" data-action="new-signalement">Signaler une panne</button>
+            <button type="button" class="btn btn--primary btn--sm" data-action="new-intervention">Créer une intervention</button>
+          </div>
         </div>
         <div>${eventsTableHtml({ rows, filtre })}</div>
       </div>
@@ -89,11 +92,16 @@ export function maintenanceHtml({ rows, bloques, filtre }) {
 // Les libellés viennent de `LABELS.maintType`, comme dans le tableau : un seul vocabulaire.
 const TYPES = [MAINT_TYPES.INTERNE, MAINT_TYPES.EXTERNE].map((value) => ({ value, label: LABELS.maintType[value] }));
 
+// Le choix du matériel, commun au signalement et à l’intervention.
+function itemSelectHtml(items) {
+  return `<label class="field"><span class="field__label">Matériel</span><select class="select" name="itemId">${items.map((i) => `<option value="${escapeHtml(i.id)}">${escapeHtml(i.nom)}</option>`).join('')}</select></label>`;
+}
+
 // `item` null = l’objet reste à choisir dans la liste.
 export function interventionFormHtml(item = null, items = []) {
   const choixObjet = item
     ? `<p class="body-sm"><strong>${escapeHtml(item.nom)}</strong></p><input type="hidden" name="itemId" value="${escapeHtml(item.id)}">`
-    : `<label class="field"><span class="field__label">Matériel</span><select class="select" name="itemId">${items.map((i) => `<option value="${escapeHtml(i.id)}">${escapeHtml(i.nom)}</option>`).join('')}</select></label>`;
+    : itemSelectHtml(items);
   return `
     <div class="stack">
       ${choixObjet}
@@ -102,6 +110,20 @@ export function interventionFormHtml(item = null, items = []) {
       <label class="field"><span class="field__label">Coût en euros</span><input class="input" name="cout" type="text" inputmode="decimal" value="0" placeholder="120,50"></label>
       <label class="field"><span class="field__label">Description</span><textarea class="textarea" name="description" placeholder="Révision de la bague"></textarea></label>
     </div>`;
+}
+
+// Signalement créé à la main par la pédago (spec §5.4) : un objet et ce qui ne va pas.
+export function signalementFormHtml(items = []) {
+  return `
+    <div class="stack">
+      ${itemSelectHtml(items)}
+      <label class="field"><span class="field__label">Description</span><textarea class="textarea" name="description" placeholder="Câble d’alimentation manquant"></textarea></label>
+    </div>`;
+}
+
+export function readSignalementForm(root) {
+  const val = (name) => root.querySelector(`[name="${name}"]`)?.value ?? '';
+  return { itemId: val('itemId'), description: val('description').trim() };
 }
 
 export function readInterventionForm(root) {
@@ -157,8 +179,24 @@ export function maintenanceView(container) {
         ],
       });
     }));
+    const itemsParNom = () => store.items.list().sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+    container.querySelector('[data-action="new-signalement"]').addEventListener('click', () => {
+      openModal({
+        title: 'Signaler une panne',
+        body: signalementFormHtml(itemsParNom()),
+        actions: [
+          { label: 'Annuler', variant: 'ghost' },
+          { label: 'Signaler', variant: 'primary', onClick: (modal) => {
+            try {
+              reportIssue({ ...readSignalementForm(modal), auteurId: auth.currentUserId() });
+              toast('Panne signalée', 'success');
+            } catch (err) { toast(err.message, 'error'); return false; }
+          } },
+        ],
+      });
+    });
     container.querySelector('[data-action="new-intervention"]').addEventListener('click', () => {
-      const items = store.items.list().sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+      const items = itemsParNom();
       openModal({
         title: 'Créer une intervention',
         body: interventionFormHtml(null, items),

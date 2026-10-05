@@ -2,6 +2,10 @@
 // (bibliothèque globale `QRCode`, chargée par <script> dans les pages qui en ont besoin).
 import { ITEM_CODE_RE } from './models.js';
 
+// L’alphabet des codes de retrait : sans I, L, O, 0 ni 1, que l’on confond à la lecture.
+// Une seule définition, ici : `code6()` tire dedans, la recherche de l’admin en bâtit son motif.
+export const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
 export const LOAN_CODE_RE = /^LOAN-([^-\s]+)-([A-Z0-9]{6})$/;
 
 export function isItemCode(text) {

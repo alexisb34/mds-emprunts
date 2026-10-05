@@ -1,7 +1,7 @@
 // js/mobile/views/fiche.js — fiche d’une référence : exemplaires et action selon le circuit.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, formatOpenHours, withDefaults } from '../../rules.js';
+import { now, formatOpenHours, formatHeure, returnHour } from '../../rules.js';
 import { CIRCUITS, ITEM_STATES } from '../../models.js';
 import { escapeHtml, badge, formatDate, formatTime } from '../../ui.js';
 import { userLoans } from '../../actions/loans.js';
@@ -9,7 +9,7 @@ import { groupByReference, availability } from '../catalog.js';
 import { setHeader } from '../layout.js';
 
 const CIRCUIT_HELP = {
-  self: (settings) => `Self-service : scannez l’étiquette de l’exemplaire au bureau des pédago (${formatOpenHours(settings)}). Retour le jour même avant ${withDefaults(settings).heureRetourSelf}h.`,
+  self: (settings) => `Self-service : scannez l’étiquette de l’exemplaire au bureau des pédago (${formatOpenHours(settings)}). Retour le jour même avant ${formatHeure(returnHour(settings))}.`,
   salle: 'Ce matériel reste dans la salle photo : réservez un créneau pour l’utiliser.',
   valeur: 'Matériel sur réservation : la pédago vous le remet à l’heure prévue.',
 };

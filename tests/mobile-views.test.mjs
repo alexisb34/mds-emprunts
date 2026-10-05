@@ -135,3 +135,10 @@ test('ficheHtml : l’heure de retour du self-service vient aussi des réglages'
   assert.match(regle, /9h-12h/);
   assert.doesNotMatch(regle, /avant 17h/);
 });
+
+test('ficheHtml : sans heure de retour enregistrée, l’aide cite la fermeture réglée', () => {
+  const group = groupByReference(store.items.list()).find((g) => g.circuit === 'self');
+  const html = ficheHtml({ group, date: NOW, settings: { horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 16 }] } });
+  assert.match(html, /8h-12h et 13h-16h\)\. Retour le jour même avant 16h\./);
+  assert.doesNotMatch(html, /avant 17h/);
+});

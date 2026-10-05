@@ -1,7 +1,7 @@
 // js/actions/maintenance.js — cycle de vie des pannes : signalement, intervention, clôture.
 // Spec §5.4 : clore le DERNIER événement ouvert d’un objet le remet en service (ou hors service).
 import { store } from '../store.js';
-import { MAINT_TYPES, MAINT_STATES, ITEM_STATES, LABELS } from '../models.js';
+import { MAINT_TYPES, MAINT_STATES, ITEM_STATES, ITEM_TRANSITIONS, LABELS } from '../models.js';
 import { now } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
@@ -27,6 +27,18 @@ function cleanDescription(value) {
 // Les événements encore à traiter d’un objet : ouverts ou en cours.
 export function openEvents(itemId) {
   return store.maintenance.list((m) => m.itemId === itemId && m.statut !== MAINT_STATES.CLOS);
+}
+
+// L’état que doit porter un objet au vu de ses événements ouverts. `souhaite` est ce que
+// l’appelant voudrait (retour au catalogue, mise hors service) ; un événement encore ouvert
+// prime sur une remise en service, jamais sur une mise hors service.
+// Rend l’état courant quand la transition est interdite (l’appelant n’a rien à écrire),
+// et null quand l’objet n’existe pas.
+export function resolveItemState(itemId, souhaite) {
+  const item = itemId ? store.items.get(itemId) : null;
+  if (!item) return null;
+  const cible = souhaite === ITEM_STATES.DISPONIBLE && openEvents(itemId).length > 0 ? ITEM_STATES.MAINTENANCE : souhaite;
+  return (ITEM_TRANSITIONS[item.etat] || []).includes(cible) ? cible : item.etat;
 }
 
 // Un objet disponible part en maintenance dès le signalement ; emprunté ou réservé, il
@@ -91,9 +103,9 @@ export function startIntervention(id, pedagoId) {
   });
 }
 
-// Depuis quels états la clôture peut décider du sort de l’objet : un objet emprunté ou réservé
-// n’est pas à nous — son retour le remettra dans le circuit.
-const MAINT_RESOLVABLE = [ITEM_STATES.MAINTENANCE, ITEM_STATES.HS];
+// Un objet emprunté ou réservé n’est pas à nous : la clôture ne décide pas de son sort,
+// c’est son retour (ou la fin de sa réservation) qui le remettra dans le circuit.
+const estDehors = (item) => item.etat === ITEM_STATES.EMPRUNTE || item.etat === ITEM_STATES.RESERVE;
 
 // `remettreEnService: false` → l’objet passe `hs` (définitif, masqué du catalogue, gardé à l’inventaire).
 // `remettreEnService: true` → l’objet repasse `disponible` ; `undefined` → on ne touche pas à son état.
@@ -103,7 +115,7 @@ export function closeEvent(id, pedagoId, { remettreEnService } = {}) {
   // Décider « hors service » d’un objet encore dehors serait perdu : son retour le remettrait au catalogue.
   if (remettreEnService === false && event.itemId) {
     const dehors = store.items.get(event.itemId);
-    if (dehors && (dehors.etat === ITEM_STATES.EMPRUNTE || dehors.etat === ITEM_STATES.RESERVE)) {
+    if (dehors && estDehors(dehors)) {
       throw new Error('Cet objet est encore dehors : attendez son retour pour le passer hors service.');
     }
   }
@@ -113,11 +125,15 @@ export function closeEvent(id, pedagoId, { remettreEnService } = {}) {
     // Le dernier événement ouvert de l’objet décide de son sort ; sinon on ne touche à rien.
     if (event.itemId && openEvents(event.itemId).length === 0) {
       const item = store.items.get(event.itemId);
-      const cible = remettreEnService === true ? ITEM_STATES.DISPONIBLE
+      const souhaite = remettreEnService === true ? ITEM_STATES.DISPONIBLE
         : remettreEnService === false ? ITEM_STATES.HS : null;
-      if (item && cible && item.etat !== cible && MAINT_RESOLVABLE.includes(item.etat)) {
-        applyItemState(event.itemId, cible);
-        suffixe = ` — ${LABELS.itemState[cible].toLowerCase()}`;
+      if (item && souhaite && !estDehors(item)) {
+        const cible = resolveItemState(item.id, souhaite);
+        // Le journal ne mentionne l’état que s’il a vraiment changé.
+        if (cible && cible !== item.etat) {
+          applyItemState(item.id, cible);
+          suffixe = ` — ${LABELS.itemState[cible].toLowerCase()}`;
+        }
       }
     }
     logAction({ auteurId: pedagoId, action: ACTIONS.MAINT_CLOS, itemId: event.itemId, detail: `${event.description}${suffixe}` });

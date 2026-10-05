@@ -2,7 +2,7 @@
 // confirmation d’emprunt ou checklist de retour, résultat. Le flux est piloté par scanFlow.js.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, selfReturnDeadline, withDefaults, reasonLabel, REASONS } from '../../rules.js';
+import { now, selfReturnDeadline, returnHour, reasonLabel, REASONS } from '../../rules.js';
 import { CIRCUITS, ITEM_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, relativeDay, toast } from '../../ui.js';
 import { resolveScan, borrowSelf, returnSelf, userLoans } from '../../actions/loans.js';
@@ -235,7 +235,7 @@ export function scanView(container) {
       case STEPS.SCAN: container.innerHTML = scanStepHtml({ codes: codes(), camera, returnable: returnable() }); bindScan(); break;
       case STEPS.PHOTO: container.innerHTML = photoStepHtml({ mode: state.mode, item: state.item, camera }); bindPhoto(); break;
       case STEPS.CONFIRM: {
-        const deadline = selfReturnDeadline(now(), withDefaults(store.settings.get()).heureRetourSelf);
+        const deadline = selfReturnDeadline(now(), returnHour(store.settings.get()));
         container.innerHTML = confirmStepHtml({ item: state.item, photo: state.photo, deadline }); bindConfirm(); break;
       }
       case STEPS.CHECKLIST: container.innerHTML = checklistStepHtml({ item: state.item, photo: state.photo, checklist: state.checklist }); bindChecklist(); break;

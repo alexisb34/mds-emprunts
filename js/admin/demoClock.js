@@ -53,10 +53,11 @@ export function bindDemoClock(root, { date }) {
   root.querySelector('[data-action="next-open"]').addEventListener('click', () => apply(nextOpenDay(date)));
   root.querySelector('[data-action="real-clock"]').addEventListener('click', () => apply(null));
   root.querySelector('[data-action="reset-demo"]').addEventListener('click', () => {
-    const value = fromDatetimeLocal(champ().value);
+    // La modale annonce `value || date` : c’est cette même date qu’on régénère, jamais l’horloge réelle.
+    const value = fromDatetimeLocal(champ().value) || date;
     openModal({
       title: 'Régénérer les données de démonstration',
-      body: `<p class="body-sm">L’inventaire, les emprunts, les réservations et le journal seront remplacés par un jeu neuf calé sur le ${escapeHtml(formatDateTime(value || date))}. Les photos prises pendant la démonstration seront perdues.</p>`,
+      body: `<p class="body-sm">L’inventaire, les emprunts, les réservations et le journal seront remplacés par un jeu neuf calé sur le ${escapeHtml(formatDateTime(value))}. Les photos prises pendant la démonstration seront perdues.</p>`,
       actions: [
         { label: 'Annuler', variant: 'ghost' },
         { label: 'Régénérer', variant: 'danger', onClick: () => {

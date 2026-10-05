@@ -72,7 +72,15 @@ test('handOverChecked : le bon code remet la bonne réservation, et l’autre re
 test('isKnownRetraitCode : seul un code porté par un emprunt est reconnu', () => {
   const loans = store.loans.list();
   assert.equal(isKnownRetraitCode(a.codeRetrait, loans), true);
-  assert.equal(isKnownRetraitCode('CAMERA', loans.filter((l) => l.codeRetrait !== 'CAMERA')), false);
+  assert.equal(isKnownRetraitCode(b.codeRetrait, loans), true);
+  // Un code bien formé que AUCUN emprunt du jeu complet ne porte : il doit être refusé, sans
+  // retirer quoi que ce soit de la liste (sinon la fonction pourrait tout accepter sans que le test le voie).
+  const portes = new Set(loans.map((l) => l.codeRetrait));
+  const inconnu = ['CAMERA', 'ZZZZZZ', 'AAAAAA', 'MMMMMM'].find((c) => !portes.has(c));
+  assert.ok(inconnu, 'un code d’essai que personne ne porte');
+  assert.equal(isKnownRetraitCode(inconnu, loans), false);
+  assert.equal(isKnownRetraitCode(a.codeRetrait, []), false, 'sans emprunt, aucun code n’est connu');
+  assert.equal(isKnownRetraitCode(a.codeRetrait, loans.filter((l) => l.codeRetrait !== a.codeRetrait)), false, 'le code d’une réservation retirée de la liste n’est plus connu');
 });
 
 test('handOverChecked : avec la ligne connue, la remise passe par l’identifiant, pas par le code', () => {

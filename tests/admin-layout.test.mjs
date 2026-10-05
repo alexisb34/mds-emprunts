@@ -5,6 +5,7 @@ import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { NAV, isActive, sidebarHtml, topbarHtml, parseAdminSearch } from '../js/admin/layout.js';
 import { loginHtml } from '../js/admin/views/login.js';
+import { code6 } from '../js/actions/loans.js';
 
 beforeEach(() => {
   localStorage.clear();
@@ -88,4 +89,14 @@ test('parseAdminSearch : un code sans chiffre reste un code possible, l’alphab
 test('parseAdminSearch : le préfixe LOAN- est exigé en majuscules, la casse du reste est conservée', () => {
   assert.deepEqual(parseAdminSearch(' LOAN-Loan_0007-AB12CD '), { type: 'code', code: 'LOAN-Loan_0007-AB12CD' });
   assert.deepEqual(parseAdminSearch('loan-loan_0007-ab12cd'), { type: 'texte', texte: 'loan-loan_0007-ab12cd' });
+});
+
+test('parseAdminSearch : tout code tiré par code6() est un code de retrait possible', () => {
+  for (let i = 0; i < 500; i += 1) {
+    const code = code6();
+    assert.deepEqual(parseAdminSearch(code), { type: 'code_possible', code }, code);
+    assert.deepEqual(parseAdminSearch(code.toLowerCase()), { type: 'code_possible', code }, `${code} saisi en minuscules`);
+  }
+  // Les caractères exclus de l’alphabet ne passent pas pour un code.
+  for (const exclu of ['I', 'L', 'O', '0', '1']) assert.equal(parseAdminSearch(`AB${exclu}2CD`).type, 'texte', exclu);
 });

@@ -3,6 +3,7 @@
 import { escapeHtml, avatar, fullName } from '../ui.js';
 import { LABELS } from '../models.js';
 import { navigate, currentPath } from '../router.js';
+import { CODE_ALPHABET } from '../qr.js';
 
 export const NAV = [
   { path: '/dashboard', label: 'Tableau de bord' },
@@ -17,10 +18,10 @@ export const NAV = [
 export const SEARCH_KEY = 'mds-emprunts:adminSearch';
 
 // Un code de retrait saisi dans la recherche globale ouvre directement la remise (spec §6).
-// L’alphabet des codes de retrait (js/actions/loans.js) exclut I, L, O, 0 et 1 pour
-// éviter les confusions à la lecture. Un jeton de six caractères qui s’y conforme est
-// un code *possible* : c’est l’appelant, qui a le store, qui tranche.
-const CODE6 = /^[A-HJKMNP-Z2-9]{6}$/;
+// Un jeton de six caractères tirés dans l’alphabet des codes de retrait (js/qr.js, partagé avec
+// `code6()` : les deux ne peuvent pas diverger) est un code *possible* : c’est l’appelant,
+// qui a le store, qui tranche.
+const CODE6 = new RegExp(`^[${CODE_ALPHABET}]{6}$`);
 export function parseAdminSearch(q) {
   const texte = String(q || '').trim();
   // Un QR d’emprunt est rendu tel quel : `LOAN_CODE_RE` exige le préfixe `LOAN-` en

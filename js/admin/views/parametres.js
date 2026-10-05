@@ -2,7 +2,7 @@
 // de démonstration, espace occupé et réinitialisation.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, withDefaults, openHours } from '../../rules.js';
+import { now, withDefaults, openHours, openRoomHours } from '../../rules.js';
 import { escapeHtml, toast } from '../../ui.js';
 import { officeStatus, updateSettings } from '../../actions/settings.js';
 import { demoClockHtml, bindDemoClock } from '../demoClock.js';
@@ -32,6 +32,8 @@ export function settingsFormHtml(settings) {
   // `openHours` répare une liste absente ou mal formée : l’écran qui sert à corriger le réglage doit rester ouvrable.
   const plages = openHours(S);
   const [matin, apresMidi] = [plages[0] || { debut: 8, fin: 12 }, plages[1] || { debut: 13, fin: 17 }];
+  // Même réparation pour les heures de la salle : un réglage `salle: null` ne doit pas fermer l’écran.
+  const salle = openRoomHours(S);
   return `
     <div class="card">
       <div class="card__header"><h2 class="card__title">Règles d’emprunt</h2></div>
@@ -42,8 +44,8 @@ export function settingsFormHtml(settings) {
         ${nombre('Fermeture de l’après-midi', 'apresMidiFin', apresMidi.fin, ' min="0" max="24" step="0.5"')}
         ${nombre('Durée maximale d’une réservation (jours)', 'dureeMaxReservationJours', S.dureeMaxReservationJours, ' min="1" max="60" step="1"')}
         ${nombre('Fenêtre de retrait (minutes)', 'fenetreRetraitMinutes', S.fenetreRetraitMinutes, ' min="5" max="480" step="5"')}
-        ${nombre('Premier créneau de la salle', 'salleHeureDebut', S.salle.heureDebut, ' min="0" max="23" step="1"')}
-        ${nombre('Dernier créneau de la salle (fin)', 'salleHeureFin', S.salle.heureFin, ' min="1" max="24" step="1"')}
+        ${nombre('Premier créneau de la salle', 'salleHeureDebut', salle.heureDebut, ' min="0" max="23" step="1"')}
+        ${nombre('Dernier créneau de la salle (fin)', 'salleHeureFin', salle.heureFin, ' min="1" max="24" step="1"')}
       </div>
       <label class="checkbox"><input type="checkbox" name="bloquerSiRetard"${S.bloquerSiRetard ? ' checked' : ''}> Empêcher d’emprunter quand une personne est en retard</label>
       <div class="form-actions"><button type="button" class="btn btn--primary" data-action="save-settings">Enregistrer</button></div>

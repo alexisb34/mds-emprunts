@@ -7,9 +7,10 @@ import { ACTIONS } from '../js/log.js';
 import { ITEM_STATES, LOAN_STATES, MAINT_STATES, MAINT_TYPES } from '../js/models.js';
 import {
   openEvents, reportIssue, createIntervention, startIntervention, closeEvent,
-  maintenanceRows, immobilises,
+  maintenanceRows, immobilises, resolveItemState,
 } from '../js/actions/maintenance.js';
-import { receiveLoan, returnSelf } from '../js/actions/loans.js';
+import { receiveLoan, returnSelf, reserveValeur, refuseLoan, cancelLoan, expireDueLoans } from '../js/actions/loans.js';
+import { addDays } from '../js/rules.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const PEDAGO = 'user_041';
@@ -214,4 +215,116 @@ test('returnSelf : un objet signalé pendant son emprunt part en maintenance, ch
   assert.equal(r.maintenance, null, 'checklist propre : pas de nouveau signalement');
   assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.MAINTENANCE);
   assert.equal(openEvents(loan.itemId).length, 1);
+});
+
+// ---- resolveItemState : l’état d’un objet au vu de ses événements ouverts ----
+
+test('resolveItemState : retour au catalogue, sauf si un événement est encore ouvert', () => {
+  const item = itemDispo();
+  assert.equal(resolveItemState(item.id, ITEM_STATES.DISPONIBLE), ITEM_STATES.DISPONIBLE, 'rien d’ouvert : état inchangé (disponible → disponible est interdit)');
+  reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Bague grippée' });
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.MAINTENANCE);
+  store.items.update(item.id, { etat: ITEM_STATES.DISPONIBLE });
+  assert.equal(resolveItemState(item.id, ITEM_STATES.DISPONIBLE), ITEM_STATES.MAINTENANCE, 'un événement ouvert prime sur la remise en service');
+  store.items.update(item.id, { etat: ITEM_STATES.MAINTENANCE });
+  const [ev] = openEvents(item.id);
+  store.maintenance.update(ev.id, { statut: MAINT_STATES.CLOS });
+  assert.equal(resolveItemState(item.id, ITEM_STATES.DISPONIBLE), ITEM_STATES.DISPONIBLE, 'plus rien d’ouvert : retour au catalogue');
+});
+
+test('resolveItemState : hors service n’est jamais écarté par un événement ouvert', () => {
+  const item = itemDispo();
+  reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Écran fendu' });
+  assert.equal(resolveItemState(item.id, ITEM_STATES.HS), ITEM_STATES.HS, 'maintenance → hs');
+  store.items.update(item.id, { etat: ITEM_STATES.DISPONIBLE });
+  assert.equal(resolveItemState(item.id, ITEM_STATES.HS), ITEM_STATES.HS, 'disponible → hs, malgré l’événement ouvert');
+});
+
+test('resolveItemState : une transition interdite rend l’état courant, un objet inconnu rend null', () => {
+  const loan = store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS)[0];
+  assert.equal(resolveItemState(loan.itemId, ITEM_STATES.HS), ITEM_STATES.EMPRUNTE, 'emprunte → hs est interdit : on ne bouge pas');
+  assert.equal(resolveItemState(loan.itemId, ITEM_STATES.DISPONIBLE), ITEM_STATES.DISPONIBLE, 'emprunte → disponible est permis');
+  reportIssue({ itemId: loan.itemId, auteurId: PEDAGO, description: 'Signalé pendant l’emprunt' });
+  assert.equal(resolveItemState(loan.itemId, ITEM_STATES.DISPONIBLE), ITEM_STATES.MAINTENANCE, 'emprunte → maintenance est permis');
+  assert.equal(resolveItemState('item_inconnu', ITEM_STATES.DISPONIBLE), null);
+  assert.equal(resolveItemState(null, ITEM_STATES.DISPONIBLE), null);
+  assert.equal(resolveItemState(undefined, ITEM_STATES.HS), null);
+});
+
+// ---- une réservation qui se termine ne remet pas au catalogue un objet signalé ----
+
+const DEMAIN9 = new Date(2026, 8, 18, 9, 0);
+const reservationSignalee = () => {
+  const item = store.items.list((i) => i.circuit === 'valeur' && i.etat === ITEM_STATES.DISPONIBLE)[0];
+  const loan = reserveValeur({ itemId: item.id, userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Signalé pendant la réservation' });
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.RESERVE, 'la réservation tient : l’objet n’est pas immobilisé');
+  return { item, loan };
+};
+const enMaintenanceAvecUnEvenement = (item) => {
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.MAINTENANCE, 'l’objet signalé ne retourne pas au catalogue');
+  assert.equal(openEvents(item.id).length, 1);
+  assert.ok(immobilises().some((r) => r.item.id === item.id), 'il figure dans le matériel immobilisé');
+};
+
+test('refuseLoan : un objet signalé pendant sa réservation passe en maintenance', () => {
+  const { item, loan } = reservationSignalee();
+  refuseLoan(loan.id, PEDAGO, 'Pas disponible');
+  enMaintenanceAvecUnEvenement(item);
+});
+
+test('cancelLoan : un objet signalé pendant sa réservation passe en maintenance', () => {
+  const { item, loan } = reservationSignalee();
+  cancelLoan(loan.id, loan.userId);
+  enMaintenanceAvecUnEvenement(item);
+});
+
+test('expireDueLoans : un objet signalé pendant sa réservation passe en maintenance', () => {
+  const { item } = reservationSignalee();
+  assert.ok(expireDueLoans(new Date(2026, 8, 18, 11, 0)) >= 1, 'la réservation de l’objet expire');
+  enMaintenanceAvecUnEvenement(item);
+});
+
+test('refuseLoan : sans signalement, l’objet réservé redevient disponible', () => {
+  const item = store.items.list((i) => i.circuit === 'valeur' && i.etat === ITEM_STATES.DISPONIBLE)[0];
+  const loan = reserveValeur({ itemId: item.id, userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  refuseLoan(loan.id, PEDAGO, 'Pas disponible');
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
+});
+
+// ---- closeEvent : « hors service » ----
+
+test('closeEvent : un objet remis disponible à la main peut encore être clos « hors service »', () => {
+  const item = itemDispo();
+  const ev = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Écran fendu' });
+  store.items.update(item.id, { etat: ITEM_STATES.DISPONIBLE });
+  closeEvent(ev.id, PEDAGO, { remettreEnService: false });
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.HS);
+  assert.match(store.log.list().at(-1).detail, /— hors service$/);
+});
+
+test('closeEvent : le suffixe du journal n’apparaît que si l’état a vraiment changé', () => {
+  const item = itemDispo();
+  const a = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Premier' });
+  const b = createIntervention({ itemId: item.id, type: MAINT_TYPES.INTERNE, description: 'Second', pedagoId: PEDAGO });
+  closeEvent(a.id, PEDAGO, { remettreEnService: true });
+  assert.equal(store.log.list().at(-1).detail, 'Premier', 'un autre événement est ouvert : rien n’a changé');
+  closeEvent(b.id, PEDAGO, { remettreEnService: true });
+  assert.equal(store.log.list().at(-1).detail, 'Second — disponible');
+  // Déjà disponible : la clôture ne change rien, le journal ne prétend pas le contraire.
+  const c = store.maintenance.create({
+    itemId: item.id, type: MAINT_TYPES.SIGNALEMENT, auteurId: PEDAGO, date: NOW.toISOString(), statut: MAINT_STATES.OUVERT,
+    description: 'Oubli', prestataire: '', cout: 0, loanId: null, bookingId: null,
+  });
+  closeEvent(c.id, PEDAGO, { remettreEnService: true });
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
+  assert.equal(store.log.list().at(-1).detail, 'Oubli');
+});
+
+test('closeEvent : « remettre en service » ne touche pas à un objet encore dehors', () => {
+  const loan = store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS)[0];
+  const ev = reportIssue({ itemId: loan.itemId, auteurId: PEDAGO, description: 'Signalé pendant l’emprunt' });
+  closeEvent(ev.id, PEDAGO, { remettreEnService: true });
+  assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE, 'son retour décidera');
+  assert.equal(store.log.list().at(-1).detail, 'Signalé pendant l’emprunt');
 });
