@@ -11,7 +11,8 @@
 
 /* Contenu */
 .m-main { flex: 1; padding: var(--space-lg) var(--space-lg) calc(96px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--space-lg); }
-.is-login .m-main { padding-bottom: var(--space-lg); }
+/* En-tête masqué : c’est au contenu de se tenir sous l’encoche, sinon il passe dessous en mode installé. */
+.is-login .m-main { padding-top: calc(var(--space-lg) + env(safe-area-inset-top)); padding-bottom: var(--space-lg); }
 .m-section { display: flex; flex-direction: column; gap: var(--space-sm); }
 .m-section > h2 { margin-top: var(--space-sm); }
 .m-list { display: flex; flex-direction: column; gap: var(--space-sm); }
