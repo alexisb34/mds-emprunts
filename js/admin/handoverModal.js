@@ -38,7 +38,10 @@ export function readChecklistForm(root, reference) {
 export function codeMatchesLoan(saisi, loan) {
   if (!loan) return true;
   const parsed = parseLoanCode(String(saisi || '').trim());
-  if (parsed) return parsed.loanId === loan.id;
+  // Les DEUX parties du QR doivent coller : `handOverChecked` reconstruit ensuite la
+  // charge utile à partir de la réservation, donc plus personne ne vérifie le code
+  // court après nous.
+  if (parsed) return parsed.loanId === loan.id && parsed.code6 === loan.codeRetrait;
   return String(saisi || '').trim().toUpperCase() === loan.codeRetrait;
 }
 

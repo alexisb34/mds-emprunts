@@ -30,6 +30,9 @@ test('codeMatchesLoan : le code, en minuscules ou en QR, de la bonne réservatio
   assert.equal(codeMatchesLoan(a.codeRetrait, a), true);
   assert.equal(codeMatchesLoan(` ${a.codeRetrait.toLowerCase()} `, a), true);
   assert.equal(codeMatchesLoan(loanQrPayload(a), a), true);
+  // Le bon identifiant avec un mauvais code court ne suffit pas : `handOverChecked`
+  // reconstruit la charge utile, donc cette comparaison est la dernière.
+  assert.equal(codeMatchesLoan(`LOAN-${a.id}-ZZZZZZ`, a), false);
 });
 
 test('codeMatchesLoan : le code, ou le QR, d’une autre réservation est refusé', () => {
