@@ -4,7 +4,7 @@ import { auth } from '../auth.js';
 import { escapeHtml, toast } from '../ui.js';
 import { checklistFor } from '../checklists.js';
 import { handOver } from '../actions/loans.js';
-import { parseLoanCode } from '../qr.js';
+import { parseLoanCode, loanQrPayload } from '../qr.js';
 import { openScanModal } from '../scanModal.js';
 
 export function checklistFormHtml(reference) {
@@ -51,7 +51,10 @@ export function isKnownRetraitCode(code, loans) {
 // Refuse le code d’une autre réservation sans rien écrire, puis remet.
 export function handOverChecked({ saisi, loan = null, pedagoId }) {
   if (!codeMatchesLoan(saisi, loan)) throw new Error('Ce code correspond à une autre réservation.');
-  return handOver({ code: saisi, pedagoId });
+  // Ligne connue : on remet par identifiant plutôt que par code. Rien n’impose l’unicité
+  // du code court au tirage (`code6`), et `handOver` prendrait sinon la première
+  // réservation en attente portant ce code — pas forcément celle de la ligne.
+  return handOver({ code: loan ? loanQrPayload(loan) : saisi, pedagoId });
 }
 
 // Modale de remise : la pédago scanne le QR affiché par l’emprunteur, ou saisit son code à 6 caractères.
@@ -66,7 +69,7 @@ export function openHandoverModal({ loan = null, code = '', onDone } = {}) {
       ? 'Scannez le QR affiché par l’emprunteur, ou vérifiez son code de retrait.'
       : 'Scannez le QR affiché par l’emprunteur, ou saisissez son code de retrait.',
     label: 'Code de retrait',
-    placeholder: 'AB12CD',
+    placeholder: 'AB23CD', // l’alphabet des codes exclut I, L, O, 0 et 1
     readerId: 'handover-reader',
     value: attendu || code || '',
     submitLabel: 'Remettre',

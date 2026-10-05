@@ -71,3 +71,15 @@ test('isKnownRetraitCode : seul un code porté par un emprunt est reconnu', () =
   assert.equal(isKnownRetraitCode(a.codeRetrait, loans), true);
   assert.equal(isKnownRetraitCode('CAMERA', loans.filter((l) => l.codeRetrait !== 'CAMERA')), false);
 });
+
+test('handOverChecked : avec la ligne connue, la remise passe par l’identifiant, pas par le code', () => {
+  // Rien n’impose l’unicité du code court au tirage : on force la collision.
+  store.loans.update(b.id, { codeRetrait: a.codeRetrait });
+  // La modale est ouverte depuis la ligne B, la SECONDE à porter ce code. Une remise
+  // par code prendrait A, la première réservation en attente trouvée ; par identifiant,
+  // c’est bien B qui part.
+  const remis = handOverChecked({ saisi: a.codeRetrait, loan: store.loans.get(b.id), pedagoId: PEDAGO });
+  assert.equal(remis.id, b.id, 'c’est la réservation de la ligne ouverte qui est remise');
+  assert.equal(store.loans.get(b.id).statut, LOAN_STATES.EN_COURS);
+  assert.equal(store.loans.get(a.id).statut, LOAN_STATES.RESERVEE, 'l’autre réservation n’a pas bougé');
+});
