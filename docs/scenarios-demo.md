@@ -1,6 +1,6 @@
 # Scénarios de démonstration
 
-Six scénarios, un par phase livrée, dans l’ordre où on les joue devant quelqu’un. Ils servent à deux personnes : celle qui fait la démonstration, et celle qui doit rejouer la boucle complète pour contrôler une phase.
+Six scénarios couvrant les phases livrées, dans l’ordre où on les joue devant quelqu’un. Ils servent à deux personnes : celle qui fait la démonstration, et celle qui doit rejouer la boucle complète pour contrôler une phase.
 
 Chaque pas dit ce qu’on **fait**, puis ce qu’on doit **voir**. Le gras repère les boutons, onglets, champs et écrans, écrits comme l’écran les écrit (et, à l’occasion, une consigne sur laquelle insister) ; les messages cités entre « guillemets » sont ceux que l’application affiche. Si un libellé ne correspond plus à l’écran, c’est ce document qui est à corriger, pas l’application.
 
@@ -25,7 +25,7 @@ Aucun mot de passe : l’écran de connexion dit « Comptes de démonstration �
 
 | Rôle | Nom à l’écran | Où se connecter | Pourquoi lui |
 |---|---|---|---|
-| Élève | **Camille Dubois** (MBA 2 DAD) | `mobile.html`, groupe Élèves (taper « Dubois ») | N’a aucun emprunt ni réservation dans le jeu neuf : tout lui est permis. |
+| Élève | **Camille Dubois** (MBA 2 DAD) | `mobile.html`, groupe Élèves (taper « Dubois ») | N’a aucun emprunt ni réservation **en cours** dans le jeu neuf : tout lui est permis. Son onglet Historique n’est pas vide pour autant. |
 | Intervenant | **Sophie Marchand** | `mobile.html`, groupe Intervenants (taper « Marchand ») | Sert de « deuxième personne » (salle photo). |
 | Pédagogie | **Alexis Bengel** | `admin.html` (aussi présent dans le groupe Pédagogie du mobile) | Propriétaire du prototype. Les quatre autres comptes de la pédagogie se valent. |
 
@@ -42,7 +42,7 @@ Sauf mention contraire, chaque scénario part d’un jeu neuf (section 1) et d�
 1. **Admin** : cliquer sur **Emprunts** dans la barre latérale. On voit la liste des emprunts en cours ; noter le nombre à côté d’**Emprunts** dans la barre latérale (10 sur un jeu neuf).
 2. **Mobile** : choisir Camille Dubois. L’accueil dit « Bonjour Camille » et « Aucun emprunt en cours. »
 3. Toucher **Scanner un QR code** (le bouton de l’accueil ou celui du centre de la barre du bas). L’écran **Scanner** s’ouvre sur l’étape « Emprunter : scannez l’étiquette de l’objet ». Avec une caméra, viser l’étiquette d’un objet. Sans caméra, la zone d’image dit « Caméra indisponible — utilisez la simulation ci-dessous. » : dans **Simuler un scan**, le champ **Objet disponible** propose en premier « MDS-0003 — Multiprise #3 » ; toucher **Simuler le scan**. (On peut aussi taper un code dans **Ou saisir un code** puis toucher **Valider le code**.)
-4. Étape 2, « Photo de l’objet » : on voit la Multiprise #3, son code MDS-0003 et le badge Self-service. Toucher **Prendre la photo** avec une caméra ; sans caméra, toucher **Sans caméra : image de démonstration** (le bouton s’appelle **Utiliser une image de démonstration** quand aucune caméra n’est détectée).
+4. Étape 2, « Photo de l’objet » : on voit la Multiprise #3, son code MDS-0003 et le badge Self-service. Toucher **Prendre la photo** avec une caméra ; sans caméra, toucher **Utiliser une image de démonstration**. (Avec une caméra, le même repli existe sous le nom **Sans caméra : image de démonstration**.)
 5. Étape 3, « Confirmer l’emprunt » : la photo s’affiche avec l’encadré « Retour attendu aujourd’hui avant 17h00, au bureau des pédago. » Toucher **Confirmer l’emprunt**.
 6. Résultat : une coche, « Emprunt enregistré », puis « Multiprise #3 · Retour attendu aujourd’hui avant 17h00. Bon travail ! »
 7. **Admin, sans rien toucher** : le nombre à côté d’**Emprunts** passe de 10 à 11, et la première ligne de la liste est la Multiprise #3 (MDS-0003) de Camille Dubois, au statut **En cours**. Sur le **Tableau de bord**, la liste « Dernières activités » contient maintenant « Emprunt · Camille Dubois » (« Multiprise #3 — Camille Dubois »).
@@ -158,7 +158,7 @@ Un objet encore emprunté ou réservé ne peut pas passer **Hors service** : l�
 2. Dans **Fermeture du matin**, remplacer 12 par 11 et cliquer sur **Enregistrer** : toast « Réglages enregistrés ».
 3. Régler **Date et heure simulées** sur le même jour à 11h30, **Appliquer**. L’encadré dit « Bureau fermé : ouvert les jours ouvrés de 8h-11h et 13h-17h. Les emprunts en self-service sont refusés, les retours restent possibles. »
 4. **Mobile** (Camille) : **Scanner un QR code**, **Simuler le scan**. L’écran affiche « Impossible » et « Le bureau de la pédagogie est fermé (jours ouvrés, 8h-11h et 13h-17h) : le self-service reprendra à l’ouverture. » Le message cite **11h**, l’horaire réglé, pas l’horaire d’origine.
-5. **Admin** : remettre 12 dans **Fermeture du matin**, **Enregistrer**. Refaire **Simuler le scan** sur le mobile : on arrive cette fois à l’étape « Photo de l’objet » (toucher **Annuler** pour ne rien emprunter).
+5. **Admin** : remettre 12 dans **Fermeture du matin**, **Enregistrer**. Sur le mobile, toucher **Scanner à nouveau** pour quitter l’écran « Impossible », puis **Simuler le scan** : on arrive cette fois à l’étape « Photo de l’objet » (toucher **Annuler** pour ne rien emprunter).
 6. **Montrer la jauge d’espace** : la carte **Espace occupé** affiche un pourcentage, une barre et un texte du type « 203 Ko sur 5,0 Mo — les photos d’emprunt et de retour pèsent l’essentiel. » Les photos des emprunts et des retours remplissent le navigateur ; à partir de 80 %, un avertissement invite à régénérer les données.
 
 ## 4. Pièges d’horloge

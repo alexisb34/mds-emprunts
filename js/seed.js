@@ -344,7 +344,9 @@ export function buildSeed(now = new Date()) {
   [[1, [8, 9, 10, 11, 12], 7], [2, [14, 15], 18], [3, [9, 10], 32]].forEach(([nOff, creneaux, uIdx]) => {
     const day = nextWeekday(base, nOff);
     const user = emprunteurs[uIdx];
-    const created = atHour(base, 8, 30);
+    // Borné comme les autres horodatages : avant 8h30, `atHour(base, 8, 30)` serait dans
+    // le futur et le journal du tableau de bord s’ouvrirait sur des événements à venir.
+    const created = new Date(Math.min(atHour(base, 8, 30).getTime(), now.getTime() - (3 - nOff) * 60 * 1000));
     const b = addBooking({
       userId: user.id, date: ymd(day), creneaux, statut: BOOKING_STATES.A_VENIR, createdAt: iso(created), updatedAt: iso(created),
     });

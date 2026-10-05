@@ -7,11 +7,11 @@ Un **prototype** d’emprunt de matériel pour l’école. Rien n’est réel : 
 ## Comment y accéder
 
 1. Ouvrez `https://<compte>.github.io/mds-emprunts/` dans le navigateur de votre téléphone, puis touchez **Interface mobile**.
-2. Pour l’ouvrir comme une application, faites-le depuis cette page : dans le menu de votre navigateur, choisissez **Ajouter à l’écran d’accueil** (le libellé varie un peu selon le téléphone).
+2. Pour l’ouvrir comme une application, faites-le depuis cette page : dans le menu de votre navigateur, choisissez **Ajouter à l’écran d’accueil** (le libellé varie un peu selon le téléphone). Sur certains téléphones, l’application ainsi installée a ses propres données : ce que vous auriez emprunté depuis le navigateur n’y apparaîtra pas. Choisissez l’un ou l’autre et restez-y.
 
 ## Votre compte
 
-Sur l’écran « Qui êtes-vous ? », choisissez un nom dans la liste : il n’y a pas de mot de passe. Le plus simple est **Camille Dubois** (tapez « Dubois » dans le champ de recherche). Les autres noms marchent aussi, mais certains ont déjà du matériel emprunté et seront refusés : c’est normal.
+Sur l’écran « Qui êtes-vous ? », choisissez un nom dans la liste : il n’y a pas de mot de passe. Le plus simple est **Camille Dubois** (tapez « Dubois » dans le champ de recherche). Les autres noms marchent aussi, mais certains peuvent être refusés — un exemplaire du même matériel déjà emprunté, ou un retard en cours. C’est voulu.
 
 Chaque téléphone a ses propres données : **deux testeurs ne se voient pas l’un l’autre**.
 

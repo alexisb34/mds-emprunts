@@ -114,9 +114,33 @@ test('buildSeed(lundi 8h00) : aucun dateRetrait futur, seed déterministe', () =
 test('aucune entrée de journal n’est postérieure à « maintenant », quelle que soit l’heure', () => {
   // Le tableau de bord ouvre sur « Dernières activités » : une entrée future s’y affiche
   // en tête et donne l’impression d’un jeu de données incohérent.
-  for (const quand of [new Date(2026, 9, 5, 9, 0), new Date(2026, 9, 5, 16, 0), new Date(2026, 9, 3, 11, 0)]) {
-    const db = buildSeed(quand);
-    const futures = db.log.filter((l) => new Date(l.date) > quand);
-    assert.deepEqual(futures.map((l) => `${l.date} ${l.detail}`), [], `jeu généré à ${quand.toISOString()}`);
+  // On balaie une semaine entière heure par heure : trois horaires choisis avaient laissé
+  // passer une plage complète (avant 8h30, les réservations à venir étaient postdatées).
+  const fautifs = [];
+  for (let jour = 1; jour <= 7; jour += 1) {
+    for (let heure = 0; heure < 24; heure += 1) {
+      const quand = new Date(2026, 9, jour, heure, 10);
+      const futures = buildSeed(quand).log.filter((l) => new Date(l.date) > quand);
+      if (futures.length) fautifs.push(`${quand.toISOString()} → ${futures[0].date} ${futures[0].action}`);
+    }
   }
+  assert.deepEqual(fautifs, []);
+});
+
+test('les repères que citent les documents de démonstration existent dans le jeu', () => {
+  // `docs/scenarios-demo.md` et `docs/notice-testeurs.md` nomment des comptes et des codes.
+  // Sans ce test, réordonner CATALOG ou renommer un compte les rendrait faux en silence.
+  const nom = (u) => `${u.prenom} ${u.nom}`;
+  const parNom = (n) => db.users.find((u) => nom(u) === n);
+  assert.equal(parNom('Camille Dubois')?.role, ROLES.ELEVE);
+  assert.equal(parNom('Sophie Marchand')?.role, ROLES.INTERVENANT);
+  assert.equal(parNom('Alexis Bengel')?.role, ROLES.PEDAGO);
+  const parCode = (c) => db.items.find((i) => i.code === c);
+  assert.equal(parCode('MDS-0003')?.nom, 'Multiprise #3');
+  assert.equal(parCode('MDS-0004')?.nom, 'Multiprise #4');
+  assert.equal(parCode('MDS-0042')?.nom, 'Filtre variable Hoya');
+  // Les codes doivent rester stables d’une génération à l’autre : les étiquettes imprimées
+  // le supposent, et la consigne d’impression le dit.
+  const autre = buildSeed(new Date(2026, 11, 1, 14, 0));
+  assert.equal(autre.items.find((i) => i.code === 'MDS-0003')?.nom, 'Multiprise #3');
 });
