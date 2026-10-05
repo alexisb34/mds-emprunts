@@ -108,3 +108,13 @@ test('openingWeek : un jour ouvré garde la date, le week-end ouvre la semaine s
   assert.equal(ymd(samedi), '2026-09-21');
   assert.equal(ymd(dimanche), '2026-09-21');
 });
+
+test('myBookingsHtml : un créneau d’un autre jour resté ouvert est dit « non clôturé »', () => {
+  const hier = { id: 'book_hier', date: '2026-09-16', creneaux: [11], statut: 'en_cours', etatEntree: { lignes: [] }, etatSortie: null };
+  const html = myBookingsHtml({ active: { booking: hier, entreeFaite: true, sortieFaite: false }, aVenir: [] }, NOW);
+  assert.match(html, /Créneau non clôturé/);
+  assert.doesNotMatch(html, /Créneau en cours/);
+  const aujourdhui = { ...hier, id: 'book_now', date: '2026-09-17', creneaux: [9, 10] };
+  const html2 = myBookingsHtml({ active: { booking: aujourdhui, entreeFaite: true, sortieFaite: false }, aVenir: [] }, NOW);
+  assert.match(html2, /Créneau en cours/);
+});

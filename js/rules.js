@@ -220,8 +220,10 @@ export function isBookingActive(b, date) {
   return d >= bookingStart(b) && d < bookingEnd(b);
 }
 
+// Une sortie ne « manque » que pendant un créneau en cours : un créneau clos d’office par
+// la pédago, ou jamais commencé (balayé par `closeDueBookings`), n’a plus de sortie à faire.
 export function isExitMissing(b, date) {
-  if (b.statut === BOOKING_STATES.ANNULEE || b.etatSortie) return false;
+  if (b.statut !== BOOKING_STATES.EN_COURS || b.etatSortie) return false;
   return toDate(date) > new Date(bookingEnd(b).getTime() + 60 * MIN);
 }
 

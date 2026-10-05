@@ -3,7 +3,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { NAV, isActive, sidebarHtml, topbarHtml } from '../js/admin/layout.js';
+import { NAV, isActive, sidebarHtml, topbarHtml, parseAdminSearch } from '../js/admin/layout.js';
 import { loginHtml } from '../js/admin/views/login.js';
 import { aVenirHtml } from '../js/admin/views/aVenir.js';
 
@@ -68,4 +68,15 @@ test('loginHtml : un bouton par pédago actif, emails affichés', () => {
 test('aVenirHtml : mentionne la phase', () => {
   assert.match(aVenirHtml('Emprunts', 3), /Emprunts/);
   assert.match(aVenirHtml('Emprunts', 3), /phase 3/);
+});
+
+test('parseAdminSearch : distingue un code de retrait d’une recherche de matériel', () => {
+  assert.deepEqual(parseAdminSearch('AB12CD'), { type: 'code', code: 'AB12CD' });
+  assert.deepEqual(parseAdminSearch('  ab12cd '), { type: 'code', code: 'AB12CD' });
+  assert.deepEqual(parseAdminSearch('LOAN-loan_0007-AB12CD'), { type: 'code', code: 'LOAN-loan_0007-AB12CD' });
+  assert.deepEqual(parseAdminSearch('canon'), { type: 'texte', texte: 'canon' });
+  assert.deepEqual(parseAdminSearch('Canon R10'), { type: 'texte', texte: 'Canon R10' });
+  assert.deepEqual(parseAdminSearch(''), { type: 'texte', texte: '' });
+  // Six caractères mais pas un code : un mot de six lettres reste une recherche.
+  assert.deepEqual(parseAdminSearch('trepie'), { type: 'texte', texte: 'trepie' });
 });

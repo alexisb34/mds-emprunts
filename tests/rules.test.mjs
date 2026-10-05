@@ -73,8 +73,9 @@ test('réservation salle : début, fin, active, sortie non faite', () => {
   assert.equal(isBookingActive(b, new Date(2026, 8, 17, 12, 59)), true);
   assert.equal(isBookingActive(b, new Date(2026, 8, 17, 13, 0)), false);
   assert.equal(isBookingActive({ ...b, statut: 'annulee' }, new Date(2026, 8, 17, 10)), false);
-  assert.equal(isExitMissing(b, new Date(2026, 8, 17, 14, 0)), false);
-  assert.equal(isExitMissing(b, new Date(2026, 8, 17, 14, 1)), true);
+  const enCours = { ...b, statut: 'en_cours' };
+  assert.equal(isExitMissing(enCours, new Date(2026, 8, 17, 14, 0)), false);
+  assert.equal(isExitMissing(enCours, new Date(2026, 8, 17, 14, 1)), true);
   assert.equal(isExitMissing({ ...b, etatSortie: { date: 'x', lignes: [] } }, new Date(2026, 8, 18)), false);
   assert.equal(isExitMissing({ ...b, statut: 'annulee' }, new Date(2026, 8, 18)), false);
 });
@@ -261,4 +262,14 @@ test('reasonLabel : salle_fermee reprend les heures de la salle réglées', () =
   // Réglage absent ou cassé : retour aux heures par défaut ; sans réglages : texte figé.
   assert.match(reasonLabel(REASONS.SALLE_FERMEE, {}), /de 8h à 17h/);
   assert.equal(reasonLabel(REASONS.SALLE_FERMEE), REASON_LABELS[REASONS.SALLE_FERMEE]);
+});
+
+test('isExitMissing : seul un créneau en cours peut avoir une sortie manquante', () => {
+  const base = { date: '2026-09-17', creneaux: [9, 10], etatSortie: null };
+  const tard = new Date(2026, 8, 17, 13, 0);
+  assert.equal(isExitMissing({ ...base, statut: 'en_cours' }, tard), true);
+  assert.equal(isExitMissing({ ...base, statut: 'terminee' }, tard), false, 'clos d’office par la pédago');
+  assert.equal(isExitMissing({ ...base, statut: 'a_venir' }, tard), false, 'jamais commencé, balayé par closeDueBookings');
+  assert.equal(isExitMissing({ ...base, statut: 'annulee' }, tard), false);
+  assert.equal(isExitMissing({ ...base, statut: 'en_cours' }, new Date(2026, 8, 17, 11, 30)), false, 'moins d’une heure après la fin');
 });

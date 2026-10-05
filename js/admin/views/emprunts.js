@@ -138,7 +138,7 @@ export function empruntsView(container) {
     container.querySelectorAll('[data-action="receive"]').forEach((b) => b.addEventListener('click', () => askReceive(rowOf(b.dataset.loan))));
     container.querySelectorAll('[data-action="refuse"]').forEach((b) => b.addEventListener('click', () => askRefuse(rowOf(b.dataset.loan))));
     container.querySelectorAll('[data-action="extend"]').forEach((b) => b.addEventListener('click', () => askExtend(rowOf(b.dataset.loan))));
-    container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', () => openHandoverModal({})));
+    container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', () => openHandoverModal({ loan: rowOf(b.dataset.loan).loan })));
   };
 
   render();

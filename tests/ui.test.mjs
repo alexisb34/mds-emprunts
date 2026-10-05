@@ -108,3 +108,19 @@ test('toDate : une date seule est locale, pas UTC', () => {
   // soit 02h00 à Paris et 20h00 la veille à New York.
   assert.equal(formatTime('2026-09-17'), '00h00');
 });
+
+test('openModal : la fermeture renvoyée ne ferme que SA modale', () => {
+  const root = { innerHTML: '', querySelectorAll: () => [], querySelector: () => null };
+  const avant = globalThis.document;
+  globalThis.document = { getElementById: () => root, body: { classList: { add() {}, remove() {} } } };
+  try {
+    const fermerPremiere = openModal({ title: 'Première', body: '' });
+    const fermerSeconde = openModal({ title: 'Seconde', body: '' });
+    fermerPremiere(); // la première est déjà remplacée : cet appel ne doit rien fermer
+    assert.match(root.innerHTML, /Seconde/, 'la seconde modale est toujours à l’écran');
+    fermerSeconde();
+    assert.equal(root.innerHTML, '');
+  } finally {
+    globalThis.document = avant;
+  }
+});

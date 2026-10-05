@@ -81,10 +81,14 @@ export function avatar(user, size = 'sm') {
 // ---- DOM ----
 
 let onCloseModal = null;
+// Jeton d’identité de la modale à l’écran : la fermeture renvoyée par `openModal` ne vaut
+// que tant que SA modale est la courante (un callback différé ne ferme pas la suivante).
+let modalToken = 0;
 
 export function closeModal() {
   const cb = onCloseModal;
   onCloseModal = null;
+  modalToken += 1; // toute fermeture périme les jetons en circulation
   const root = document.getElementById('modal-root');
   if (root) root.innerHTML = '';
   document.body.classList.remove('has-modal');
@@ -100,6 +104,7 @@ export function openModal({ title, body, actions = [], onClose = null }) {
   // Une modale qui en remplace une autre libère d’abord les ressources de la précédente.
   if (onCloseModal) { const previous = onCloseModal; onCloseModal = null; previous(); }
   onCloseModal = onClose;
+  const token = (modalToken += 1); // après la libération de la précédente : c’est le jeton de CETTE modale
   root.innerHTML = `
     <div class="modal-backdrop" data-close>
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -120,7 +125,8 @@ export function openModal({ title, body, actions = [], onClose = null }) {
     const keepOpen = a.onClick ? (await a.onClick(root.querySelector('.modal'))) === false : false;
     if (a.close !== false && !keepOpen) closeModal();
   }));
-  return closeModal;
+  // La fermeture renvoyée n’agit que si CETTE modale est encore à l’écran.
+  return () => { if (token === modalToken) closeModal(); };
 }
 
 export function toast(message, variant = 'info', ms = 3000) {

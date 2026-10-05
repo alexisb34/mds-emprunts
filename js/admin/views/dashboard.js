@@ -34,7 +34,7 @@ function dueList(due) {
       ${user ? avatar(user) : ''}
       <div class="list__grow"><strong>${escapeHtml(item ? item.nom : loan.itemId)}</strong><span class="activity__detail">${user ? escapeHtml(fullName(user)) : '—'} · retrait à ${escapeHtml(formatTime(loan.debutPrevu))} · code ${escapeHtml(loan.codeRetrait || '')}</span></div>
       ${badge('loan', loan.statut)}
-      <button type="button" class="btn btn--primary btn--sm" data-action="handover">Remettre</button>
+      <button type="button" class="btn btn--primary btn--sm" data-action="handover" data-loan="${escapeHtml(loan.id)}">Remettre</button>
     </div>`).join('')}</div>`;
 }
 
@@ -104,7 +104,7 @@ export function dashboardView(container) {
       exitMissing: exitMissingRows(data.bookings, data.users, date),
     });
     container.querySelectorAll('[data-href]').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.href)));
-    container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); openHandoverModal({}); }));
+    container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); openHandoverModal({ loan: store.loans.get(b.dataset.loan) || null }); }));
     bindDemoClock(container, { date });
   };
   render();

@@ -8,7 +8,7 @@ import { now } from '../rules.js';
 import { escapeHtml } from '../ui.js';
 import { sweepExpirations } from '../actions/loans.js';
 import { sweepBookings } from '../actions/bookings.js';
-import { mountSidebar } from './layout.js';
+import { mountSidebar, setSearchCodeHandler } from './layout.js';
 import { loginView } from './views/login.js';
 // Les tâches suivantes ajoutent leurs imports ici :
 import { dashboardView } from './views/dashboard.js';
@@ -20,6 +20,9 @@ import { empruntsView } from './views/emprunts.js';
 import { salleView } from './views/salle.js';
 import { maintenanceView } from './views/maintenance.js';
 import { parametresView } from './views/parametres.js';
+import { openHandoverModal } from './handoverModal.js';
+
+setSearchCodeHandler((code) => openHandoverModal({ code }));
 
 store.init(buildSeed);
 

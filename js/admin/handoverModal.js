@@ -1,10 +1,10 @@
 // js/admin/handoverModal.js — remise d’un matériel réservé (scan du QR de l’emprunteur ou code court)
 // et formulaire de checklist pour la réception.
 import { auth } from '../auth.js';
-import { escapeHtml, openModal, toast } from '../ui.js';
+import { escapeHtml, toast } from '../ui.js';
 import { checklistFor } from '../checklists.js';
 import { handOver } from '../actions/loans.js';
-import { startScanner, stopScanner, hasCamera, normalizeScanText } from '../scanner.js';
+import { openScanModal } from '../scanModal.js';
 
 export function checklistFormHtml(reference) {
   const lignes = checklistFor(reference);
@@ -32,62 +32,26 @@ export function readChecklistForm(root, reference) {
 }
 
 // Modale de remise : la pédago scanne le QR affiché par l’emprunteur, ou saisit son code à 6 caractères.
-export function openHandoverModal({ onDone } = {}) {
-  // Le scanner relit le même QR plusieurs fois par seconde : on n’affiche pas deux fois
-  // la même erreur à moins de 3 secondes d’intervalle.
-  let dernierMessage = '';
-  let dernierAffichage = 0;
-  const signaler = (message) => {
-    const t = Date.now();
-    if (message === dernierMessage && t - dernierAffichage < 3000) return;
-    dernierMessage = message;
-    dernierAffichage = t;
-    toast(message, 'error');
-  };
-  const close = openModal({
+// `loan` : l’emprunt de la ligne cliquée. Son code est pré-rempli, et on refuse un code
+// qui ne lui correspond pas — sinon le bouton d’une ligne pourrait en remettre une autre.
+// `code` : valeur de départ sans emprunt attendu (code tapé dans la recherche globale).
+export function openHandoverModal({ loan = null, code = '', onDone } = {}) {
+  const attendu = loan ? loan.codeRetrait : null;
+  return openScanModal({
     title: 'Remettre le matériel',
-    onClose: () => { stopScanner(); },
-    body: `
-      <p class="body-sm text-secondary">Scannez le QR affiché par l’emprunteur, ou saisissez son code de retrait.</p>
-      <div id="handover-reader" class="reader reader--admin"></div>
-      <label class="field"><span class="field__label">Code de retrait</span><input class="input" name="code" placeholder="AB12CD" autocapitalize="characters" maxlength="24"></label>`,
-    actions: [
-      { label: 'Annuler', variant: 'ghost' },
-      {
-        label: 'Remettre', variant: 'primary',
-        onClick: (modal) => {
-          try {
-            const loan = handOver({ code: modal.querySelector('[name="code"]').value, pedagoId: auth.currentUserId() });
-            stopScanner();
-            toast('Matériel remis', 'success');
-            if (onDone) onDone(loan);
-          } catch (e) {
-            toast(e.message, 'error');
-            return false;
-          }
-        },
-      },
-    ],
+    hint: loan
+      ? 'Scannez le QR affiché par l’emprunteur, ou vérifiez son code de retrait.'
+      : 'Scannez le QR affiché par l’emprunteur, ou saisissez son code de retrait.',
+    label: 'Code de retrait',
+    placeholder: 'AB12CD',
+    readerId: 'handover-reader',
+    value: attendu || code || '',
+    submitLabel: 'Remettre',
+    onCode: (saisi) => {
+      const remis = handOver({ code: saisi, pedagoId: auth.currentUserId() });
+      if (loan && remis.id !== loan.id) throw new Error('Ce code correspond à une autre réservation.');
+      toast('Matériel remis', 'success');
+      if (onDone) onDone(remis);
+    },
   });
-  const root = document.getElementById('modal-root');
-  const input = root.querySelector('[name="code"]');
-  input.focus();
-  hasCamera().then((ok) => {
-    const reader = root.querySelector('#handover-reader');
-    if (!reader) return; // modale déjà fermée
-    if (!ok) { reader.innerHTML = '<p class="body-sm">Caméra indisponible : saisissez le code.</p>'; return; }
-    startScanner('handover-reader', (text) => {
-      input.value = normalizeScanText(text);
-      try {
-        const loan = handOver({ code: input.value, pedagoId: auth.currentUserId() });
-        stopScanner();
-        toast('Matériel remis', 'success');
-        close();
-        if (onDone) onDone(loan);
-      } catch (e) {
-        signaler(e.message);
-      }
-    }).catch(() => { reader.innerHTML = '<p class="body-sm">Caméra indisponible : saisissez le code.</p>'; });
-  });
-  return close;
 }

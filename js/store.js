@@ -146,6 +146,8 @@ export const store = {
   // tel qu’il était, donc mémoire et stockage restent d’accord.
   // L’instantané vient de la mémoire (pas de localStorage, qu’un autre onglet ou un échec
   // passé peut avoir laissé en retard).
+  // Préconditions : `fn` doit être SYNCHRONE (une fonction async validerait avant ses écritures),
+  // et `persist()` doit rester le seul écrivain de `localStorage` (l’instantané est pris en mémoire).
   // Imbrication : seule la transaction la plus externe restaure. Une transaction imbriquée
   // qui lève remonte l’erreur ; si l’externe la rattrape et continue, les écritures de
   // l’imbriquée sont conservées. Les actions de ce projet n’imbriquent pas.

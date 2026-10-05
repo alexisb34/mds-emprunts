@@ -16,6 +16,25 @@ export const NAV = [
 
 export const SEARCH_KEY = 'mds-emprunts:adminSearch';
 
+// Un code de retrait saisi dans la recherche globale ouvre directement la remise (spec §6).
+// Un code court = exactement 6 caractères alphanumériques avec au moins un chiffre ;
+// un mot de six lettres reste une recherche de matériel.
+const CODE6 = /^[A-Z0-9]{6}$/;
+export function parseAdminSearch(q) {
+  const texte = String(q || '').trim();
+  // Un QR d’emprunt est rendu tel quel : `LOAN_CODE_RE` capture l’identifiant, et
+  // `store.loans.get()` est sensible à la casse — le passer en majuscules le casserait.
+  if (texte.toUpperCase().startsWith('LOAN-')) return { type: 'code', code: texte };
+  const majuscules = texte.toUpperCase();
+  if (CODE6.test(majuscules) && /[0-9]/.test(majuscules)) return { type: 'code', code: majuscules };
+  return { type: 'texte', texte };
+}
+
+// Pour éviter une dépendance de ce module vers une modale, `app.js` installe une fois
+// au démarrage la fonction qui ouvre la remise.
+let onSearchCode = () => {};
+export function setSearchCodeHandler(fn) { onSearchCode = fn; }
+
 export function isActive(navPath, path) {
   return path === navPath || path.startsWith(`${navPath}/`);
 }
@@ -66,7 +85,13 @@ export function setTopbar({ title, subtitle = '', action = null }) {
   if (action) el.querySelector('[data-action="primary"]').addEventListener('click', action.onClick);
   el.querySelector('[data-role="global-search"]').addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
-    sessionStorage.setItem(SEARCH_KEY, e.target.value.trim());
+    const parsed = parseAdminSearch(e.target.value);
+    if (parsed.type === 'code') {
+      e.target.value = '';
+      onSearchCode(parsed.code);
+      return;
+    }
+    sessionStorage.setItem(SEARCH_KEY, parsed.texte);
     if (currentPath() === '/materiel') window.dispatchEvent(new Event('hashchange'));
     else navigate('/materiel');
   });
