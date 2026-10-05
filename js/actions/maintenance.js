@@ -51,19 +51,26 @@ function immobiliser(itemId) {
   if (item && item.etat === ITEM_STATES.DISPONIBLE) applyItemState(itemId, ITEM_STATES.MAINTENANCE);
 }
 
-export function reportIssue({ itemId, auteurId, description, loanId = null, bookingId = null }) {
+/**
+ * Crée un signalement. Seul chemin de création d’un `MaintenanceEvent` de type signalement :
+ * les checklists de retour et les états des lieux passent par ici.
+ * - `immobiliser: false` quand l’action englobante décide elle-même de l’état de l’objet
+ *   (un retour, par exemple, le fait après avoir rendu l’exemplaire).
+ * - `date` pour horodater comme l’action englobante plutôt qu’à l’instant de l’appel.
+ */
+export function reportIssue({ itemId, auteurId, description, loanId = null, bookingId = null, immobiliser: doitImmobiliser = true, date = null }) {
   const texte = cleanDescription(description);
   // Un identifiant vide (`''`, `null`, `undefined`) veut dire « sans objet » : signalement de salle.
   const cible = itemId || null;
   if (cible) requireItem(cible);
-  const date = now();
+  const quand = date || now();
   return store.transaction(() => {
     const event = store.maintenance.create({
-      itemId: cible, type: MAINT_TYPES.SIGNALEMENT, auteurId, date: date.toISOString(),
+      itemId: cible, type: MAINT_TYPES.SIGNALEMENT, auteurId, date: quand.toISOString(),
       statut: MAINT_STATES.OUVERT, description: texte, prestataire: '', cout: 0,
       loanId, bookingId,
     });
-    immobiliser(cible);
+    if (doitImmobiliser) immobiliser(cible);
     logAction({ auteurId, action: ACTIONS.MAINT_SIGNALEMENT, itemId: cible, loanId, bookingId, detail: texte });
     return event;
   });

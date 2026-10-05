@@ -328,3 +328,28 @@ test('closeEvent : « remettre en service » ne touche pas à un objet encore de
   assert.equal(store.items.get(loan.itemId).etat, ITEM_STATES.EMPRUNTE, 'son retour décidera');
   assert.equal(store.log.list().at(-1).detail, 'Signalé pendant l’emprunt');
 });
+
+test('reportIssue : un seul chemin de création, même forme depuis les trois checklists', () => {
+  const item = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0];
+  const direct = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Signalé à la main' });
+  const champs = Object.keys(direct).sort();
+  // La forme de l’enregistrement ne doit dépendre ni de l’appelant ni du contexte.
+  const depuisRetour = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Signalé au retour', loanId: 'loan_0001' });
+  assert.deepEqual(Object.keys(depuisRetour).sort(), champs);
+  assert.equal(depuisRetour.loanId, 'loan_0001');
+  assert.equal(depuisRetour.bookingId, null);
+});
+
+test('reportIssue : `immobiliser: false` laisse l’état de l’objet à l’appelant', () => {
+  const item = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0];
+  reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Constaté pendant un retour', immobiliser: false });
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE, 'le retour décidera lui-même');
+  assert.equal(openEvents(item.id).length, 1);
+});
+
+test('reportIssue : `date` imposée, pour horodater comme l’action qui l’englobe', () => {
+  const item = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0];
+  const quand = new Date(2026, 8, 17, 15, 30);
+  const ev = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Test', date: quand });
+  assert.equal(ev.date, quand.toISOString());
+});

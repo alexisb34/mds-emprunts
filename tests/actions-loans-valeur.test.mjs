@@ -330,3 +330,19 @@ test('reserveValeur est transactionnel : un échec sur l’objet ne laisse aucun
   assert.equal(store.loans.list().length, nb, 'aucun emprunt créé');
   assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
 });
+
+test('setLoanStatus : une transition absente de LOAN_TRANSITIONS lève avant d’écrire', () => {
+  const loan = store.loans.list((l) => l.statut === LOAN_STATES.RETOURNEE)[0];
+  assert.ok(loan, 'le seed contient un emprunt rendu');
+  // `retournee` est terminal : aucune action ne doit pouvoir le rouvrir.
+  assert.throws(() => handOver({ code: loan.codeRetrait, pedagoId: PEDAGO }), /./);
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.RETOURNEE);
+});
+
+test('les messages des gardes métier priment sur celui de la table', () => {
+  const rendu = store.loans.list((l) => l.statut === LOAN_STATES.RETOURNEE)[0];
+  let message = '';
+  try { receiveLoan({ loanId: rendu.id, pedagoId: PEDAGO }); } catch (e) { message = e.message; }
+  assert.match(message, /n’est plus en cours/, 'la garde métier parle, pas la table');
+  assert.doesNotMatch(message, /Transition/);
+});

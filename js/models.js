@@ -47,7 +47,10 @@ export const LOAN_TRANSITIONS = {
 };
 
 export const BOOKING_TRANSITIONS = {
-  a_venir: ['en_cours', 'annulee'],
+  // `a_venir → terminee` : un créneau que personne n’a ouvert est clos à son échéance par
+  // `closeDueBookings`, sans passer par `en_cours`. La table l’ignorait tant qu’elle n’était
+  // pas vérifiée (spec §9).
+  a_venir: ['en_cours', 'terminee', 'annulee'],
   en_cours: ['terminee', 'annulee'],
   terminee: [], annulee: [],
 };

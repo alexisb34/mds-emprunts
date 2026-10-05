@@ -247,3 +247,12 @@ test('recordEntry avec deux lignes en problème : un signalement par ligne', () 
   assert.equal(store.items.get(lignes[0].itemId).etat, ITEM_STATES.MAINTENANCE);
   assert.equal(store.log.list().length, before + 3, '1 état des lieux + 2 signalements');
 });
+
+test('setBookingStatus : une transition absente de BOOKING_TRANSITIONS lève avant d’écrire', () => {
+  const b = createBooking({ userId: ELEVE, date: DEMAIN, creneaux: [13] });
+  cancelBooking(b.id, PEDAGO);
+  assert.equal(store.bookings.get(b.id).statut, BOOKING_STATES.ANNULEE);
+  // `annulee` est terminal : la garde métier refuse d’abord, et la table couvre le reste.
+  assert.throws(() => cancelBooking(b.id, PEDAGO), /plus annulable/);
+  assert.equal(store.bookings.get(b.id).statut, BOOKING_STATES.ANNULEE);
+});
