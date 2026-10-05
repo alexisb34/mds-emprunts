@@ -32,8 +32,10 @@ export function openEvents(itemId) {
 // L’état que doit porter un objet au vu de ses événements ouverts. `souhaite` est ce que
 // l’appelant voudrait (retour au catalogue, mise hors service) ; un événement encore ouvert
 // prime sur une remise en service, jamais sur une mise hors service.
-// Rend l’état courant quand la transition est interdite (l’appelant n’a rien à écrire),
-// et null quand l’objet n’existe pas.
+// Rend l’état courant quand la transition est interdite, et null quand l’objet n’existe pas.
+// ATTENTION : l’appelant doit comparer à l’état courant avant d’écrire. `ITEM_TRANSITIONS`
+// n’autorise aucune transition vers soi-même, donc passer directement ce retour à
+// `applyItemState` lèverait « Transition matériel interdite » sur ces deux cas.
 export function resolveItemState(itemId, souhaite) {
   const item = itemId ? store.items.get(itemId) : null;
   if (!item) return null;

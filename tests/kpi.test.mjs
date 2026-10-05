@@ -37,7 +37,7 @@ test('joinLoan tolère un objet ou un utilisateur manquant', () => {
   assert.equal(j.user, null);
 });
 
-test('openReports : signalements ouverts joints', () => {
+test('openReports : signalements à traiter joints', () => {
   const r = openReports(db);
   assert.equal(r.length, 1);
   assert.equal(r[0].item.reference, 'souris');
