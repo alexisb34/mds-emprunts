@@ -62,6 +62,11 @@ export function updateSettings(patch, pedagoId) {
   const actuel = withDefaults(store.settings.get());
   const suivant = { ...actuel, ...patch };
   delete suivant.horlogeDemo;
+  // `heureRetourSelf` n’est plus un réglage : l’heure de retour se déduit de la dernière
+  // fermeture. Un jeu de données antérieur en garde une copie figée, qui l’emporterait sur
+  // les horaires qu’on vient de modifier. `store.settings.update` fusionne, donc on écrase
+  // explicitement — `JSON.stringify` élimine la clé à la persistance.
+  suivant.heureRetourSelf = undefined;
 
   if (patch.horaires !== undefined) {
     if (!Array.isArray(patch.horaires) || !patch.horaires.length) throw new Error('Il faut au moins une plage horaire.');

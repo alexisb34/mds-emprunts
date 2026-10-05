@@ -3,7 +3,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { now } from '../js/rules.js';
+import { now, returnHour } from '../js/rules.js';
 import { ACTIONS } from '../js/log.js';
 import { toDatetimeLocal, fromDatetimeLocal, officeStatus, setDemoClock, resetDemoData, updateSettings } from '../js/actions/settings.js';
 
@@ -113,4 +113,12 @@ test('officeStatus : le texte « fermé » cite les horaires réglés, pas des h
   // Le week-end ne mentionne pas d’horaires : la raison est le jour, pas l’heure.
   const weekend = officeStatus(new Date(2026, 8, 19, 10, 0), S);
   assert.match(weekend.text, /week-end/);
+});
+
+test('updateSettings : nettoie l’heure de retour figée d’un ancien jeu de données', () => {
+  // Jeu antérieur : la clé a été écrite en base et l’emporterait sur les horaires réglés.
+  store.settings.update({ heureRetourSelf: 17 });
+  const s = updateSettings({ horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 16 }] }, PEDAGO);
+  assert.equal(s.heureRetourSelf, undefined, 'la clé obsolète ne vaut plus rien');
+  assert.equal(returnHour(store.settings.get()), 16, 'l’heure de retour suit la dernière fermeture');
 });
