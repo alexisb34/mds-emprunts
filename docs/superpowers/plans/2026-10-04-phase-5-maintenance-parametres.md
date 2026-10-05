@@ -1270,15 +1270,22 @@ test('scanModalBodyHtml : la valeur de départ pré-remplit le champ', () => {
 `tests/admin-layout.test.mjs` — ajouter `parseAdminSearch` à l’import et à la fin du fichier :
 
 ```js
-test('parseAdminSearch : distingue un code de retrait d’une recherche de matériel', () => {
-  assert.deepEqual(parseAdminSearch('AB12CD'), { type: 'code', code: 'AB12CD' });
-  assert.deepEqual(parseAdminSearch('  ab12cd '), { type: 'code', code: 'AB12CD' });
-  assert.deepEqual(parseAdminSearch('LOAN-loan_0007-AB12CD'), { type: 'code', code: 'LOAN-loan_0007-AB12CD' });
+test('parseAdminSearch : code sûr, code possible, ou recherche de matériel', () => {
+  // Un QR d’emprunt est un code certain, rendu tel quel : l’identifiant est sensible à la casse.
+  assert.deepEqual(parseAdminSearch('LOAN-loan_0007-AB23CD'), { type: 'code', code: 'LOAN-loan_0007-AB23CD' });
+  // Préfixe en minuscules : `LOAN_CODE_RE` le refuserait, donc ce n’est pas un code.
+  assert.deepEqual(parseAdminSearch('loan-loan_0007-ab23cd'), { type: 'texte', texte: 'loan-loan_0007-ab23cd' });
+  // Un jeton conforme à l’alphabet est un code POSSIBLE : le store tranchera.
+  assert.deepEqual(parseAdminSearch('AB23CD'), { type: 'code_possible', code: 'AB23CD' });
+  assert.deepEqual(parseAdminSearch('  ab23cd '), { type: 'code_possible', code: 'AB23CD' });
+  // 16,7 % des codes émis n’ont aucun chiffre : ils doivent passer.
+  assert.deepEqual(parseAdminSearch('ZKMNPQ'), { type: 'code_possible', code: 'ZKMNPQ' });
+  // Les caractères exclus de l’alphabet (I, L, O, 0, 1) trahissent un mot, pas un code.
+  assert.deepEqual(parseAdminSearch('trepie'), { type: 'texte', texte: 'trepie' });
+  assert.deepEqual(parseAdminSearch('AB12CD'), { type: 'texte', texte: 'AB12CD' });
   assert.deepEqual(parseAdminSearch('canon'), { type: 'texte', texte: 'canon' });
   assert.deepEqual(parseAdminSearch('Canon R10'), { type: 'texte', texte: 'Canon R10' });
   assert.deepEqual(parseAdminSearch(''), { type: 'texte', texte: '' });
-  // Six caractères mais pas un code : un mot de six lettres reste une recherche.
-  assert.deepEqual(parseAdminSearch('trepie'), { type: 'texte', texte: 'trepie' });
 });
 ```
 
@@ -1444,9 +1451,11 @@ export function openHandoverModal({ loan = null, onDone } = {}) {
     readerId: 'handover-reader',
     value: attendu || '',
     submitLabel: 'Remettre',
-    onCode: (code) => {
-      const remis = handOver({ code, pedagoId: auth.currentUserId() });
-      if (loan && remis.id !== loan.id) throw new Error('Ce code correspond à une autre réservation.');
+    onCode: (saisi) => {
+      // La garde décide AVANT d’écrire : `handOver` valide, écrit et notifie, puis rend
+      // l’emprunt — comparer après coup remettrait pour de bon une réservation qu’on
+      // prétend refuser, et rien ne permet de revenir en arrière.
+      const remis = handOverChecked({ saisi, loan, pedagoId: auth.currentUserId() });
       toast('Matériel remis', 'success');
       if (onDone) onDone(remis);
     },
@@ -1464,14 +1473,19 @@ Les imports de `handoverModal.js` deviennent : `auth`, `escapeHtml`, `toast` (`.
 // Un code de retrait saisi dans la recherche globale ouvre directement la remise (spec §6).
 // Un code court = exactement 6 caractères alphanumériques avec au moins un chiffre ;
 // un mot de six lettres reste une recherche de matériel.
-const CODE6 = /^[A-Z0-9]{6}$/;
+// L’alphabet des codes de retrait (`js/actions/loans.js`) exclut I, L, O, 0 et 1 pour
+// éviter les confusions à la lecture. Exiger un chiffre écarterait 16,7 % des codes émis
+// — (23/31)^6 — qui n’en comportent aucun. Un jeton conforme est un code *possible* :
+// c’est l’appelant, qui a le store, qui tranche.
+const CODE6 = /^[A-HJKMNP-Z2-9]{6}$/;
 export function parseAdminSearch(q) {
   const texte = String(q || '').trim();
   // Un QR d’emprunt est rendu tel quel : `LOAN_CODE_RE` capture l’identifiant, et
   // `store.loans.get()` est sensible à la casse — le passer en majuscules le casserait.
-  if (texte.toUpperCase().startsWith('LOAN-')) return { type: 'code', code: texte };
+  // Le préfixe est exigé en majuscules, sinon `handOver` refuserait le code comme inconnu.
+  if (texte.startsWith('LOAN-')) return { type: 'code', code: texte };
   const majuscules = texte.toUpperCase();
-  if (CODE6.test(majuscules) && /[0-9]/.test(majuscules)) return { type: 'code', code: majuscules };
+  if (CODE6.test(majuscules)) return { type: 'code_possible', code: majuscules };
   return { type: 'texte', texte };
 }
 ```
