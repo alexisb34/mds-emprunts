@@ -227,13 +227,17 @@ export function buildSeed(now = new Date()) {
     const it = item(ref);
     const user = emprunteurs[10 + i];
     const start = atHour(nextWeekday(base, nStart), 9 + i);
+    // Borné comme les autres horodatages du jeu : à 9h, `atHour(base, 9, 30)` tomberait
+    // 30 minutes après « maintenant », et le journal du tableau de bord ouvrirait sur des
+    // événements qui n’ont pas eu lieu.
+    const pose = new Date(Math.min(atHour(base, 9, 30 + i).getTime(), now.getTime() - (2 - i) * 60 * 1000));
     const l = addLoan({
       itemId: it.id, userId: user.id, statut: LOAN_STATES.RESERVEE, motif, codeRetrait: code6(),
-      dateReservation: iso(atHour(base, 9, 30 + i)), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(start, dLen), 17)),
-      createdAt: iso(atHour(base, 9, 30 + i)), updatedAt: iso(atHour(base, 9, 30 + i)),
+      dateReservation: iso(pose), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(start, dLen), 17)),
+      createdAt: iso(pose), updatedAt: iso(pose),
     });
     it.etat = ITEM_STATES.RESERVE;
-    addLog(atHour(base, 9, 30 + i), user.id, 'loan.reservee', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} — ${who(user)}`);
+    addLog(pose, user.id, 'loan.reservee', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} — ${who(user)}`);
   });
 
   // ---- Maintenance ----

@@ -110,3 +110,13 @@ test('buildSeed(lundi 8h00) : aucun dateRetrait futur, seed déterministe', () =
   }
   assert.equal(JSON.stringify(buildSeed(lundi8h)), JSON.stringify(seedLundi));
 });
+
+test('aucune entrée de journal n’est postérieure à « maintenant », quelle que soit l’heure', () => {
+  // Le tableau de bord ouvre sur « Dernières activités » : une entrée future s’y affiche
+  // en tête et donne l’impression d’un jeu de données incohérent.
+  for (const quand of [new Date(2026, 9, 5, 9, 0), new Date(2026, 9, 5, 16, 0), new Date(2026, 9, 3, 11, 0)]) {
+    const db = buildSeed(quand);
+    const futures = db.log.filter((l) => new Date(l.date) > quand);
+    assert.deepEqual(futures.map((l) => `${l.date} ${l.detail}`), [], `jeu généré à ${quand.toISOString()}`);
+  }
+});
