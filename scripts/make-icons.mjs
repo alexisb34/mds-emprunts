@@ -2,6 +2,8 @@
 // `node scripts/make-icons.mjs` réécrit assets/icon-192.png et assets/icon-512.png.
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
 const VIOLET = [0x66, 0x24, 0x83];
 const BLANC = [0xff, 0xff, 0xff];
@@ -60,8 +62,11 @@ function motif(x, y, size) {
   return VIOLET;
 }
 
-mkdirSync('assets', { recursive: true });
+// Chemins résolus depuis le script : lancé depuis un autre répertoire, il écrirait
+// sinon un dossier `assets/` égaré.
+const racine = join(dirname(fileURLToPath(import.meta.url)), '..');
+mkdirSync(join(racine, 'assets'), { recursive: true });
 for (const size of [192, 512]) {
-  writeFileSync(`assets/icon-${size}.png`, png(size, motif));
+  writeFileSync(join(racine, 'assets', `icon-${size}.png`), png(size, motif));
   console.log(`assets/icon-${size}.png écrit (${size}×${size})`);
 }

@@ -12,7 +12,7 @@
 /* Contenu */
 .m-main { flex: 1; padding: var(--space-lg) var(--space-lg) calc(96px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--space-lg); }
 /* En-tête masqué : c’est au contenu de se tenir sous l’encoche, sinon il passe dessous en mode installé. */
-.is-login .m-main { padding-top: calc(var(--space-lg) + env(safe-area-inset-top)); padding-bottom: var(--space-lg); }
+.is-login .m-main { padding-top: calc(var(--space-lg) + env(safe-area-inset-top)); padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom)); }
 .m-section { display: flex; flex-direction: column; gap: var(--space-sm); }
 .m-section > h2 { margin-top: var(--space-sm); }
 .m-list { display: flex; flex-direction: column; gap: var(--space-sm); }
@@ -101,4 +101,6 @@
 .m-nav__tab--active { color: var(--text-brand); }
 .m-nav__scan { justify-self: center; width: 60px; height: 60px; margin-top: -28px; border-radius: 50%; background: var(--brand-primary); color: var(--text-on-brand); display: grid; place-items: center; box-shadow: var(--shadow-card); }
 .m-nav__scan:hover { background: var(--brand-primary-hover); }
+/* Les toasts se posaient sur la barre de navigation : même dégagement que les barres collantes. */
+#toast-root { bottom: calc(88px + env(safe-area-inset-bottom)); }
 .error-card { border-left: 4px solid var(--feedback-error); }
