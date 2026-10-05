@@ -127,6 +127,20 @@ test('aucune entrée de journal n’est postérieure à « maintenant », quelle
   assert.deepEqual(fautifs, []);
 });
 
+test('à 8h00 un lundi, les entrées bornées ne s’empilent pas : au moins quatre minutes entre deux', () => {
+  // Avant 8h30, les horodatages du matin tombent dans le futur et sont ramenés à
+  // « maintenant » moins un écart ; des écarts d’une minute donnaient cinq entrées collées.
+  const lundi8h = new Date(2026, 8, 21, 8, 0);
+  const recentes = buildSeed(lundi8h).log
+    .map((l) => new Date(l.date).getTime())
+    .filter((t) => t > lundi8h.getTime() - 2 * 60 * 60 * 1000)
+    .sort((a, b) => a - b);
+  assert.ok(recentes.length >= 10, 'le journal du matin n’est pas vide');
+  for (let i = 1; i < recentes.length; i += 1) {
+    assert.ok(recentes[i] - recentes[i - 1] >= 4 * 60 * 1000, `entrées ${i - 1} et ${i} à moins de quatre minutes`);
+  }
+});
+
 test('les repères que citent les documents de démonstration existent dans le jeu', () => {
   // `docs/scenarios-demo.md` et `docs/notice-testeurs.md` nomment des comptes et des codes.
   // Sans ce test, réordonner CATALOG ou renommer un compte les rendrait faux en silence.

@@ -35,25 +35,38 @@ function cheminLocal(ref) {
   return ref.replace(/[#?].*$/, '');
 }
 
+// `chemin` est relatif à la racine du site ; rend le premier segment qui manque, ou null.
 function segmentAbsent(chemin) {
   const segments = posix.normalize(chemin).split('/').filter((s) => s && s !== '.');
   let dossier = '';
   for (const segment of segments) {
-    const present = readdirSync(new URL(dossier, RACINE));
+    let present;
+    try {
+      present = readdirSync(new URL(dossier, RACINE));
+    } catch {
+      // Un segment déjà trouvé n’est pas un dossier (`css/base.css/x.css`) : ce qui suit
+      // n’existe pas, et le test doit le dire plutôt que planter sur un ENOTDIR brut.
+      return segment;
+    }
     if (!present.includes(segment)) return segment;
     dossier += `${segment}/`;
   }
   return null;
 }
 
-function problemes(html) {
+// `dossier` : le dossier de la page, relatif à la racine du site (« » pour une page à la
+// racine). Une référence relative se résout depuis lui, comme le fait le navigateur.
+function problemes(html, dossier = '') {
   const out = [];
   for (const ref of references(html)) {
-    if (!ref || estExterne(ref)) continue;
+    // `${…}` : un gabarit de balisage dont l’adresse se décide à l’exécution ; ce n’est pas un chemin.
+    if (!ref || ref.includes('${') || estExterne(ref)) continue;
     if (ref.startsWith('/')) { out.push(`${ref} : chemin absolu, hors du site une fois publié`); continue; }
     const chemin = cheminLocal(ref);
     if (!chemin) continue; // fragment seul
-    const absent = segmentAbsent(chemin);
+    const resolu = posix.normalize(posix.join(dossier, chemin));
+    if (resolu === '..' || resolu.startsWith('../')) { out.push(`${ref} : remonte au-dessus de la racine du site`); continue; }
+    const absent = segmentAbsent(resolu);
     if (absent) out.push(`${ref} : « ${absent} » n’existe pas (casse comprise)`);
   }
   return out;
@@ -95,7 +108,10 @@ test('le détecteur nomme la bonne référence, ignore fragments et externes, su
 
 test('le manifeste reste relatif et complet : il sera servi depuis un sous-répertoire', () => {
   const manifest = JSON.parse(lire('manifest.json'));
-  for (const champ of ['start_url', 'scope', 'id']) {
+  // Pas d’`id` : il se résout contre l’ORIGINE (`https://<compte>.github.io/mobile.html`), pas
+  // contre le manifeste, donc une valeur relative ne serait pas la bonne. Absent, il vaut `start_url`.
+  assert.equal('id' in manifest, false, 'manifest.id doit rester absent (il défaut à start_url)');
+  for (const champ of ['start_url', 'scope']) {
     assert.equal(typeof manifest[champ], 'string', `manifest.${champ} est absent`);
     assert.ok(!manifest[champ].startsWith('/'), `manifest.${champ} ne doit pas commencer par /`);
   }
@@ -121,9 +137,45 @@ test('la page d’accueil mène aux quatre interfaces', () => {
 
 test('le détecteur voit un attribut sans guillemets ou en capitales', () => {
   // HTML tolère les deux ; un motif qui exige des guillemets minuscules les manquerait.
-  assert.deepEqual(problemes('<link href=/css/base.css>').length, 1);
-  assert.deepEqual(problemes('<script SRC="/js/store.js"></script>').length, 1);
-  assert.deepEqual(problemes('<img srcset="/assets/icon-192.png 1x">').length, 1);
+  // On compare le message, pas le nombre : un seul problème, mais le bon.
+  assert.deepEqual(problemes('<link href=/css/base.css>'), ['/css/base.css : chemin absolu, hors du site une fois publié']);
+  assert.deepEqual(problemes('<script SRC="/js/store.js"></script>'), ['/js/store.js : chemin absolu, hors du site une fois publié']);
+  assert.deepEqual(problemes('<img srcset="/assets/icon-192.png 1x">'), ['/assets/icon-192.png 1x : chemin absolu, hors du site une fois publié']);
   // Et rien d’inventé sur du balisage légitime.
   assert.deepEqual(problemes('<link href=css/base.css><a href="#/materiel">x</a>'), []);
+});
+
+test('le détecteur ignore une adresse de gabarit `${…}`, qui ne se décide qu’à l’exécution', () => {
+  assert.deepEqual(problemes('const html = `<a href="${lien}">x</a>`;'), []);
+  assert.deepEqual(problemes('`<img src="assets/${nom}.png">`'), []);
+  // Un gabarit n’excuse pas pour autant un chemin absolu écrit en dur à côté.
+  assert.deepEqual(problemes('`<a href="${lien}">x</a><a href="/admin.html">y</a>`'), ['/admin.html : chemin absolu, hors du site une fois publié']);
+});
+
+test('le détecteur résout `..` depuis le dossier de la page au lieu de le prendre pour un nom', () => {
+  // Depuis `docs/`, `../css/base.css` est bien `css/base.css`.
+  assert.deepEqual(problemes('<link href="../css/base.css">', 'docs'), []);
+  assert.deepEqual(problemes('<link href="../css/absent.css">', 'docs'), ['../css/absent.css : « absent.css » n’existe pas (casse comprise)']);
+  assert.deepEqual(problemes('<link href="css/../css/base.css">'), []);
+  // Depuis la racine, remonter sort du site : c’est un vrai défaut, et le message le dit.
+  assert.deepEqual(problemes('<link href="../css/base.css">'), ['../css/base.css : remonte au-dessus de la racine du site']);
+});
+
+test('le détecteur signale un segment qui traverse un fichier au lieu de planter sur ENOTDIR', () => {
+  assert.deepEqual(problemes('<link href="css/base.css/x.css">'), ['css/base.css/x.css : « x.css » n’existe pas (casse comprise)']);
+});
+
+test('les polices se chargent en parallèle : <link> dans chaque page, avant nos feuilles, jamais @import', () => {
+  // Un `@import` dans base.css fait attendre le premier rendu deux allers-retours réseau
+  // d’affilée ; sur un wifi d’école, c’est un écran blanc.
+  assert.doesNotMatch(lire('css/base.css'), /@import/);
+  const famille = /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2\?family=Inter[^"]*display=swap">/;
+  for (const page of pages) {
+    const html = lire(page);
+    const police = html.search(famille);
+    assert.ok(police >= 0, `${page} ne charge pas les polices par <link>`);
+    assert.ok(html.indexOf('<link rel="preconnect" href="https://fonts.googleapis.com">') >= 0, `${page} : preconnect googleapis`);
+    assert.ok(html.indexOf('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>') >= 0, `${page} : preconnect gstatic`);
+    assert.ok(police < html.indexOf('href="css/tokens.css"'), `${page} : les polices passent avant nos feuilles`);
+  }
 });

@@ -6,18 +6,19 @@ Chaque pas dit ce qu’on **fait**, puis ce qu’on doit **voir**. Le gras repè
 
 ## 1. Avant de commencer
 
-1. Lancer le prototype : `python3 -m http.server 8000` depuis le dépôt (ou ouvrir l’adresse publiée). La caméra n’est utilisable que sur `localhost` ou en HTTPS ; sans elle, l’écran Scanner propose une simulation, et c’est ce que ce document suit.
-2. Ouvrir `admin.html` et `mobile.html` **dans deux fenêtres côte à côte**. Rétrécir la fenêtre du mobile pour qu’elle ressemble à un téléphone.
-3. Fenêtre admin : l’écran « Qui êtes-vous ? » liste les comptes de la pédagogie. Choisir **Alexis Bengel**. Le **Tableau de bord** s’ouvre sur la carte **Horloge de démonstration**.
-4. Cliquer sur **Jour ouvré 9h**. On voit le toast « Horloge de démo appliquée », la ligne « Maintenant : … à 09h00 », le badge **Horloge simulée** et l’encadré « Bureau ouvert : les emprunts en self-service sont possibles. »
-5. Cliquer sur **Régénérer les données**. Une fenêtre « Régénérer les données de démonstration » s’ouvre ; cliquer sur **Régénérer**. On voit le toast « Données de démonstration régénérées ».
-6. Fenêtre mobile : choisir un compte (voir le tableau ci-dessous).
+1. **Imprimer les étiquettes** (une fois, avant la première démonstration ou le premier test avec des élèves) : ouvrir `etiquettes.html` (la page se trouve sous **Étiquettes QR** sur l’accueil ; sans sélection, elle montre tout l’inventaire), imprimer à 100 % (sans « ajuster à la page »), puis coller une étiquette par exemplaire. Sans étiquette imprimée, le « scan réel » de la notice des testeurs n’a rien à viser. Le scénario 1 emprunte la Multiprise #3 (**MDS-0003**) ; le scénario 2 reprend MDS-0003 puis passe à la Multiprise #4 (**MDS-0004**) : ce sont les deux étiquettes à avoir sous la main pour viser un vrai QR au lieu de simuler le scan.
+2. Lancer le prototype : `python3 -m http.server 8000` depuis le dépôt (ou ouvrir l’adresse publiée). La caméra n’est utilisable que sur `localhost` ou en HTTPS ; sans elle, l’écran Scanner propose une simulation, et c’est ce que ce document suit.
+3. Ouvrir `admin.html` et `mobile.html` **dans deux fenêtres côte à côte**. Rétrécir la fenêtre du mobile pour qu’elle ressemble à un téléphone.
+4. Fenêtre admin : l’écran « Qui êtes-vous ? » liste les comptes de la pédagogie. Choisir **Alexis Bengel**. Le **Tableau de bord** s’ouvre sur la carte **Horloge de démonstration**.
+5. Cliquer sur **Jour ouvré 9h**. On voit le toast « Horloge de démo appliquée », la ligne « Maintenant : … à 09h00 », le badge **Horloge simulée** et l’encadré « Bureau ouvert : les emprunts en self-service sont possibles. »
+6. Cliquer sur **Régénérer les données**. Une fenêtre « Régénérer les données de démonstration » s’ouvre ; cliquer sur **Régénérer**. On voit le toast « Données de démonstration régénérées ».
+7. Fenêtre mobile : choisir un compte (voir le tableau ci-dessous).
 
 À savoir :
 
 - Les deux interfaces **partagent les données du navigateur** : un seul navigateur suffit, et ce que fait l’une apparaît dans l’autre sans recharger. En revanche chaque onglet garde son propre compte connecté, ce qui permet d’être Alexis à gauche et Camille à droite.
 - Une **fenêtre de navigation privée** ouvre un second jeu de données, indépendant du premier : utile pour montrer deux personnes qui ne se voient pas.
-- À chaque démonstration, recommencer au point 4 : le jeu de démonstration est calé sur la date de génération.
+- À chaque démonstration, recommencer au point 5 : le jeu de démonstration est calé sur la date de génération.
 
 ## 2. Les comptes
 

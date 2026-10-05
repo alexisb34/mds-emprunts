@@ -353,3 +353,18 @@ test('reportIssue : `date` imposée, pour horodater comme l’action qui l’eng
   const ev = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Test', date: quand });
   assert.equal(ev.date, quand.toISOString());
 });
+
+test('closeEvent : le filet de la table arrête un statut que les gardes ne couvrent pas, sans rien écrire', () => {
+  const item = itemDispo();
+  const ev = reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Capteur sale' });
+  // Incohérence qu’aucune action ne produit : un statut hors de la table. La garde de
+  // `closeEvent` ne refuse que « clos » ; c’est `MAINT_TRANSITIONS` qui doit arrêter le coup.
+  store.maintenance.update(ev.id, { statut: 'inconnu' });
+  const avantEvent = store.maintenance.get(ev.id);
+  const avantItem = store.items.get(item.id);
+  const nbJournal = store.log.list().length;
+  assert.throws(() => closeEvent(ev.id, PEDAGO, { remettreEnService: true }), /Transition maintenance interdite : inconnu → clos/);
+  assert.deepEqual(store.maintenance.get(ev.id), avantEvent, 'l’événement est intact');
+  assert.deepEqual(store.items.get(item.id), avantItem, 'l’objet est intact');
+  assert.equal(store.log.list().length, nbJournal, 'rien n’a été journalisé');
+});

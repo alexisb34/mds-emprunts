@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MDS Emprunts — Étiquettes QR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
@@ -30,7 +33,7 @@
       <a class="btn btn--ghost btn--sm" href="admin.html#/materiel">← Retour au matériel</a>
       <button type="button" class="btn btn--primary btn--sm" id="print">Imprimer</button>
     </header>
-    <p class="body-sm text-secondary no-print">Imprimer à 100 % (sans « ajuster à la page »), puis coller une étiquette par exemplaire. Les codes du jeu de démonstration restent les mêmes après une régénération des données ; ceux du matériel ajouté à la main disparaissent avec elle.</p>
+    <p class="body-sm text-secondary no-print">Imprimer à 100 % (sans « ajuster à la page »), puis coller une étiquette par exemplaire. Les codes du jeu de démonstration restent les mêmes après une régénération des données ; ceux du matériel ajouté à la main disparaissent avec elle. Sans sélection, cette page montre tout l’inventaire ; ouverte depuis l’écran Matériel, elle ne montre que les exemplaires choisis.</p>
     <div id="grid" class="labels__grid"></div>
   </main>
   <script src="vendor/qrcode.min.js"></script>
@@ -39,20 +42,19 @@
     import { buildSeed } from './js/seed.js';
     import { renderQr } from './js/qr.js';
     import { escapeHtml } from './js/ui.js';
+    import { selectLabels } from './js/etiquettes.js';
 
     store.init(buildSeed);
-    const codes = (new URLSearchParams(window.location.search).get('codes') || '').split(',').map((s) => s.trim()).filter(Boolean);
-    const items = codes.map((code) => store.items.list((i) => i.code === code)[0]).filter(Boolean);
-    const codesInconnus = codes.filter((code) => !items.some((i) => i.code === code));
+    const { mode, items, inconnus } = selectLabels(new URLSearchParams(window.location.search).get('codes'), store.items.list());
     const grid = document.getElementById('grid');
-    if (!codes.length) {
-      grid.innerHTML = '<p class="empty-state">Aucun code fourni (paramètre <code>?codes=MDS-0001,MDS-0002</code>).</p>';
-    } else if (!items.length) {
-      grid.innerHTML = `<p class="empty-state">Codes inconnus : ${escapeHtml(codesInconnus.join(', '))}</p>`;
+    if (!items.length) {
+      grid.innerHTML = mode === 'inventaire'
+        ? '<p class="empty-state">Aucun matériel à étiqueter.</p>'
+        : `<p class="empty-state">Codes inconnus : ${escapeHtml(inconnus.join(', '))}</p>`;
     } else {
       const labels = items.map((i) => `<div class="label"><div class="label__qr" data-code="${escapeHtml(i.code)}"></div><strong class="label__code">${escapeHtml(i.code)}</strong><span class="label__name">${escapeHtml(i.nom)}</span><span class="label__brand">MDS Emprunts</span></div>`).join('');
-      const avertissement = codesInconnus.length
-        ? `<p class="body-tiny text-secondary no-print">Codes inconnus ignorés : ${escapeHtml(codesInconnus.join(', '))}</p>`
+      const avertissement = inconnus.length
+        ? `<p class="body-tiny text-secondary no-print">Codes inconnus ignorés : ${escapeHtml(inconnus.join(', '))}</p>`
         : '';
       grid.innerHTML = labels + avertissement;
     }

@@ -1,7 +1,7 @@
 // js/actions/maintenance.js — cycle de vie des pannes : signalement, intervention, clôture.
 // Spec §5.4 : clore le DERNIER événement ouvert d’un objet le remet en service (ou hors service).
 import { store } from '../store.js';
-import { MAINT_TYPES, MAINT_STATES, ITEM_STATES, ITEM_TRANSITIONS, LABELS } from '../models.js';
+import { MAINT_TYPES, MAINT_STATES, MAINT_TRANSITIONS, ITEM_STATES, ITEM_TRANSITIONS, LABELS, assertTransition } from '../models.js';
 import { now } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
@@ -16,6 +16,15 @@ function requireItem(id) {
   const item = store.items.get(id);
   if (!item) throw new Error('Matériel introuvable.');
   return item;
+}
+
+// Spec §9 : la couche d’actions vérifie les transitions déclarées dans `models.js`.
+// Les gardes métier en amont restent : elles donnent le message lisible, la table n’est
+// qu’un filet pour un chemin imprévu.
+function setMaintStatus(id, statut, patch = {}) {
+  const event = requireEvent(id);
+  assertTransition(MAINT_TRANSITIONS, event.statut, statut, 'maintenance');
+  return store.maintenance.update(id, { statut, ...patch });
 }
 
 function cleanDescription(value) {
@@ -106,7 +115,7 @@ export function startIntervention(id, pedagoId) {
     throw new Error(event.statut === MAINT_STATES.EN_COURS ? 'Cette intervention est déjà en cours.' : 'Cet événement est déjà clos.');
   }
   return store.transaction(() => {
-    const updated = store.maintenance.update(id, { statut: MAINT_STATES.EN_COURS });
+    const updated = setMaintStatus(id, MAINT_STATES.EN_COURS);
     logAction({ auteurId: pedagoId, action: ACTIONS.MAINT_EN_COURS, itemId: event.itemId, detail: event.description });
     return updated;
   });
@@ -129,7 +138,7 @@ export function closeEvent(id, pedagoId, { remettreEnService } = {}) {
     }
   }
   return store.transaction(() => {
-    const updated = store.maintenance.update(id, { statut: MAINT_STATES.CLOS });
+    const updated = setMaintStatus(id, MAINT_STATES.CLOS);
     let suffixe = '';
     // Le dernier événement ouvert de l’objet décide de son sort ; sinon on ne touche à rien.
     if (event.itemId && openEvents(event.itemId).length === 0) {

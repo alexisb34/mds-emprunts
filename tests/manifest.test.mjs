@@ -34,8 +34,12 @@ test('manifest : les deux icônes sont de vrais PNG aux dimensions annoncées', 
   assert.ok(manifest.icons.some((i) => (i.purpose || '').includes('any')));
 });
 
-test('manifest : identité d’installation et couleur de thème accordées au document', () => {
-  assert.equal(manifest.id, 'mobile.html');
+test('manifest : identité d’installation par défaut et couleur de thème accordées au document', () => {
+  // `id` se résout contre l’origine, pas contre le manifeste : `"mobile.html"` deviendrait
+  // `https://<compte>.github.io/mobile.html`. Sans `id`, l’identité est `start_url`, qui se
+  // résout, lui, depuis le manifeste et donc sous le sous-répertoire de publication.
+  assert.equal('id' in manifest, false);
+  assert.equal(manifest.start_url, 'mobile.html');
   const html = readFileSync(new URL('../mobile.html', import.meta.url), 'utf8');
   const meta = /<meta name="theme-color" content="([^"]+)">/.exec(html);
   assert.ok(meta, 'mobile.html déclare une couleur de thème');

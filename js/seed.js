@@ -81,6 +81,11 @@ function makeRandom(seed) {
 
 export function buildSeed(now = new Date()) {
   const rand = makeRandom(42);
+  // Un horodatage nominal tombé dans le futur (le jeu est généré avant l’heure prévue) est
+  // ramené à `minutes` avant « maintenant » ; à défaut d’écarts différents, tous les
+  // horodatages bornés s’empileraient à la minute près et le journal du tableau de bord
+  // s’ouvrirait sur cinq entrées collées.
+  const avant = (nominal, minutes) => (nominal.getTime() <= now.getTime() ? nominal : new Date(now.getTime() - minutes * 60 * 1000));
   const pick = (arr) => arr[Math.floor(rand() * arr.length)];
   // Duplication volontaire de `code6` (js/actions/loans.js) : celui-ci tire dans le générateur `rand`
   // pour que le seed reste déterministe, alors que l’action utilise Math.random.
@@ -230,7 +235,7 @@ export function buildSeed(now = new Date()) {
     // Borné comme les autres horodatages du jeu : à 9h, `atHour(base, 9, 30)` tomberait
     // 30 minutes après « maintenant », et le journal du tableau de bord ouvrirait sur des
     // événements qui n’ont pas eu lieu.
-    const pose = new Date(Math.min(atHour(base, 9, 30 + i).getTime(), now.getTime() - (2 - i) * 60 * 1000));
+    const pose = avant(atHour(base, 9, 30 + i), [35, 15][i]);
     const l = addLoan({
       itemId: it.id, userId: user.id, statut: LOAN_STATES.RESERVEE, motif, codeRetrait: code6(),
       dateReservation: iso(pose), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(start, dLen), 17)),
@@ -346,7 +351,7 @@ export function buildSeed(now = new Date()) {
     const user = emprunteurs[uIdx];
     // Borné comme les autres horodatages : avant 8h30, `atHour(base, 8, 30)` serait dans
     // le futur et le journal du tableau de bord s’ouvrirait sur des événements à venir.
-    const created = new Date(Math.min(atHour(base, 8, 30).getTime(), now.getTime() - (3 - nOff) * 60 * 1000));
+    const created = avant(atHour(base, 8, 30), [55, 25, 5][nOff - 1]);
     const b = addBooking({
       userId: user.id, date: ymd(day), creneaux, statut: BOOKING_STATES.A_VENIR, createdAt: iso(created), updatedAt: iso(created),
     });
