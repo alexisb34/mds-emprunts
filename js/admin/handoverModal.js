@@ -1,10 +1,11 @@
 // js/admin/handoverModal.js — remise d’un matériel réservé (scan du QR de l’emprunteur ou code court)
 // et formulaire de checklist pour la réception.
 import { auth } from '../auth.js';
-import { escapeHtml, openModal, toast } from '../ui.js';
+import { escapeHtml, toast } from '../ui.js';
 import { checklistFor } from '../checklists.js';
 import { handOver } from '../actions/loans.js';
-import { startScanner, stopScanner, hasCamera, normalizeScanText } from '../scanner.js';
+import { parseLoanCode, loanQrPayload } from '../qr.js';
+import { openScanModal } from '../scanModal.js';
 
 export function checklistFormHtml(reference) {
   const lignes = checklistFor(reference);
@@ -31,63 +32,54 @@ export function readChecklistForm(root, reference) {
   return { checklist, commentaire: c ? c.value.trim() : '' };
 }
 
+// Le code saisi désigne-t-il bien la réservation d’où la modale a été ouverte ?
+// À vérifier AVANT `handOver`, qui écrit puis rend l’emprunt : comparer après coup
+// remettrait pour de bon une réservation qu’on prétend refuser.
+export function codeMatchesLoan(saisi, loan) {
+  if (!loan) return true;
+  const parsed = parseLoanCode(String(saisi || '').trim());
+  // Les DEUX parties du QR doivent coller : `handOverChecked` reconstruit ensuite la
+  // charge utile à partir de la réservation, donc plus personne ne vérifie le code
+  // court après nous.
+  if (parsed) return parsed.loanId === loan.id && parsed.code6 === loan.codeRetrait;
+  return String(saisi || '').trim().toUpperCase() === loan.codeRetrait;
+}
+
+// Un code court tapé dans la recherche globale est-il celui d’un emprunt connu ?
+// (Un emprunt déjà remis compte : la remise répondra alors « plus en attente ».)
+export function isKnownRetraitCode(code, loans) {
+  return loans.some((l) => l.codeRetrait === code);
+}
+
+// Refuse le code d’une autre réservation sans rien écrire, puis remet.
+export function handOverChecked({ saisi, loan = null, pedagoId }) {
+  if (!codeMatchesLoan(saisi, loan)) throw new Error('Ce code correspond à une autre réservation.');
+  // Ligne connue : on remet par identifiant plutôt que par code. Rien n’impose l’unicité
+  // du code court au tirage (`code6`), et `handOver` prendrait sinon la première
+  // réservation en attente portant ce code — pas forcément celle de la ligne.
+  return handOver({ code: loan ? loanQrPayload(loan) : saisi, pedagoId });
+}
+
 // Modale de remise : la pédago scanne le QR affiché par l’emprunteur, ou saisit son code à 6 caractères.
-export function openHandoverModal({ onDone } = {}) {
-  // Le scanner relit le même QR plusieurs fois par seconde : on n’affiche pas deux fois
-  // la même erreur à moins de 3 secondes d’intervalle.
-  let dernierMessage = '';
-  let dernierAffichage = 0;
-  const signaler = (message) => {
-    const t = Date.now();
-    if (message === dernierMessage && t - dernierAffichage < 3000) return;
-    dernierMessage = message;
-    dernierAffichage = t;
-    toast(message, 'error');
-  };
-  const close = openModal({
+// `loan` : l’emprunt de la ligne cliquée. Son code est pré-rempli, et on refuse un code
+// qui ne lui correspond pas — sinon le bouton d’une ligne pourrait en remettre une autre.
+// `code` : valeur de départ sans emprunt attendu (code tapé dans la recherche globale).
+export function openHandoverModal({ loan = null, code = '', onDone } = {}) {
+  const attendu = loan ? loan.codeRetrait : null;
+  return openScanModal({
     title: 'Remettre le matériel',
-    onClose: () => { stopScanner(); },
-    body: `
-      <p class="body-sm text-secondary">Scannez le QR affiché par l’emprunteur, ou saisissez son code de retrait.</p>
-      <div id="handover-reader" class="reader reader--admin"></div>
-      <label class="field"><span class="field__label">Code de retrait</span><input class="input" name="code" placeholder="AB12CD" autocapitalize="characters" maxlength="24"></label>`,
-    actions: [
-      { label: 'Annuler', variant: 'ghost' },
-      {
-        label: 'Remettre', variant: 'primary',
-        onClick: (modal) => {
-          try {
-            const loan = handOver({ code: modal.querySelector('[name="code"]').value, pedagoId: auth.currentUserId() });
-            stopScanner();
-            toast('Matériel remis', 'success');
-            if (onDone) onDone(loan);
-          } catch (e) {
-            toast(e.message, 'error');
-            return false;
-          }
-        },
-      },
-    ],
+    hint: loan
+      ? 'Scannez le QR affiché par l’emprunteur, ou vérifiez son code de retrait.'
+      : 'Scannez le QR affiché par l’emprunteur, ou saisissez son code de retrait.',
+    label: 'Code de retrait',
+    placeholder: 'AB23CD', // l’alphabet des codes exclut I, L, O, 0 et 1
+    readerId: 'handover-reader',
+    value: attendu || code || '',
+    submitLabel: 'Remettre',
+    onCode: (saisi) => {
+      const remis = handOverChecked({ saisi, loan, pedagoId: auth.currentUserId() });
+      toast('Matériel remis', 'success');
+      if (onDone) onDone(remis);
+    },
   });
-  const root = document.getElementById('modal-root');
-  const input = root.querySelector('[name="code"]');
-  input.focus();
-  hasCamera().then((ok) => {
-    const reader = root.querySelector('#handover-reader');
-    if (!reader) return; // modale déjà fermée
-    if (!ok) { reader.innerHTML = '<p class="body-sm">Caméra indisponible : saisissez le code.</p>'; return; }
-    startScanner('handover-reader', (text) => {
-      input.value = normalizeScanText(text);
-      try {
-        const loan = handOver({ code: input.value, pedagoId: auth.currentUserId() });
-        stopScanner();
-        toast('Matériel remis', 'success');
-        close();
-        if (onDone) onDone(loan);
-      } catch (e) {
-        signaler(e.message);
-      }
-    }).catch(() => { reader.innerHTML = '<p class="body-sm">Caméra indisponible : saisissez le code.</p>'; });
-  });
-  return close;
 }

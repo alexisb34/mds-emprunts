@@ -16,6 +16,10 @@ Les règles suivent une **horloge de démonstration** réglable depuis le tablea
 
 La **salle photo** se réserve depuis l’onglet *Salle* du mobile, par créneaux d’une heure de 8h à 17h du lundi au vendredi, plusieurs créneaux à la suite. Le créneau commencé demande un état des lieux d’entrée, puis un de sortie : une ligne en « Problème » ouvre un signalement par objet et bascule l’objet en maintenance. Côté pédagogie, l’onglet *Salle photo* montre le planning de la semaine, le détail d’un créneau avec ses deux états des lieux, et un bandeau « Sorties non faites » — avec un bouton *Clore le créneau* — une heure après la fin d’un créneau resté ouvert.
 
+Côté pédagogie, l’onglet *Maintenance* suit les pannes : un signalement — venu d’une checklist de retour, d’un état des lieux de la salle ou créé à la main — donne lieu à des interventions, internes ou confiées à un prestataire avec un coût, qu’on démarre puis qu’on clôt. Clore le dernier événement ouvert d’un objet le remet en service, ou le passe définitivement hors service : il reste alors à l’inventaire mais disparaît du catalogue. L’onglet *Paramètres* règle les horaires d’ouverture, la durée maximale d’une réservation, la fenêtre de retrait et la règle anti-retard ; il affiche aussi l’espace occupé dans le navigateur et permet de régénérer les données. Les horaires réglés sont la seule source de vérité : l’état du bureau, les messages de refus et l’aide du catalogue les citent tels quels.
+
+Depuis un téléphone, `mobile.html` s’ajoute à l’écran d’accueil et s’ouvre comme une application (manifeste et icônes fournis, encoche et barre d’accueil prises en compte). L’installation réelle exige HTTPS : elle arrive en phase 6. Il n’y a volontairement pas de *service worker* — le hors-ligne n’est pas au programme, et un cache mal réglé transformerait chaque mise à jour en énigme pendant les tests.
+
 Le scan et la photo utilisent la caméra (autorisation demandée) ; sans caméra, l’écran Scanner propose une simulation et une image de démonstration. Après une mise à jour du code, forcer un rechargement complet (Cmd/Ctrl + Maj + R) : le serveur de développement n’envoie pas d’en-têtes de cache.
 
 ## Tester
@@ -38,5 +42,5 @@ Aucune dépendance à installer (Node ≥ 22).
 - [x] Phase 2 — Mobile : self-service
 - [x] Phase 3 — Matériel de valeur
 - [x] Phase 4 — Salle photo
-- [ ] Phase 5 — Maintenance & paramètres
+- [x] Phase 5 — Maintenance & paramètres
 - [ ] Phase 6 — Déploiement test

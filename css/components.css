@@ -127,7 +127,7 @@
 
 /* ---- Modale ---- */
 .has-modal { overflow: hidden; }
-.modal-backdrop { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; padding: var(--space-lg); z-index: 100; }
+.modal-backdrop { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; padding: max(var(--space-lg), env(safe-area-inset-top)) var(--space-lg) max(var(--space-lg), env(safe-area-inset-bottom)); z-index: 100; }
 .modal { width: min(560px, 100%); max-height: 90vh; overflow: auto; background: var(--bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); display: flex; flex-direction: column; }
 .modal__header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2xl) var(--space-2xl) var(--space-lg); }
 .modal__close { width: 32px; height: 32px; border-radius: 50%; font-size: 22px; line-height: 1; color: var(--text-secondary); }

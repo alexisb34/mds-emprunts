@@ -16,6 +16,8 @@
 
 ## Contraintes globales
 
+- **Les identifiants créés ne sont pas ordonnés.** `genId` (`js/store.js`) concatène un horodatage et six caractères aléatoires : seuls les identifiants du *seed* sont séquentiels. Aucun tri ne doit départager sur un identifiant ; l’ordre d’insertion dans `store.x.list()` est en revanche l’ordre de création.
+
 - **Aucune dépendance npm, aucune étape de build.** Toute bibliothèque tierce est une copie locale dans `vendor/`.
 - Tests : `node --test "tests/**/*.test.mjs"` (glob entre guillemets — `node --test tests/` ne fonctionne pas ici). Node ≥ 22. La suite doit passer aussi sous `TZ=America/New_York`.
 - **Toute chaîne destinée à l’utilisateur est en français et utilise l’apostrophe typographique `’` (U+2019), jamais `'` (U+0027).** Les commentaires français aussi. Vérification : `grep -rn "[a-zA-Zàéèêçûô]'[a-zA-Zàéèêçûô]" js/ tests/ --include='*.js' --include='*.mjs'` ne doit rien afficher.
@@ -43,7 +45,7 @@ Chaque tâche se termine par un livrable testable indépendamment.
 
 ---
 
-### Tâche 1 : Actions de maintenance
+### Task 1 : Actions de maintenance
 
 **Fichiers :**
 - Créer : `js/actions/maintenance.js`
@@ -52,7 +54,7 @@ Chaque tâche se termine par un livrable testable indépendamment.
 
 **Interfaces :**
 - Consomme : `store` (`js/store.js`) ; `MAINT_TYPES`, `MAINT_STATES`, `MAINT_TRANSITIONS`, `ITEM_STATES`, `LABELS` (`js/models.js`) ; `now` (`js/rules.js`) ; `logAction`, `ACTIONS` (`js/log.js`) ; `applyItemState` (`js/actions/items.js`).
-- Produit : `openEvents(itemId)`, `reportIssue({ itemId, auteurId, description, loanId, bookingId })`, `createIntervention({ itemId, type, prestataire, cout, description, pedagoId })`, `startIntervention(id, pedagoId)`, `closeEvent(id, pedagoId, { remettreEnService })`, `maintenanceRows(date)`, `immobilises()`.
+- Produit : `openEvents(itemId)`, `reportIssue({ itemId, auteurId, description, loanId, bookingId })`, `createIntervention({ itemId, type, prestataire, cout, description, pedagoId })`, `startIntervention(id, pedagoId)`, `closeEvent(id, pedagoId, { remettreEnService })`, `maintenanceRows()`, `immobilises()`.
 
 Spec §5.4 : clore **le dernier** événement ouvert d’un objet le remet `disponible`, ou `hs` si la pédago le décide. Tant qu’il reste un autre événement ouvert, l’objet ne bouge pas.
 
@@ -203,13 +205,13 @@ test('maintenanceRows : joint objet et auteur, ouverts d’abord, plus récents 
   if (premierClos !== -1) assert.ok(dernierOuvert < premierClos, 'les clos passent après les ouverts');
 });
 
-test('immobilises : matériel en maintenance ou hors service, avec ses événements ouverts', () => {
+test('immobilises : matériel en maintenance ou hors service, avec ce qui reste à traiter', () => {
   const item = itemDispo();
   reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Bague grippée' });
   const rows = immobilises();
   const ligne = rows.find((r) => r.item.id === item.id);
   assert.ok(ligne, 'l’objet immobilisé est listé');
-  assert.equal(ligne.ouverts.length, 1);
+  assert.equal(ligne.aTraiter.length, 1);
   assert.ok(rows.every((r) => r.item.etat === ITEM_STATES.MAINTENANCE || r.item.etat === ITEM_STATES.HS));
 });
 ```
@@ -371,7 +373,7 @@ export function maintenanceRows() {
 export function immobilises() {
   return store.items
     .list((i) => i.etat === ITEM_STATES.MAINTENANCE || i.etat === ITEM_STATES.HS)
-    .map((item) => ({ item, ouverts: openEvents(item.id) }))
+    .map((item) => ({ item, aTraiter: openEvents(item.id) }))
     .sort((a, b) => a.item.nom.localeCompare(b.item.nom, 'fr'));
 }
 ```
@@ -394,7 +396,7 @@ git commit -m "feat(actions): signalements, interventions et clôture de la main
 
 ---
 
-### Tâche 2 : Écran admin Maintenance
+### Task 2 : Écran admin Maintenance
 
 **Fichiers :**
 - Créer : `js/admin/views/maintenance.js`
@@ -406,6 +408,8 @@ git commit -m "feat(actions): signalements, interventions et clôture de la main
 - Produit : `eventsTableHtml({ rows, filtre })`, `immobilisesHtml(rows)`, `maintenanceHtml({ rows, bloques, filtre })`, `interventionFormHtml(item)`, `readInterventionForm(root)`, `maintenanceView(container)`.
 
 Spec §6 : « Liste des événements par statut · *Créer une intervention* · *Clôturer* · vue “Matériel en maintenance / HS” ».
+
+Attention au libellé de la colonne de droite : `immobilises()` renvoie `aTraiter`, qui compte les événements `ouvert` **et** `en_cours`. Un objet `hs` en a zéro par construction, et un objet passé en maintenance à la main depuis sa fiche n’en a aucun non plus. La liste s’intitule donc « Matériel immobilisé », pas « à traiter », et le compte s’affiche par ligne.
 
 Reprise de la phase 4 : `exitMissingRows` quitte `js/admin/views/salle.js` pour `js/admin/kpi.js`, où vivent déjà `openReports`, `lateLoans` et `dueTodayReservations`. Le tableau de bord importait un module de **vue** pour un sélecteur pur, ce qui traînait `auth` et `layout` dans son graphe.
 
@@ -516,7 +520,7 @@ test('interventionFormHtml : type, prestataire, coût, description', () => {
   assert.match(html, /name="type"/);
   assert.match(html, new RegExp(`value="${MAINT_TYPES.EXTERNE}"`));
   assert.match(html, /name="prestataire"/);
-  assert.match(html, /name="cout"/);
+  assert.match(html, /name="cout"[^>]*inputmode="decimal"/, 'la virgule décimale française doit pouvoir être saisie');
   assert.match(html, /name="description"/);
 });
 ```
@@ -533,10 +537,9 @@ Attendu : `ERR_MODULE_NOT_FOUND` sur `js/admin/views/maintenance.js`.
 // la création et la clôture d’interventions, et le matériel immobilisé.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now } from '../../rules.js';
 import { navigate } from '../../router.js';
 import { MAINT_STATES, MAINT_TYPES, LABELS } from '../../models.js';
-import { escapeHtml, badge, avatar, fullName, formatDate, openModal, toast } from '../../ui.js';
+import { escapeHtml, badge, fullName, formatDate, openModal, toast } from '../../ui.js';
 import { createIntervention, startIntervention, closeEvent, maintenanceRows, immobilises } from '../../actions/maintenance.js';
 import { setTopbar } from '../layout.js';
 
@@ -588,9 +591,9 @@ export function eventsTableHtml({ rows, filtre }) {
 
 export function immobilisesHtml(rows) {
   if (!rows.length) return '<div class="empty-state">Aucun matériel immobilisé.</div>';
-  return `<div class="list">${rows.map(({ item, ouverts }) => `
+  return `<div class="list">${rows.map(({ item, aTraiter }) => `
     <div class="list__item" data-href="/materiel/${escapeHtml(item.id)}">
-      <div class="list__grow"><strong>${escapeHtml(item.nom)}</strong><span class="activity__detail">${ouverts.length ? `${ouverts.length} à traiter` : 'rien à traiter'}</span></div>
+      <div class="list__grow"><strong>${escapeHtml(item.nom)}</strong><span class="activity__detail">${aTraiter.length ? `${aTraiter.length} à traiter` : 'rien à traiter'}</span></div>
       ${badge('item', item.etat)}
     </div>`).join('')}</div>`;
 }
@@ -631,7 +634,7 @@ export function interventionFormHtml(item = null, items = []) {
       ${choixObjet}
       <label class="field"><span class="field__label">Type</span><select class="select" name="type">${TYPES.map((t) => `<option value="${t.value}">${escapeHtml(t.label)}</option>`).join('')}</select></label>
       <label class="field"><span class="field__label">Prestataire (intervention externe)</span><input class="input" name="prestataire" placeholder="Objectif Service"></label>
-      <label class="field"><span class="field__label">Coût en euros</span><input class="input" name="cout" type="number" min="0" step="0.01" value="0"></label>
+      <label class="field"><span class="field__label">Coût en euros</span><input class="input" name="cout" type="text" inputmode="decimal" value="0" placeholder="120,50"></label>
       <label class="field"><span class="field__label">Description</span><textarea class="textarea" name="description" placeholder="Révision de la bague"></textarea></label>
     </div>`;
 }
@@ -642,7 +645,9 @@ export function readInterventionForm(root) {
     itemId: val('itemId'),
     type: val('type'),
     prestataire: val('prestataire').trim(),
-    cout: Number(val('cout')) || 0,
+    // `type="number"` rendrait « 120,50 » comme une valeur vide : on lit du texte et on
+    // normalise la virgule décimale. `createIntervention` refuse ce qui n’est pas un nombre.
+    cout: val('cout').trim().replace(',', '.'),
     description: val('description').trim(),
   };
 }
@@ -711,14 +716,7 @@ export function maintenanceView(container) {
 
 - [ ] **Étape 5 : libellés, route et CSS**
 
-`js/models.js` — `LABELS` gagne la famille des types de maintenance, à côté de `maintState` :
-
-```js
-  maintType: {
-    signalement: 'Signalement', intervention_interne: 'Interne',
-    intervention_externe: 'Externe', remise_en_service: 'Remise en service',
-  },
-```
+`js/models.js` : **ne rien ajouter.** `LABELS.maintType` existe déjà (`js/models.js:77`), avec les libellés « Intervention interne » et « Intervention externe ». Une seconde clé du même nom dans le même objet littéral écraserait la première en silence. La vue lit les libellés existants via `LABELS.maintType?.[event.type]`.
 
 `js/admin/app.js` : `import { maintenanceView } from './views/maintenance.js';` et la route devient `{ path: '/maintenance', view: guard(maintenanceView) }`.
 
@@ -747,13 +745,13 @@ Admin → Maintenance : les onglets filtrent, « Créer une intervention » enre
 - [ ] **Étape 8 : commit**
 
 ```bash
-git add js/admin/views/maintenance.js js/admin/views/salle.js js/admin/views/dashboard.js js/admin/kpi.js js/admin/app.js js/models.js css/admin.css tests/admin-maintenance.test.mjs tests/admin-salle.test.mjs
+git add js/admin/views/maintenance.js js/admin/views/salle.js js/admin/views/dashboard.js js/admin/kpi.js js/admin/app.js css/admin.css tests/admin-maintenance.test.mjs tests/admin-salle.test.mjs
 git commit -m "feat(admin): écran de maintenance, interventions et matériel immobilisé"
 ```
 
 ---
 
-### Tâche 3 : Écran admin Paramètres, horloge partagée, horaires robustes
+### Task 3 : Écran admin Paramètres, horloge partagée, horaires robustes
 
 **Fichiers :**
 - Créer : `js/admin/demoClock.js`, `js/admin/views/parametres.js`
@@ -1232,7 +1230,7 @@ git commit -m "feat(admin): écran de paramètres, horloge partagée et horaires
 
 ---
 
-### Tâche 4 : Reprises — modale de scan partagée, remise pré-remplie, recherche par code
+### Task 4 : Reprises — modale de scan partagée, remise pré-remplie, recherche par code
 
 **Fichiers :**
 - Créer : `js/scanModal.js`
@@ -1272,15 +1270,22 @@ test('scanModalBodyHtml : la valeur de départ pré-remplit le champ', () => {
 `tests/admin-layout.test.mjs` — ajouter `parseAdminSearch` à l’import et à la fin du fichier :
 
 ```js
-test('parseAdminSearch : distingue un code de retrait d’une recherche de matériel', () => {
-  assert.deepEqual(parseAdminSearch('AB12CD'), { type: 'code', code: 'AB12CD' });
-  assert.deepEqual(parseAdminSearch('  ab12cd '), { type: 'code', code: 'AB12CD' });
-  assert.deepEqual(parseAdminSearch('LOAN-loan_0007-AB12CD'), { type: 'code', code: 'LOAN-loan_0007-AB12CD' });
+test('parseAdminSearch : code sûr, code possible, ou recherche de matériel', () => {
+  // Un QR d’emprunt est un code certain, rendu tel quel : l’identifiant est sensible à la casse.
+  assert.deepEqual(parseAdminSearch('LOAN-loan_0007-AB23CD'), { type: 'code', code: 'LOAN-loan_0007-AB23CD' });
+  // Préfixe en minuscules : `LOAN_CODE_RE` le refuserait, donc ce n’est pas un code.
+  assert.deepEqual(parseAdminSearch('loan-loan_0007-ab23cd'), { type: 'texte', texte: 'loan-loan_0007-ab23cd' });
+  // Un jeton conforme à l’alphabet est un code POSSIBLE : le store tranchera.
+  assert.deepEqual(parseAdminSearch('AB23CD'), { type: 'code_possible', code: 'AB23CD' });
+  assert.deepEqual(parseAdminSearch('  ab23cd '), { type: 'code_possible', code: 'AB23CD' });
+  // 16,7 % des codes émis n’ont aucun chiffre : ils doivent passer.
+  assert.deepEqual(parseAdminSearch('ZKMNPQ'), { type: 'code_possible', code: 'ZKMNPQ' });
+  // Les caractères exclus de l’alphabet (I, L, O, 0, 1) trahissent un mot, pas un code.
+  assert.deepEqual(parseAdminSearch('trepie'), { type: 'texte', texte: 'trepie' });
+  assert.deepEqual(parseAdminSearch('AB12CD'), { type: 'texte', texte: 'AB12CD' });
   assert.deepEqual(parseAdminSearch('canon'), { type: 'texte', texte: 'canon' });
   assert.deepEqual(parseAdminSearch('Canon R10'), { type: 'texte', texte: 'Canon R10' });
   assert.deepEqual(parseAdminSearch(''), { type: 'texte', texte: '' });
-  // Six caractères mais pas un code : un mot de six lettres reste une recherche.
-  assert.deepEqual(parseAdminSearch('trepie'), { type: 'texte', texte: 'trepie' });
 });
 ```
 
@@ -1446,9 +1451,11 @@ export function openHandoverModal({ loan = null, onDone } = {}) {
     readerId: 'handover-reader',
     value: attendu || '',
     submitLabel: 'Remettre',
-    onCode: (code) => {
-      const remis = handOver({ code, pedagoId: auth.currentUserId() });
-      if (loan && remis.id !== loan.id) throw new Error('Ce code correspond à une autre réservation.');
+    onCode: (saisi) => {
+      // La garde décide AVANT d’écrire : `handOver` valide, écrit et notifie, puis rend
+      // l’emprunt — comparer après coup remettrait pour de bon une réservation qu’on
+      // prétend refuser, et rien ne permet de revenir en arrière.
+      const remis = handOverChecked({ saisi, loan, pedagoId: auth.currentUserId() });
       toast('Matériel remis', 'success');
       if (onDone) onDone(remis);
     },
@@ -1466,14 +1473,19 @@ Les imports de `handoverModal.js` deviennent : `auth`, `escapeHtml`, `toast` (`.
 // Un code de retrait saisi dans la recherche globale ouvre directement la remise (spec §6).
 // Un code court = exactement 6 caractères alphanumériques avec au moins un chiffre ;
 // un mot de six lettres reste une recherche de matériel.
-const CODE6 = /^[A-Z0-9]{6}$/;
+// L’alphabet des codes de retrait (`js/actions/loans.js`) exclut I, L, O, 0 et 1 pour
+// éviter les confusions à la lecture. Exiger un chiffre écarterait 16,7 % des codes émis
+// — (23/31)^6 — qui n’en comportent aucun. Un jeton conforme est un code *possible* :
+// c’est l’appelant, qui a le store, qui tranche.
+const CODE6 = /^[A-HJKMNP-Z2-9]{6}$/;
 export function parseAdminSearch(q) {
   const texte = String(q || '').trim();
   // Un QR d’emprunt est rendu tel quel : `LOAN_CODE_RE` capture l’identifiant, et
   // `store.loans.get()` est sensible à la casse — le passer en majuscules le casserait.
-  if (texte.toUpperCase().startsWith('LOAN-')) return { type: 'code', code: texte };
+  // Le préfixe est exigé en majuscules, sinon `handOver` refuserait le code comme inconnu.
+  if (texte.startsWith('LOAN-')) return { type: 'code', code: texte };
   const majuscules = texte.toUpperCase();
-  if (CODE6.test(majuscules) && /[0-9]/.test(majuscules)) return { type: 'code', code: majuscules };
+  if (CODE6.test(majuscules)) return { type: 'code_possible', code: majuscules };
   return { type: 'texte', texte };
 }
 ```
@@ -1628,7 +1640,7 @@ git commit -m "refactor: modale de scan partagée, remise pré-remplie et repris
 
 ---
 
-### Tâche 5 : PWA légère — installable sur un téléphone
+### Task 5 : PWA légère — installable sur un téléphone
 
 **Fichiers :**
 - Créer : `manifest.json`, `scripts/make-icons.mjs`, `assets/icon-192.png`, `assets/icon-512.png`
@@ -1831,7 +1843,7 @@ git commit -m "feat(pwa): manifeste, icônes générées et zones sûres"
 
 ---
 
-### Tâche 6 : Vérification de fin de phase
+### Task 6 : Vérification de fin de phase
 
 **Fichiers :**
 - Modifier : `README.md`, `docs/superpowers/plans/2026-09-17-mds-emprunts-roadmap.md`

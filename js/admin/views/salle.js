@@ -7,6 +7,7 @@ import { escapeHtml, badge, avatar, fullName, formatDate, formatDateTime, format
 import { buildWeekGrid, startOfWeek, weekLabel } from '../../weekGrid.js';
 import { weekBookings, cancelBooking, forceCloseBooking, sweepBookings } from '../../actions/bookings.js';
 import { setTopbar } from '../layout.js';
+import { exitMissingRows } from '../kpi.js';
 
 const initials = (user) => (user ? `${(user.prenom || '')[0] || ''}${(user.nom || '')[0] || ''}`.toUpperCase() || '?' : '?');
 
@@ -22,13 +23,6 @@ export function planningHtml({ grid, users }) {
     return `<tr><th>${heure}h</th>${cases}</tr>`;
   }).join('');
   return `<table class="week-grid"><thead><tr><th></th>${entetes}</tr></thead><tbody>${lignes}</tbody></table>`;
-}
-
-export function exitMissingRows(bookings, users, date) {
-  return bookings
-    .filter((b) => b.statut === BOOKING_STATES.EN_COURS && isExitMissing(b, date))
-    .map((booking) => ({ booking, user: users.find((u) => u.id === booking.userId) || null }))
-    .sort((a, b) => a.booking.date.localeCompare(b.booking.date));
 }
 
 function etatBloc(titre, etat) {

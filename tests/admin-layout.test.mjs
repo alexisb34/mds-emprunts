@@ -3,9 +3,9 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { NAV, isActive, sidebarHtml, topbarHtml } from '../js/admin/layout.js';
+import { NAV, isActive, sidebarHtml, topbarHtml, parseAdminSearch } from '../js/admin/layout.js';
 import { loginHtml } from '../js/admin/views/login.js';
-import { aVenirHtml } from '../js/admin/views/aVenir.js';
+import { code6 } from '../js/actions/loans.js';
 
 beforeEach(() => {
   localStorage.clear();
@@ -65,7 +65,38 @@ test('loginHtml : un bouton par pédago actif, emails affichés', () => {
   assert.match(html, /Qui êtes-vous/);
 });
 
-test('aVenirHtml : mentionne la phase', () => {
-  assert.match(aVenirHtml('Emprunts', 3), /Emprunts/);
-  assert.match(aVenirHtml('Emprunts', 3), /phase 3/);
+
+test('parseAdminSearch : distingue un code de retrait d’une recherche de matériel', () => {
+  assert.deepEqual(parseAdminSearch('AB23CD'), { type: 'code_possible', code: 'AB23CD' });
+  assert.deepEqual(parseAdminSearch('  ab23cd '), { type: 'code_possible', code: 'AB23CD' });
+  assert.deepEqual(parseAdminSearch('LOAN-loan_0007-AB12CD'), { type: 'code', code: 'LOAN-loan_0007-AB12CD' });
+  assert.deepEqual(parseAdminSearch('canon'), { type: 'texte', texte: 'canon' });
+  assert.deepEqual(parseAdminSearch('Canon R10'), { type: 'texte', texte: 'Canon R10' });
+  assert.deepEqual(parseAdminSearch(''), { type: 'texte', texte: '' });
+});
+
+test('parseAdminSearch : un code sans chiffre reste un code possible, l’alphabet des codes tranche', () => {
+  // 17 % des codes émis n’ont aucun chiffre : exiger un chiffre en perdrait un sur six.
+  assert.deepEqual(parseAdminSearch('ZKMNPQ'), { type: 'code_possible', code: 'ZKMNPQ' });
+  // Un mot de six lettres de l’alphabet est un candidat : c’est le store qui décidera.
+  assert.deepEqual(parseAdminSearch('camera'), { type: 'code_possible', code: 'CAMERA' });
+  // I, L, O, 0 et 1 ne figurent jamais dans un code émis : recherche de matériel.
+  for (const t of ['trepie', 'ABCDEI', 'ABCDEL', 'ABCDEO', 'ABCDE0', 'ABCDE1', 'ab12c', 'AB12CDE']) {
+    assert.deepEqual(parseAdminSearch(t), { type: 'texte', texte: t }, t);
+  }
+});
+
+test('parseAdminSearch : le préfixe LOAN- est exigé en majuscules, la casse du reste est conservée', () => {
+  assert.deepEqual(parseAdminSearch(' LOAN-Loan_0007-AB12CD '), { type: 'code', code: 'LOAN-Loan_0007-AB12CD' });
+  assert.deepEqual(parseAdminSearch('loan-loan_0007-ab12cd'), { type: 'texte', texte: 'loan-loan_0007-ab12cd' });
+});
+
+test('parseAdminSearch : tout code tiré par code6() est un code de retrait possible', () => {
+  for (let i = 0; i < 500; i += 1) {
+    const code = code6();
+    assert.deepEqual(parseAdminSearch(code), { type: 'code_possible', code }, code);
+    assert.deepEqual(parseAdminSearch(code.toLowerCase()), { type: 'code_possible', code }, `${code} saisi en minuscules`);
+  }
+  // Les caractères exclus de l’alphabet ne passent pas pour un code.
+  for (const exclu of ['I', 'L', 'O', '0', '1']) assert.equal(parseAdminSearch(`AB${exclu}2CD`).type, 'texte', exclu);
 });

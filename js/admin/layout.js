@@ -3,6 +3,7 @@
 import { escapeHtml, avatar, fullName } from '../ui.js';
 import { LABELS } from '../models.js';
 import { navigate, currentPath } from '../router.js';
+import { CODE_ALPHABET } from '../qr.js';
 
 export const NAV = [
   { path: '/dashboard', label: 'Tableau de bord' },
@@ -15,6 +16,28 @@ export const NAV = [
 ];
 
 export const SEARCH_KEY = 'mds-emprunts:adminSearch';
+
+// Un code de retrait saisi dans la recherche globale ouvre directement la remise (spec §6).
+// Un jeton de six caractères tirés dans l’alphabet des codes de retrait (js/qr.js, partagé avec
+// `code6()` : les deux ne peuvent pas diverger) est un code *possible* : c’est l’appelant,
+// qui a le store, qui tranche.
+const CODE6 = new RegExp(`^[${CODE_ALPHABET}]{6}$`);
+export function parseAdminSearch(q) {
+  const texte = String(q || '').trim();
+  // Un QR d’emprunt est rendu tel quel : `LOAN_CODE_RE` exige le préfixe `LOAN-` en
+  // majuscules et capture l’identifiant, que `store.loans.get()` lit en respectant la casse.
+  if (texte.startsWith('LOAN-')) return { type: 'code', code: texte };
+  const majuscules = texte.toUpperCase();
+  if (CODE6.test(majuscules)) return { type: 'code_possible', code: majuscules };
+  return { type: 'texte', texte };
+}
+
+// Pour éviter une dépendance de ce module vers une modale ou le store, `app.js` installe
+// une fois au démarrage une fonction `(parsed) => boolean` : elle ouvre la remise et rend
+// true si elle prend la saisie en charge, false sinon (le champ est alors traité comme
+// une recherche de matériel ordinaire).
+let onSearchCode = () => false;
+export function setSearchCodeHandler(fn) { onSearchCode = fn; }
 
 export function isActive(navPath, path) {
   return path === navPath || path.startsWith(`${navPath}/`);
@@ -66,7 +89,13 @@ export function setTopbar({ title, subtitle = '', action = null }) {
   if (action) el.querySelector('[data-action="primary"]').addEventListener('click', action.onClick);
   el.querySelector('[data-role="global-search"]').addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
-    sessionStorage.setItem(SEARCH_KEY, e.target.value.trim());
+    const parsed = parseAdminSearch(e.target.value);
+    // Le champ n’est vidé que si la saisie a bien été prise pour un code.
+    if (parsed.type !== 'texte' && onSearchCode(parsed)) {
+      e.target.value = '';
+      return;
+    }
+    sessionStorage.setItem(SEARCH_KEY, parsed.type === 'texte' ? parsed.texte : e.target.value.trim());
     if (currentPath() === '/materiel') window.dispatchEvent(new Event('hashchange'));
     else navigate('/materiel');
   });

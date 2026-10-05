@@ -4,10 +4,11 @@ import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import {
   DEFAULT_SETTINGS, REASONS, REASON_LABELS, now, isWeekday, isOfficeOpen, atHour, addDays, ymd, fromYmd,
-  selfReturnDeadline, isLate, pickupWindow, isInPickupWindow, isExpired,
+  selfReturnDeadline, returnHour, isLate, pickupWindow, isInPickupWindow, isExpired,
   bookingStart, bookingEnd, isBookingActive, isExitMissing,
   slotsAreContiguous, slotsInRoomHours, slotsConflict,
   hasActiveLoanOfReference, userHasLateLoan, canBorrowSelf, canReserveValeur, withDefaults, sortByDateDesc,
+  openHours, reasonLabel, formatOpenHours,
 } from '../js/rules.js';
 
 const jeudi10h = new Date(2026, 8, 17, 10, 0);
@@ -72,8 +73,9 @@ test('réservation salle : début, fin, active, sortie non faite', () => {
   assert.equal(isBookingActive(b, new Date(2026, 8, 17, 12, 59)), true);
   assert.equal(isBookingActive(b, new Date(2026, 8, 17, 13, 0)), false);
   assert.equal(isBookingActive({ ...b, statut: 'annulee' }, new Date(2026, 8, 17, 10)), false);
-  assert.equal(isExitMissing(b, new Date(2026, 8, 17, 14, 0)), false);
-  assert.equal(isExitMissing(b, new Date(2026, 8, 17, 14, 1)), true);
+  const enCours = { ...b, statut: 'en_cours' };
+  assert.equal(isExitMissing(enCours, new Date(2026, 8, 17, 14, 0)), false);
+  assert.equal(isExitMissing(enCours, new Date(2026, 8, 17, 14, 1)), true);
   assert.equal(isExitMissing({ ...b, etatSortie: { date: 'x', lignes: [] } }, new Date(2026, 8, 18)), false);
   assert.equal(isExitMissing({ ...b, statut: 'annulee' }, new Date(2026, 8, 18)), false);
 });
@@ -212,4 +214,89 @@ test('dates seules « AAAA-MM-JJ » lues en heure locale, quel que soit le fusea
   assert.equal(ymd('2026-09-17'), '2026-09-17');
   assert.equal(isWeekday('2026-09-19'), false, 'samedi');
   assert.equal(isWeekday('2026-09-18'), true, 'vendredi');
+});
+
+test('openHours : tolère une liste nulle, vide ou mal formée', () => {
+  assert.deepEqual(openHours(null), DEFAULT_SETTINGS.horaires);
+  assert.deepEqual(openHours({ horaires: [] }), DEFAULT_SETTINGS.horaires);
+  assert.deepEqual(openHours({ horaires: null }), DEFAULT_SETTINGS.horaires);
+  assert.deepEqual(openHours({ horaires: [{ debut: 9, fin: 'midi' }] }), DEFAULT_SETTINGS.horaires);
+  assert.deepEqual(openHours({ horaires: [{ debut: 9.5, fin: 12 }] }), [{ debut: 9.5, fin: 12 }]);
+});
+
+test('isOfficeOpen : horaires fractionnaires et réglages cassés', () => {
+  const S = { horaires: [{ debut: 9.5, fin: 12 }] };
+  assert.equal(isOfficeOpen(new Date(2026, 8, 17, 9, 20), S.horaires), false);
+  assert.equal(isOfficeOpen(new Date(2026, 8, 17, 9, 40), S.horaires), true);
+  // Une liste vide retombe sur les horaires par défaut au lieu de fermer le bureau pour toujours.
+  assert.equal(isOfficeOpen(new Date(2026, 8, 17, 10, 0), []), true);
+});
+
+test('reasonLabel : le message hors ouverture reprend les horaires réglés', () => {
+  const S = { horaires: [{ debut: 9, fin: 12 }, { debut: 14, fin: 18 }] };
+  const texte = reasonLabel(REASONS.HORS_OUVERTURE, S);
+  assert.match(texte, /9h-12h/);
+  assert.match(texte, /14h-18h/);
+  assert.doesNotMatch(texte, /8h-12h/);
+  // Sans réglages, le libellé statique reste celui de REASON_LABELS.
+  assert.equal(reasonLabel(REASONS.BUREAU_FERME), REASON_LABELS[REASONS.BUREAU_FERME]);
+});
+
+test('formatOpenHours : heures entières et fractionnaires', () => {
+  assert.equal(formatOpenHours({ horaires: [{ debut: 9.5, fin: 12 }] }), '9h30-12h');
+  assert.equal(formatOpenHours(null), '8h-12h et 13h-17h');
+});
+
+test('openHours : le repli est une copie, pas les horaires par défaut eux-mêmes', () => {
+  const repli = openHours({ horaires: [] });
+  assert.notEqual(repli, DEFAULT_SETTINGS.horaires);
+  assert.notEqual(repli[0], DEFAULT_SETTINGS.horaires[0]);
+  repli[0].debut = 3;
+  assert.equal(DEFAULT_SETTINGS.horaires[0].debut, 8, 'modifier le résultat ne corrompt pas les défauts');
+});
+
+test('reasonLabel : salle_fermee reprend les heures de la salle réglées', () => {
+  const texte = reasonLabel(REASONS.SALLE_FERMEE, { salle: { heureDebut: 9, heureFin: 18 } });
+  assert.match(texte, /de 9h à 18h/);
+  assert.doesNotMatch(texte, /8h à 17h/);
+  // Réglage absent ou cassé : retour aux heures par défaut ; sans réglages : texte figé.
+  assert.match(reasonLabel(REASONS.SALLE_FERMEE, {}), /de 8h à 17h/);
+  assert.equal(reasonLabel(REASONS.SALLE_FERMEE), REASON_LABELS[REASONS.SALLE_FERMEE]);
+});
+
+test('isExitMissing : seul un créneau en cours peut avoir une sortie manquante', () => {
+  const base = { date: '2026-09-17', creneaux: [9, 10], etatSortie: null };
+  const tard = new Date(2026, 8, 17, 13, 0);
+  assert.equal(isExitMissing({ ...base, statut: 'en_cours' }, tard), true);
+  assert.equal(isExitMissing({ ...base, statut: 'terminee' }, tard), false, 'clos d’office par la pédago');
+  assert.equal(isExitMissing({ ...base, statut: 'a_venir' }, tard), false, 'jamais commencé, balayé par closeDueBookings');
+  assert.equal(isExitMissing({ ...base, statut: 'annulee' }, tard), false);
+  assert.equal(isExitMissing({ ...base, statut: 'en_cours' }, new Date(2026, 8, 17, 11, 30)), false, 'moins d’une heure après la fin');
+});
+
+test('returnHour : sans valeur enregistrée, la dernière fermeture des horaires réglés', () => {
+  assert.equal(returnHour(null), 17, 'sans réglages : horaires par défaut');
+  assert.equal(returnHour({}), 17);
+  assert.equal(returnHour({ horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 16 }] }), 16);
+  assert.equal(returnHour({ horaires: [{ debut: 14, fin: 18 }, { debut: 8, fin: 12 }] }), 18, 'la plus tardive, quel que soit l’ordre');
+  assert.equal(returnHour({ horaires: [] }), 17, 'horaires mal formés : repli sur les défauts');
+});
+
+test('returnHour : une valeur enregistrée l’emporte sur les horaires', () => {
+  assert.equal(returnHour({ heureRetourSelf: 15, horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 16 }] }), 15);
+  assert.equal(returnHour({ heureRetourSelf: 'bientôt', horaires: [{ debut: 9, fin: 11 }] }), 11, 'une valeur inexploitable est ignorée');
+});
+
+test('selfReturnDeadline : sans heure explicite, la fermeture par défaut ; les demi-heures sont respectées', () => {
+  assert.equal(selfReturnDeadline(new Date(2026, 8, 17, 10, 0)).getHours(), 17);
+  const demi = selfReturnDeadline(new Date(2026, 8, 17, 10, 0), 16.5);
+  assert.deepEqual([demi.getHours(), demi.getMinutes()], [16, 30]);
+});
+
+test('REASON_LABELS : les messages d’horaires sans réglages sont ceux que donnent les horaires par défaut', () => {
+  for (const reason of [REASONS.HORS_OUVERTURE, REASONS.SALLE_FERMEE]) {
+    assert.equal(REASON_LABELS[reason], reasonLabel(reason, DEFAULT_SETTINGS), reason);
+  }
+  assert.match(REASON_LABELS.hors_ouverture, /8h-12h et 13h-17h/);
+  assert.match(REASON_LABELS.salle_fermee, /de 8h à 17h/);
 });

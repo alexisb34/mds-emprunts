@@ -2,12 +2,13 @@
 import { store } from '../store.js';
 import { CIRCUITS, ITEM_STATES, LOAN_STATES, MAINT_TYPES, MAINT_STATES } from '../models.js';
 import {
-  now, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, REASONS, REASON_LABELS,
+  now, returnHour, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, REASONS, reasonLabel,
 } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
+import { resolveItemState } from './maintenance.js';
 import { buildChecklist, hasProblem, problemLines } from '../checklists.js';
-import { isItemCode, parseLoanCode } from '../qr.js';
+import { isItemCode, parseLoanCode, CODE_ALPHABET } from '../qr.js';
 import { fullName } from '../ui.js';
 
 const ACTIVE = [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS];
@@ -18,7 +19,8 @@ function assertPhoto(photo) {
 }
 
 function refusal(reason) {
-  return Object.assign(new Error(REASON_LABELS[reason] || reason), { reason });
+  // Le libellé cite les horaires RÉGLÉS : un message figé mentirait dès que la pédago les change.
+  return Object.assign(new Error(reasonLabel(reason, store.settings.get()) || reason), { reason });
 }
 
 export function findOpenLoanForItem(itemId) {
@@ -51,7 +53,7 @@ export function borrowSelf({ itemCode, userId, photo = null }) {
   assertPhoto(photo);
   const { item } = r;
   const user = store.users.get(userId);
-  const heure = withDefaults(store.settings.get()).heureRetourSelf;
+  const heure = returnHour(store.settings.get());
   return store.transaction(() => {
     const loan = store.loans.create({
       itemId: item.id, userId, statut: LOAN_STATES.EN_COURS, motif: '', motifRefus: '', codeRetrait: null,
@@ -81,7 +83,9 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
     const updated = store.loans.update(loanId, { statut: LOAN_STATES.RETOURNEE, dateRetourReelle: date.toISOString(), photoRetour: photo, checklistRetour: lines });
     // L’objet peut déjà être en maintenance (intervention pédago pendant l’emprunt) : on ne force l’état
     // que s’il est encore « emprunté ».
-    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, problem ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
+    // Un signalement déposé pendant l’emprunt immobilise l’objet à son retour même si la
+    // checklist est propre : `resolveItemState` ne le remet au catalogue que si rien n’est ouvert.
+    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, resolveItemState(item.id, problem ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE));
     logAction({ auteurId: userId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId, detail: `${item.nom} rendu${problem ? ' avec un problème' : ''}` });
     if (!problem) return { loan: updated, maintenance: null };
     const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
@@ -116,8 +120,6 @@ export function userLoans(userId, date = now()) {
     historique: sortByDateDesc(mine.filter((l) => !ACTIVE.includes(l.statut)), (l) => l.dateRetourReelle || l.dateRetrait || l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
   };
 }
-
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 // Code court lisible (sans I, L, O, 0, 1) : l’emprunteur peut le dicter si le QR ne passe pas.
 export function code6() {
@@ -197,7 +199,9 @@ export function receiveLoan({ loanId, pedagoId, checklist = null, commentaire = 
       statut: LOAN_STATES.RETOURNEE, dateRetourReelle: date.toISOString(), receptionnePar: pedagoId,
       checklistRetour: lines, commentaire: String(commentaire || '').trim(),
     });
-    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, problem ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE);
+    // Un signalement déposé pendant l’emprunt immobilise l’objet à son retour même si la
+    // checklist est propre : `resolveItemState` ne le remet au catalogue que si rien n’est ouvert.
+    if (item.etat === ITEM_STATES.EMPRUNTE) applyItemState(item.id, resolveItemState(item.id, problem ? ITEM_STATES.MAINTENANCE : ITEM_STATES.DISPONIBLE));
     logAction({ auteurId: pedagoId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId: loan.userId, detail: `${item.nom} réceptionné${problem ? ' avec un problème' : ''}` });
     if (!problem) return { loan: updated, maintenance: null };
     const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
@@ -214,7 +218,8 @@ function releaseReservation(loan, { statut, action, auteurId, detail, patch = {}
   const item = store.items.get(loan.itemId);
   return store.transaction(() => {
     const updated = store.loans.update(loan.id, { statut, ...patch });
-    if (item && item.etat === ITEM_STATES.RESERVE) applyItemState(item.id, ITEM_STATES.DISPONIBLE);
+    // Un signalement déposé pendant la réservation garde l’objet hors du catalogue.
+    if (item && item.etat === ITEM_STATES.RESERVE) applyItemState(item.id, resolveItemState(item.id, ITEM_STATES.DISPONIBLE));
     logAction({ auteurId, action, itemId: loan.itemId, loanId: loan.id, userId: loan.userId, detail });
     return updated;
   });

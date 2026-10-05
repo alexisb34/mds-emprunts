@@ -117,3 +117,28 @@ test('accueilHtml : avis de refus avec le motif, échappé', () => {
   assert.match(html, /Canon R10 : réservation refusée — Réservé pour un &lt;cours&gt;/);
   assert.doesNotMatch(accueilHtml(base), /alert--error/);
 });
+
+test('ficheHtml : l’aide du self-service cite les horaires réglés', () => {
+  const group = groupByReference(store.items.list()).find((g) => g.reference === 'multiprise');
+  const regle = ficheHtml({ group, date: NOW, settings: { horaires: [{ debut: 9, fin: 11 }, { debut: 14, fin: 18 }] } });
+  assert.match(regle, /9h-11h et 14h-18h/);
+  assert.doesNotMatch(regle, /8h-12h/);
+  assert.match(ficheHtml({ group, date: NOW }), /8h-12h et 13h-17h/, 'sans réglages : horaires par défaut');
+});
+
+test('ficheHtml : l’heure de retour du self-service vient aussi des réglages', () => {
+  const group = groupByReference(store.items.list()).find((g) => g.circuit === 'self');
+  const parDefaut = ficheHtml({ group, date: NOW });
+  assert.match(parDefaut, /avant 17h/);
+  const regle = ficheHtml({ group, date: NOW, settings: { heureRetourSelf: 16, horaires: [{ debut: 9, fin: 12 }] } });
+  assert.match(regle, /avant 16h/);
+  assert.match(regle, /9h-12h/);
+  assert.doesNotMatch(regle, /avant 17h/);
+});
+
+test('ficheHtml : sans heure de retour enregistrée, l’aide cite la fermeture réglée', () => {
+  const group = groupByReference(store.items.list()).find((g) => g.circuit === 'self');
+  const html = ficheHtml({ group, date: NOW, settings: { horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 16 }] } });
+  assert.match(html, /8h-12h et 13h-16h\)\. Retour le jour même avant 16h\./);
+  assert.doesNotMatch(html, /avant 17h/);
+});

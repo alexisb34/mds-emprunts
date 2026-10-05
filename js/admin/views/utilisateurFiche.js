@@ -121,7 +121,15 @@ export function utilisateurFicheView(container, { id }) {
         body: `<p class="body-sm">${activate ? 'Le compte pourra de nouveau emprunter et réserver.' : 'Le compte ne pourra plus se connecter ni emprunter. Les emprunts en cours restent visibles.'}</p>`,
         actions: [
           { label: 'Annuler', variant: 'ghost' },
-          { label: activate ? 'Réactiver' : 'Désactiver', variant: activate ? 'primary' : 'danger', onClick: () => { setUserActive(id, activate, auth.currentUserId()); toast(activate ? 'Compte réactivé' : 'Compte désactivé', 'success'); } },
+          { label: activate ? 'Réactiver' : 'Désactiver', variant: activate ? 'primary' : 'danger', onClick: () => {
+            try {
+              setUserActive(id, activate, auth.currentUserId());
+              toast(activate ? 'Compte réactivé' : 'Compte désactivé', 'success');
+            } catch (err) {
+              toast(err.message, 'error');
+              return false;
+            }
+          } },
         ],
       });
     });

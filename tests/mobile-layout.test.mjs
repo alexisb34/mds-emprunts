@@ -6,7 +6,6 @@ import { buildSeed } from '../js/seed.js';
 import { TABS, isActive, bottomNavHtml, headerHtml } from '../js/mobile/layout.js';
 import { groupUsersByRole, loginHtml } from '../js/mobile/views/login.js';
 import { profilHtml } from '../js/mobile/views/profil.js';
-import { aVenirHtml } from '../js/mobile/views/aVenir.js';
 
 beforeEach(() => {
   localStorage.clear();
@@ -74,6 +73,3 @@ test('profilHtml : identité, promo, actions', () => {
   assert.doesNotMatch(inter, /Promo/);
 });
 
-test('aVenirHtml mentionne la phase', () => {
-  assert.match(aVenirHtml('Salle photo', 4), /phase 4/);
-});

@@ -5,7 +5,8 @@ import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { buildWeekGrid } from '../js/weekGrid.js';
 import { weekBookings } from '../js/actions/bookings.js';
-import { planningHtml, exitMissingRows, bookingDetailHtml, salleHtml } from '../js/admin/views/salle.js';
+import { planningHtml, bookingDetailHtml, salleHtml } from '../js/admin/views/salle.js';
+import { exitMissingRows } from '../js/admin/kpi.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 beforeEach(() => { localStorage.clear(); store.init(() => buildSeed(NOW)); store.settings.update({ horlogeDemo: NOW.toISOString() }); });
@@ -22,16 +23,6 @@ test('planningHtml : 5 colonnes, initiales de l’occupant, créneau cliquable',
   const initiales = `${user.prenom[0]}${user.nom[0]}`.toUpperCase();
   assert.match(html, new RegExp(`class="slot slot--taken" data-booking="${actif.id}"[^>]*>${initiales}</button>`));
   assert.doesNotMatch(html, /week-grid--admin/, 'classe morte retirée');
-});
-
-test('exitMissingRows : une réservation dont la sortie manque depuis plus d’une heure', () => {
-  const actif = store.bookings.list((b) => b.statut === 'en_cours')[0];
-  assert.deepEqual(exitMissingRows(store.bookings.list(), store.users.list(), NOW), [], 'le créneau est encore en cours');
-  const tard = new Date(2026, 8, 17, 13, 0); // fin 11h + 1h dépassée
-  const rows = exitMissingRows(store.bookings.list(), store.users.list(), tard);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].booking.id, actif.id);
-  assert.equal(rows[0].user.id, actif.userId);
 });
 
 test('bookingDetailHtml : créneaux, états des lieux, bouton d’annulation', () => {

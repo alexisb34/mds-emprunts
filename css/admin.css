@@ -98,3 +98,14 @@
 .week-grid .slot--past { background: var(--bg-muted); }
 .week-grid .slot--taken { background: var(--status-borrowed-bg); color: var(--status-borrowed-fg); cursor: pointer; }
 .week-grid .slot--taken:hover { background: var(--brand-primary); color: var(--text-on-brand); }
+
+.tabs { display: flex; gap: var(--space-xs); }
+.tab { border: var(--stroke-thin) solid var(--border-default); background: var(--bg-surface); border-radius: var(--radius-pill); padding: var(--space-xs) var(--space-md); font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.tab:hover { border-color: var(--border-brand); }
+.tab.is-active { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--text-on-brand); }
+.tab__count { opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+.gauge { width: 100%; height: 10px; border: 0; border-radius: var(--radius-pill); background: var(--bg-muted); overflow: hidden; }
+.gauge::-webkit-progress-bar { background: var(--bg-muted); border-radius: var(--radius-pill); }
+.gauge::-webkit-progress-value { background: var(--brand-primary); border-radius: var(--radius-pill); }
+.gauge::-moz-progress-bar { background: var(--brand-primary); border-radius: var(--radius-pill); }

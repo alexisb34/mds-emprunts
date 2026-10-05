@@ -8,9 +8,8 @@ import { now } from '../rules.js';
 import { escapeHtml } from '../ui.js';
 import { sweepExpirations } from '../actions/loans.js';
 import { sweepBookings } from '../actions/bookings.js';
-import { mountSidebar } from './layout.js';
+import { mountSidebar, setSearchCodeHandler } from './layout.js';
 import { loginView } from './views/login.js';
-import { aVenirView } from './views/aVenir.js';
 // Les tâches suivantes ajoutent leurs imports ici :
 import { dashboardView } from './views/dashboard.js';
 import { materielView } from './views/materiel.js';
@@ -19,6 +18,17 @@ import { utilisateursView } from './views/utilisateurs.js';
 import { utilisateurFicheView } from './views/utilisateurFiche.js';
 import { empruntsView } from './views/emprunts.js';
 import { salleView } from './views/salle.js';
+import { maintenanceView } from './views/maintenance.js';
+import { parametresView } from './views/parametres.js';
+import { openHandoverModal, isKnownRetraitCode } from './handoverModal.js';
+
+// Un code court possible n’ouvre la remise que s’il correspond à un emprunt ; sinon la saisie
+// reste une recherche de matériel (un mot comme « camera » est aussi un jeton de six lettres valides).
+setSearchCodeHandler((parsed) => {
+  if (parsed.type === 'code_possible' && !isKnownRetraitCode(parsed.code, store.loans.list())) return false;
+  openHandoverModal({ code: parsed.code });
+  return true;
+});
 
 store.init(buildSeed);
 
@@ -28,7 +38,7 @@ const viewEl = document.getElementById('view');
 export function sidebarCounts() {
   return {
     emprunts: store.loans.list((l) => l.statut === LOAN_STATES.EN_COURS).length,
-    maintenance: store.maintenance.list((m) => m.statut === MAINT_STATES.OUVERT).length,
+    maintenance: store.maintenance.list((m) => m.statut !== MAINT_STATES.CLOS).length,
   };
 }
 
@@ -59,10 +69,10 @@ const routes = [
   { path: '/materiel/:id', view: guard(materielFicheView) },
   { path: '/emprunts', view: guard(empruntsView) },
   { path: '/salle', view: guard(salleView) },
-  { path: '/maintenance', view: guard(aVenirView('Maintenance', 5)) },
+  { path: '/maintenance', view: guard(maintenanceView) },
   { path: '/utilisateurs', view: guard(utilisateursView) },
   { path: '/utilisateurs/:id', view: guard(utilisateurFicheView) },
-  { path: '/parametres', view: guard(aVenirView('Paramètres', 5)) },
+  { path: '/parametres', view: guard(parametresView) },
 ];
 
 const router = createRouter({
