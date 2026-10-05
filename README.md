@@ -30,6 +30,27 @@ npm test
 
 Aucune dépendance à installer (Node ≥ 22).
 
+## Publier
+
+Le prototype est un site statique : n’importe quel hébergement de fichiers le sert tel quel. Les chemins sont tous relatifs, donc un sous-répertoire convient.
+
+**La caméra exige HTTPS.** Sans elle, le scan de QR et les photos retombent sur la saisie manuelle et une image de démonstration — utile en salle, insuffisant pour un vrai test terrain. `localhost` fait exception : en local, tout fonctionne.
+
+Depuis ce dossier, une fois un dépôt GitHub créé :
+
+```bash
+git remote add origin https://github.com/<compte>/mds-emprunts.git
+git push -u origin main
+```
+
+Puis, dans le dépôt : **Settings → Pages → Source : Deploy from a branch → `main` / `/ (root)`**. L’URL `https://<compte>.github.io/mds-emprunts/` répond au bout d’une minute ou deux.
+
+Pour montrer une version en cours sans rien publier, un tunnel suffit :
+
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+
 ## Documentation
 
 - Spec : `docs/superpowers/specs/2026-09-17-mds-emprunts-design.md`
