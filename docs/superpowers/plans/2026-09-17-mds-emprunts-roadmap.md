@@ -35,7 +35,7 @@
 | 3. Matériel de valeur | `2026-10-04-phase-3-materiel-valeur.md` (exécuté) | Réservation → remise par QR → retard → réception avec checklist |
 | 4. Salle photo | `2026-10-04-phase-4-salle-photo.md` (exécuté) | Réservation multi-créneaux, états des lieux, planning admin |
 | 5. Maintenance & paramètres | `2026-10-04-phase-5-maintenance-parametres.md` (exécuté) | Interventions, horloge de démo, reset, PWA installable |
-| 6. Déploiement test | à rédiger fin phase 5 | URL GitHub Pages, scénarios de démo, test sur téléphone |
+| 6. Déploiement test | `2026-10-05-phase-6-deploiement-test.md` (exécuté) | URL GitHub Pages, scénarios de démo, test sur téléphone |
 
 ---
 
@@ -117,6 +117,8 @@
 ---
 
 ## Phase 6 — Déploiement test
+
+**Plan :** `2026-10-05-phase-6-deploiement-test.md` (exécuté)
 
 | # | Tâche | Fichiers | Produit | Vérification |
 |---|---|---|---|---|

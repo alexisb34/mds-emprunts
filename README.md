@@ -57,6 +57,8 @@ cloudflared tunnel --url http://localhost:8000
 
 - Spec : `docs/superpowers/specs/2026-09-17-mds-emprunts-design.md`
 - Feuille de route : `docs/superpowers/plans/2026-09-17-mds-emprunts-roadmap.md`
+- Scénarios de démonstration : `docs/scenarios-demo.md`
+- Notice à remettre aux testeurs : `docs/notice-testeurs.md`
 
 ## État d’avancement
 
@@ -66,4 +68,4 @@ cloudflared tunnel --url http://localhost:8000
 - [x] Phase 3 — Matériel de valeur
 - [x] Phase 4 — Salle photo
 - [x] Phase 5 — Maintenance & paramètres
-- [ ] Phase 6 — Déploiement test
+- [x] Phase 6 — Déploiement test
