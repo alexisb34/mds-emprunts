@@ -52,7 +52,7 @@ export function resolveItemState(itemId, souhaite) {
   return (ITEM_TRANSITIONS[item.etat] || []).includes(cible) ? cible : item.etat;
 }
 
-// Un objet disponible part en maintenance dès le signalement ; emprunté ou réservé, il
+// Un objet disponible part en maintenance dès le signalement ; emprunté, il
 // y partira à son retour (c’est `receiveLoan` qui s’en charge). Hors service, on n’y touche pas.
 function immobiliser(itemId) {
   if (!itemId) return;
@@ -121,9 +121,9 @@ export function startIntervention(id, pedagoId) {
   });
 }
 
-// Un objet emprunté ou réservé n’est pas à nous : la clôture ne décide pas de son sort,
-// c’est son retour (ou la fin de sa réservation) qui le remettra dans le circuit.
-const estDehors = (item) => item.etat === ITEM_STATES.EMPRUNTE || item.etat === ITEM_STATES.RESERVE;
+// Un objet emprunté n’est pas à nous : la clôture ne décide pas de son sort,
+// c’est son retour qui le remettra dans le circuit.
+const estDehors = (item) => item.etat === ITEM_STATES.EMPRUNTE;
 
 // `remettreEnService: false` → l’objet passe `hs` (définitif, masqué du catalogue, gardé à l’inventaire).
 // `remettreEnService: true` → l’objet repasse `disponible` ; `undefined` → on ne touche pas à son état.

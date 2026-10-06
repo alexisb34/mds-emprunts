@@ -2,7 +2,7 @@
 import { store } from '../store.js';
 import { CIRCUITS, ITEM_STATES, LOAN_STATES, LOAN_TRANSITIONS, assertTransition } from '../models.js';
 import {
-  now, returnHour, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, REASONS, reasonLabel,
+  now, returnHour, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, freeExemplaires, REASONS, reasonLabel,
 } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
@@ -141,10 +141,8 @@ function setLoanStatus(loanId, statut, patch = {}) {
   return store.loans.update(loanId, { statut, ...patch });
 }
 
-export function reserveValeur({ itemId, userId, debutPrevu, finPrevue, motif = '' }) {
+export function reserveValeur({ reference, userId, debutPrevu, finPrevue, motif = '' }) {
   const date = now();
-  const item = store.items.get(itemId);
-  if (!item) throw refusal(REASONS.CODE_INCONNU);
   const user = store.users.get(userId);
   const debut = new Date(debutPrevu);
   const fin = new Date(finPrevue);
@@ -155,17 +153,21 @@ export function reserveValeur({ itemId, userId, debutPrevu, finPrevue, motif = '
   const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
   if (new Date(debut.getTime() + minutes * 60000) < date) throw refusal(REASONS.DATE_PASSEE);
   const loans = store.loans.list();
-  const check = canReserveValeur({ item, user, loans, items: store.items.list(), settings: store.settings.get(), debutPrevu: debut, finPrevue: fin, date });
+  const items = store.items.list();
+  const check = canReserveValeur({ reference, user, loans, items, settings: store.settings.get(), debutPrevu: debut, finPrevue: fin, date });
   if (!check.ok) throw refusal(check.reason);
+  // `canReserveValeur` vient de garantir qu’il en reste au moins un : on prend le premier,
+  // l’ordre de la liste étant l’ordre de création, donc stable.
+  const exemplaire = freeExemplaires({ items, loans, reference, debut, fin, date })[0];
   return store.transaction(() => {
     const loan = store.loans.create({
-      itemId, userId, statut: LOAN_STATES.RESERVEE, motif: String(motif || '').trim(), motifRefus: '', dateRefus: null, codeRetrait: code6(),
+      itemId: exemplaire.id, userId, statut: LOAN_STATES.RESERVEE, motif: String(motif || '').trim(), motifRefus: '', dateRefus: null, codeRetrait: code6(),
       dateReservation: date.toISOString(), debutPrevu: debut.toISOString(), finPrevue: fin.toISOString(),
       dateRetrait: null, dateRetourReelle: null, remisPar: null, receptionnePar: null,
       photoEmprunt: null, photoRetour: null, checklistRetour: null, commentaire: '',
     });
-    applyItemState(itemId, ITEM_STATES.RESERVE);
-    logAction({ auteurId: userId, action: ACTIONS.LOAN_RESERVEE, itemId, loanId: loan.id, userId, detail: `${item.nom} — ${fullName(user)}` });
+    // Aucun état d’objet n’est écrit : la réservation occupe une période, pas un objet.
+    logAction({ auteurId: userId, action: ACTIONS.LOAN_RESERVEE, itemId: exemplaire.id, loanId: loan.id, userId, detail: `${exemplaire.nom} — ${fullName(user)}` });
     return loan;
   });
 }
@@ -224,11 +226,9 @@ export function receiveLoan({ loanId, pedagoId, checklist = null, commentaire = 
 }
 
 function releaseReservation(loan, { statut, action, auteurId, detail, patch = {} }) {
-  const item = store.items.get(loan.itemId);
   return store.transaction(() => {
     const updated = setLoanStatus(loan.id, statut, patch);
-    // Un signalement déposé pendant la réservation garde l’objet hors du catalogue.
-    if (item && item.etat === ITEM_STATES.RESERVE) applyItemState(item.id, resolveItemState(item.id, ITEM_STATES.DISPONIBLE));
+    // Rien à restituer à l’objet : une réservation n’écrit aucun état, donc sa fin n’en défait aucun.
     logAction({ auteurId, action, itemId: loan.itemId, loanId: loan.id, userId: loan.userId, detail });
     return updated;
   });

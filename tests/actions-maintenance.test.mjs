@@ -10,7 +10,7 @@ import {
   maintenanceRows, immobilises, resolveItemState,
 } from '../js/actions/maintenance.js';
 import { receiveLoan, returnSelf, reserveValeur, refuseLoan, cancelLoan, expireDueLoans } from '../js/actions/loans.js';
-import { addDays } from '../js/rules.js';
+import { addDays, freeExemplaires } from '../js/rules.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const PEDAGO = 'user_041';
@@ -254,11 +254,18 @@ test('resolveItemState : une transition interdite rend l’état courant, un obj
 // ---- une réservation qui se termine ne remet pas au catalogue un objet signalé ----
 
 const DEMAIN9 = new Date(2026, 8, 18, 9, 0);
+// Un exemplaire de valeur que personne n’a réservé ni emprunté : le seed en réserve deux, et une
+// réservation ne bloque plus l’objet, donc « le premier disponible » pourrait être l’un d’eux.
+const itemValeurLibre = () => store.items.list((i) => i.circuit === 'valeur' && i.etat === ITEM_STATES.DISPONIBLE
+  && !store.loans.list((l) => l.itemId === i.id && (l.statut === LOAN_STATES.RESERVEE || l.statut === LOAN_STATES.EN_COURS)).length)[0];
 const reservationSignalee = () => {
-  const item = store.items.list((i) => i.circuit === 'valeur' && i.etat === ITEM_STATES.DISPONIBLE)[0];
-  const loan = reserveValeur({ itemId: item.id, userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  const item = itemValeurLibre();
+  const loan = reserveValeur({ reference: item.reference, userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  assert.equal(loan.itemId, item.id, 'la réservation tient l’exemplaire choisi');
   reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Signalé pendant la réservation' });
-  assert.equal(store.items.get(item.id).etat, ITEM_STATES.RESERVE, 'la réservation tient : l’objet n’est pas immobilisé');
+  // Une réservation n’écrit aucun état : rien ne retenait l’objet hors de la maintenance, donc le
+  // signalement l’immobilise tout de suite, comme pour n’importe quel objet disponible.
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.MAINTENANCE, 'le signalement immobilise l’objet aussitôt');
   return { item, loan };
 };
 const enMaintenanceAvecUnEvenement = (item) => {
@@ -267,29 +274,33 @@ const enMaintenanceAvecUnEvenement = (item) => {
   assert.ok(immobilises().some((r) => r.item.id === item.id), 'il figure dans le matériel immobilisé');
 };
 
-test('refuseLoan : un objet signalé pendant sa réservation passe en maintenance', () => {
+test('refuseLoan : la fin d’une réservation ne remet pas au catalogue un objet signalé', () => {
   const { item, loan } = reservationSignalee();
   refuseLoan(loan.id, PEDAGO, 'Pas disponible');
   enMaintenanceAvecUnEvenement(item);
 });
 
-test('cancelLoan : un objet signalé pendant sa réservation passe en maintenance', () => {
+test('cancelLoan : la fin d’une réservation ne remet pas au catalogue un objet signalé', () => {
   const { item, loan } = reservationSignalee();
   cancelLoan(loan.id, loan.userId);
   enMaintenanceAvecUnEvenement(item);
 });
 
-test('expireDueLoans : un objet signalé pendant sa réservation passe en maintenance', () => {
+test('expireDueLoans : la fin d’une réservation ne remet pas au catalogue un objet signalé', () => {
   const { item } = reservationSignalee();
   assert.ok(expireDueLoans(new Date(2026, 8, 18, 11, 0)) >= 1, 'la réservation de l’objet expire');
   enMaintenanceAvecUnEvenement(item);
 });
 
-test('refuseLoan : sans signalement, l’objet réservé redevient disponible', () => {
-  const item = store.items.list((i) => i.circuit === 'valeur' && i.etat === ITEM_STATES.DISPONIBLE)[0];
-  const loan = reserveValeur({ itemId: item.id, userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+test('refuseLoan : sans signalement, l’objet n’a jamais quitté « disponible » et sa période est libérée', () => {
+  const item = itemValeurLibre();
+  const loan = reserveValeur({ reference: item.reference, userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE, 'réservé, il reste disponible');
   refuseLoan(loan.id, PEDAGO, 'Pas disponible');
   assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
+  assert.ok(freeExemplaires({
+    items: store.items.list(), loans: store.loans.list(), reference: item.reference, debut: DEMAIN9, fin: addDays(DEMAIN9, 1), date: NOW,
+  }).some((i) => i.id === item.id), 'sa période est de nouveau libre');
 });
 
 // ---- closeEvent : « hors service » ----

@@ -241,7 +241,6 @@ export function buildSeed(now = new Date()) {
       dateReservation: iso(pose), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(start, dLen), 17)),
       createdAt: iso(pose), updatedAt: iso(pose),
     });
-    it.etat = ITEM_STATES.RESERVE;
     addLog(pose, user.id, 'loan.reservee', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} — ${who(user)}`);
   });
 

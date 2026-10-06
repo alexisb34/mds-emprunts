@@ -58,7 +58,7 @@ export function initials(user) {
 
 // Variante visuelle (tokens --status-*) par famille et valeur
 const VARIANTS = {
-  item: { disponible: 'available', emprunte: 'borrowed', reserve: 'reserved', maintenance: 'maintenance', hs: 'hs' },
+  item: { disponible: 'available', emprunte: 'borrowed', maintenance: 'maintenance', hs: 'hs' },
   loan: { reservee: 'reserved', en_cours: 'borrowed', retournee: 'available', refusee: 'hs', expiree: 'hs', annulee: 'hs', en_retard: 'late' },
   booking: { a_venir: 'reserved', en_cours: 'borrowed', terminee: 'available', annulee: 'hs' },
   maint: { ouvert: 'late', en_cours: 'maintenance', clos: 'available' },

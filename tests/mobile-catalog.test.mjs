@@ -36,7 +36,7 @@ test('availability : disponible, tout emprunté, maintenance/HS', () => {
   const groups = groupByReference(db.items);
   assert.deepEqual(availability(groups.find((g) => g.reference === 'multiprise')), { kind: 'item', value: 'disponible', text: '4 sur 6 disponibles' });
   assert.deepEqual(availability(groups.find((g) => g.reference === 'canon-r10')), { kind: 'item', value: 'emprunte', text: '' });
-  assert.deepEqual(availability(groups.find((g) => g.reference === 'tascam-dr70')), { kind: 'item', value: 'reserve', text: '' });
+  assert.deepEqual(availability(groups.find((g) => g.reference === 'tascam-dr70')), { kind: 'item', value: 'disponible', text: '' }, 'réservé à venir : présent, donc disponible au catalogue');
   const hsOnly = { exemplaires: [{ etat: 'hs' }, { etat: 'maintenance' }], disponibles: 0, total: 2 };
   assert.deepEqual(availability(hsOnly), { kind: 'item', value: 'maintenance', text: 'Indisponible' });
 });

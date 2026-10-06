@@ -116,7 +116,6 @@ test('manualTransitions : seulement les états pilotés à la main', () => {
   assert.deepEqual(manualTransitions({ etat: 'maintenance' }), ['disponible', 'hs']);
   assert.deepEqual(manualTransitions({ etat: 'hs' }), ['maintenance', 'disponible']);
   assert.deepEqual(manualTransitions({ etat: 'emprunte' }), []);
-  assert.deepEqual(manualTransitions({ etat: 'reserve' }), []);
 });
 
 test('itemHistory : emprunts, maintenance et journal triés par date métier (pas createdAt seul)', () => {

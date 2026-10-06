@@ -5,7 +5,7 @@ import { CIRCUITS, ITEM_STATES, LOAN_STATES, BOOKING_STATES } from './models.js'
 
 export const DEFAULT_SETTINGS = {
   horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 17 }],
-  dureeMaxReservationJours: 5,
+  dureeMaxReservationJours: 7, // une semaine complète, bornes comprises (spec §5.2)
   fenetreRetraitMinutes: 60,
   bloquerSiRetard: true,
   horlogeDemo: null, // ISO string ou null = temps réel
@@ -18,7 +18,6 @@ export const REASONS = {
   DEJA_UN_EXEMPLAIRE: 'deja_un_exemplaire',
   INDISPONIBLE: 'indisponible',
   EMPRUNTE_PAR_AUTRE: 'emprunte_par_autre',
-  RESERVE_PAR_AUTRE: 'reserve_par_autre',
   EN_MAINTENANCE: 'en_maintenance',
   HORS_SERVICE: 'hors_service',
   RETARD_EN_COURS: 'retard_en_cours',
@@ -34,6 +33,7 @@ export const REASONS = {
   RENDU_A_LA_PEDAGO: 'rendu_a_la_pedago',
   CRENEAU_VIDE: 'creneau_vide',
   CRENEAUX_NON_CONTIGUS: 'creneaux_non_contigus',
+  COMPLET_SUR_LA_PERIODE: 'complet_sur_la_periode',
   CRENEAU_OCCUPE: 'creneau_occupe',
   CRENEAU_PASSE: 'creneau_passe',
   SALLE_FERMEE: 'salle_fermee',
@@ -55,7 +55,6 @@ export const REASON_LABELS = {
   deja_un_exemplaire: 'Vous avez déjà un exemplaire de ce matériel (emprunt ou réservation en cours).',
   indisponible: 'Ce matériel n’est pas disponible actuellement.',
   emprunte_par_autre: 'Ce matériel est déjà emprunté par quelqu’un d’autre.',
-  reserve_par_autre: 'Ce matériel est réservé par quelqu’un d’autre.',
   en_maintenance: 'Ce matériel est en maintenance.',
   hors_service: 'Ce matériel est hors service.',
   retard_en_cours: 'Vous avez un emprunt en retard : rendez-le avant d’emprunter à nouveau.',
@@ -66,11 +65,12 @@ export const REASON_LABELS = {
   code_retrait_inconnu: 'Aucune réservation en attente ne correspond à ce code de retrait.',
   fenetre_retrait: 'Hors de la fenêtre de retrait : le matériel se retire dans l’heure qui suit le début de la réservation.',
   date_passee: 'La date de début est déjà passée.',
-  dates_incoherentes: 'La date de retour doit être postérieure ou égale à la date de retrait.',
+  dates_incoherentes: 'La date de retour doit être postérieure à la date de retrait.',
   hors_ouverture: horsOuvertureLabel(DEFAULT_SETTINGS),
   rendu_a_la_pedago: 'Ce matériel se rend directement à la pédago, qui vérifie son état.',
   creneau_vide: 'Choisissez au moins un créneau.',
   creneaux_non_contigus: 'Les créneaux doivent se suivre sans interruption.',
+  complet_sur_la_periode: 'Aucun exemplaire n’est libre sur cette période.',
   creneau_occupe: 'Un de ces créneaux est déjà réservé.',
   creneau_passe: 'Ce créneau est déjà passé.',
   salle_fermee: salleFermeeLabel(DEFAULT_SETTINGS),
@@ -78,7 +78,6 @@ export const REASON_LABELS = {
 
 const UNAVAILABLE_REASON = {
   emprunte: REASONS.EMPRUNTE_PAR_AUTRE,
-  reserve: REASONS.RESERVE_PAR_AUTRE,
   maintenance: REASONS.EN_MAINTENANCE,
   hs: REASONS.HORS_SERVICE,
 };
@@ -198,6 +197,49 @@ export function selfReturnDeadline(date, heureRetourSelf = returnHour(null)) {
   return atHour(date, entier, Math.round((heureRetourSelf - entier) * 60));
 }
 
+export const MOMENTS = { MATIN: 'matin', APRES_MIDI: 'apres_midi' };
+
+// Les deux demi-journées se déduisent des horaires réglés : matin = première plage,
+// après-midi = seconde. Avec une seule plage, l’après-midi en est la seconde moitié —
+// « demi-journée » doit garder un sens même si la pédago range tout en une plage.
+export function halfDays(settings) {
+  const plages = openHours(settings);
+  const matin = plages[0];
+  if (plages.length > 1) return { matin: { ...matin }, apres_midi: { ...plages[plages.length - 1] } };
+  const milieu = (matin.debut + matin.fin) / 2;
+  return { matin: { debut: matin.debut, fin: milieu }, apres_midi: { debut: milieu, fin: matin.fin } };
+}
+
+// Les bornes d’une demi-journée, en heure LOCALE : `fromYmd` lit une date seule sans
+// glisser d’un jour selon le fuseau.
+export function halfDayBounds(jour, moment, settings) {
+  const plage = halfDays(settings)[moment === MOMENTS.APRES_MIDI ? 'apres_midi' : 'matin'];
+  return { debut: fromYmd(jour, plage.debut), fin: fromYmd(jour, plage.fin) };
+}
+
+const OCCUPANTS = [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS];
+
+// Un emprunt occupe-t-il son exemplaire sur [debut, fin[ ? Les bornes sont jointives :
+// une réservation qui finit à 17h n’empêche pas celle qui commence à 17h.
+// Un emprunt en retard occupe tout l’avenir : l’objet est dehors, et nul ne sait quand il rentre.
+export function occupiesWindow(loan, debut, fin, date) {
+  if (!OCCUPANTS.includes(loan.statut)) return false;
+  const lDebut = toDate(loan.debutPrevu);
+  const lFin = toDate(loan.finPrevue);
+  if (loan.statut === LOAN_STATES.EN_COURS && toDate(date) > lFin) return toDate(fin) > toDate(date);
+  return lDebut < toDate(fin) && toDate(debut) < lFin;
+}
+
+// Les exemplaires d’une référence réellement disponibles sur une période. C’est ici que se
+// joue la correction : un objet réservé en novembre reste libre pour octobre.
+export function freeExemplaires({ items, loans, reference, debut, fin, date, ignoreLoanId = null }) {
+  const presents = items.filter((i) => i.reference === reference
+    && i.etat !== ITEM_STATES.MAINTENANCE && i.etat !== ITEM_STATES.HS);
+  return presents.filter((item) => !loans.some((l) => l.itemId === item.id
+    && l.id !== ignoreLoanId
+    && occupiesWindow(l, debut, fin, date)));
+}
+
 // ---- Emprunts ----
 
 export function isLate(loan, date) {
@@ -303,14 +345,21 @@ export function canBorrowSelf(ctx) {
 }
 
 export function canReserveValeur(ctx) {
-  const { debutPrevu, finPrevue, settings } = ctx;
+  const { reference, user, loans, items, settings, debutPrevu, finPrevue, date, ignoreLoanId = null } = ctx;
   const S = withDefaults(settings);
-  if (toDate(finPrevue) < fromYmd(ymd(debutPrevu))) return { ok: false, reason: REASONS.DATES_INCOHERENTES };
+  if (!user || user.actif === false) return { ok: false, reason: REASONS.UTILISATEUR_INACTIF };
+  // En raisonnant sur la référence plutôt que sur un exemplaire, on perdrait la vérification
+  // du circuit : sans elle, `#/reserver/multiprise` réserverait du self-service.
+  const exemplaires = items.filter((i) => i.reference === reference);
+  if (!exemplaires.length) return { ok: false, reason: REASONS.CODE_INCONNU };
+  if (exemplaires.some((i) => i.circuit !== CIRCUITS.VALEUR)) return { ok: false, reason: REASONS.MAUVAIS_CIRCUIT };
+  if (toDate(finPrevue) <= toDate(debutPrevu)) return { ok: false, reason: REASONS.DATES_INCOHERENTES };
   if (!isOfficeOpen(debutPrevu, S.horaires)) return { ok: false, reason: REASONS.HORS_OUVERTURE };
-  const days = Math.round((fromYmd(ymd(finPrevue)) - fromYmd(ymd(debutPrevu))) / DAY);
-  if (days > S.dureeMaxReservationJours) {
-    return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };
-  }
-  const reason = commonChecks({ ...ctx, settings: S, circuit: CIRCUITS.VALEUR });
-  return { ok: reason === null, reason };
+  const days = Math.round((fromYmd(ymd(finPrevue)) - fromYmd(ymd(debutPrevu))) / DAY) + 1;
+  if (days > S.dureeMaxReservationJours) return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };
+  if (hasActiveLoanOfReference(loans, items, user.id, reference)) return { ok: false, reason: REASONS.DEJA_UN_EXEMPLAIRE };
+  if (S.bloquerSiRetard && userHasLateLoan(loans, user.id, date)) return { ok: false, reason: REASONS.RETARD_EN_COURS };
+  const libres = freeExemplaires({ items, loans, reference, debut: debutPrevu, fin: finPrevue, date, ignoreLoanId });
+  if (!libres.length) return { ok: false, reason: REASONS.COMPLET_SUR_LA_PERIODE };
+  return { ok: true, reason: null };
 }

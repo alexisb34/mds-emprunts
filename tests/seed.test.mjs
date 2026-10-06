@@ -37,7 +37,8 @@ test('cohérence emprunts ↔ états du matériel', () => {
   const item = (id) => db.items.find((i) => i.id === id);
   for (const l of db.loans) {
     if (l.statut === LOAN_STATES.EN_COURS) assert.equal(item(l.itemId).etat, ITEM_STATES.EMPRUNTE, l.id);
-    if (l.statut === LOAN_STATES.RESERVEE) assert.equal(item(l.itemId).etat, ITEM_STATES.RESERVE, l.id);
+    // Une réservation n’écrit aucun état : l’objet réservé à venir est physiquement là, donc disponible.
+    if (l.statut === LOAN_STATES.RESERVEE) assert.equal(item(l.itemId).etat, ITEM_STATES.DISPONIBLE, l.id);
     assert.ok(db.users.some((u) => u.id === l.userId), `userId ${l.userId}`);
   }
   const active = db.loans.filter((l) => [LOAN_STATES.EN_COURS, LOAN_STATES.RESERVEE].includes(l.statut));

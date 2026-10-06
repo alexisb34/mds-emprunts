@@ -71,7 +71,7 @@ export function reserverView(container, { id }) {
   });
   container.querySelector('[data-action="confirm-reserve"]').addEventListener('click', () => {
     try {
-      const loan = reserveValeur({ ...readReserveForm(container), itemId: item.id, userId: auth.currentUserId() });
+      const loan = reserveValeur({ ...readReserveForm(container), reference: item.reference, userId: auth.currentUserId() });
       toast(`Réservé — à retirer le ${new Date(loan.debutPrevu).toLocaleDateString('fr-FR')} à ${formatTime(loan.debutPrevu)}`, 'success');
       navigate('/emprunts');
     } catch (e) {
