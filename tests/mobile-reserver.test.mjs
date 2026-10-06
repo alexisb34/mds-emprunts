@@ -3,7 +3,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { DEFAULT_SETTINGS, REASONS, MOMENTS, fromYmd, halfDayBounds, isWeekday, calendarDays, canReserveValeur } from '../js/rules.js';
+import { DEFAULT_SETTINGS, REASONS, MOMENTS, fromYmd, ymd, halfDayBounds, isWeekday, calendarDays, canReserveValeur } from '../js/rules.js';
 import {
   defaultDates, momentOptions, reserverHtml, readReserveForm,
   disponibiliteHtml, prochaineDisponibilite,
@@ -164,4 +164,29 @@ test('prochaineDisponibilite : un autre exemplaire libre suffit, et la durée re
   assert.deepEqual({ ok: verdict.ok, reason: verdict.reason }, { ok: true, reason: null }, 'et les règles l’accepteraient telle quelle');
   assert.ok(calendarDays(long.debut, long.fin) <= S.dureeMaxReservationJours, 'sa durée tient dans le maximum');
   assert.ok(isWeekday(long.fin), 'et le retour ne tombe pas un jour fermé')
+});
+
+test('prochaineDisponibilite : ne propose jamais une période que les champs de date refusent', () => {
+  // L’horizon du balayage et le `max` des champs doivent se mesurer depuis le MÊME instant.
+  // Un « aujourd’hui » dont le dernier jour sélectionnable tombe un jour ouvré, pour que la
+  // période suivante existe vraiment.
+  const AUJ = fromYmd('2026-10-08', 10);
+  const bornes = defaultDates(AUJ);
+  assert.ok(isWeekday(fromYmd(bornes.max)), 'le dernier jour sélectionnable est ouvré');
+  const items = [{ id: 'i1', reference: 'r', circuit: 'valeur', etat: 'disponible' }];
+  const matin = halfDayBounds(bornes.max, MOMENTS.MATIN, S);
+  const aprem = halfDayBounds(bornes.max, MOMENTS.APRES_MIDI, S);
+  const pris = [{ id: 'l1', itemId: 'i1', statut: 'reservee', debutPrevu: matin.debut.toISOString(), finPrevue: matin.fin.toISOString() }];
+  const commun = { items, loans: pris, reference: 'r', date: AUJ, settings: S };
+  // Le dernier jour en entier est complet. La demi-journée suivante serait libre, mais son
+  // RETOUR tombe au-delà du `max` du champ : l’écran ne doit pas la nommer.
+  assert.equal(prochaineDisponibilite({ ...commun, debut: matin.debut, fin: aprem.fin }), null,
+    'plutôt rien qu’un retour que le champ de date refuse');
+  // Et toute période qu’elle rend tient dans les bornes des deux champs.
+  const tot = halfDayBounds('2026-10-09', MOMENTS.MATIN, S);
+  const trouve = prochaineDisponibilite({ ...commun, debut: tot.debut, fin: tot.fin,
+    loans: [{ id: 'l1', itemId: 'i1', statut: 'reservee', debutPrevu: tot.debut.toISOString(), finPrevue: tot.fin.toISOString() }] });
+  assert.ok(trouve, 'une période est trouvée');
+  assert.ok(ymd(trouve.debut) >= bornes.min && ymd(trouve.debut) <= bornes.max, 'le retrait est sélectionnable');
+  assert.ok(ymd(trouve.fin) >= bornes.min && ymd(trouve.fin) <= bornes.max, 'le retour aussi');
 });

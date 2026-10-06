@@ -201,7 +201,11 @@ export function selfReturnDeadline(date, heureRetourSelf = returnHour(null)) {
 
 // Jours calendaires d’une période, bornes comprises — la mesure de `dureeMaxReservationJours`.
 // `Math.round` absorbe la journée de 25 heures du passage à l’heure d’hiver ; `ceil` compterait
-// un jour de trop et refuserait une période légale.
+// un jour de trop et refuserait une période légale. La différence de deux minuits LOCAUX ne
+// porte qu’un écart de décalages, jamais leur somme : l’erreur ne croît donc pas avec la durée.
+// **Suppose `fin >= debut`** : sur une période inversée le compte est négatif, donc plus petit
+// que tout maximum — vérifiez la cohérence des dates AVANT d’appeler cette fonction, comme le
+// font `canReserveValeur` et l’écran de réservation.
 export function calendarDays(debut, fin) {
   return Math.round((fromYmd(ymd(fin)) - fromYmd(ymd(debut))) / DAY) + 1;
 }

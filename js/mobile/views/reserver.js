@@ -81,7 +81,10 @@ export function prochaineDisponibilite({ items, loans, reference, debut, fin, da
   while (d.jour <= limite) {
     d = demiJourneeSuivante(d);
     f = demiJourneeSuivante(f);
-    if (d.jour > limite) return null;
+    // Le curseur de FIN se borne aussi : sans lui, l’écran nommait un retour que son propre
+    // champ de date refuse (jusqu’à `dureeMaxReservationJours - 1` jours au-delà du `max`).
+    // `f` ne précède jamais `d` et avance avec lui, donc s’arrêter là est juste.
+    if (d.jour > limite || f.jour > limite) return null;
     const periode = {
       debut: halfDayBounds(d.jour, d.moment, S).debut,
       fin: halfDayBounds(f.jour, f.moment, S).fin,
