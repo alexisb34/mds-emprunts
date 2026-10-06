@@ -69,7 +69,7 @@ Toutes les entités ont un `id` (string unique), `createdAt`, `updatedAt`.
 `nom`, `prenom`, `email`, `role` (`eleve` | `intervenant` | `pedago`), `promo` (élèves uniquement), `actif` (bool).
 
 ### `Item` — un enregistrement par exemplaire physique
-`code` (QR, format `MDS-0042`), `nom`, `categorie` (Bureautique, Audio, Photo, Vidéo, Lumière, Stockage, Accessoire…), `reference` (regroupe les exemplaires identiques, ex. `multiprise`), `circuit` (`self` | `salle` | `valeur`), `etat` (`disponible` | `emprunte` | `reserve` | `maintenance` | `hs`), `localisation`, `dateAchat`, `valeurEstimee`, `notes`, `photoUrl` (illustration catalogue).
+`code` (QR, format `MDS-0042`), `nom`, `categorie` (Bureautique, Audio, Photo, Vidéo, Lumière, Stockage, Accessoire…), `reference` (regroupe les exemplaires identiques, ex. `multiprise`), `circuit` (`self` | `salle` | `valeur`), `etat` (`disponible` | `emprunte` | `maintenance` | `hs`), `localisation`, `dateAchat`, `valeurEstimee`, `notes`, `photoUrl` (illustration catalogue).
 
 ### `Loan` — emprunt ou réservation
 `itemId`, `userId`, `statut` (`reservee` | `en_cours` | `retournee` | `refusee` | `expiree` | `annulee`), `dateReservation`, `debutPrevu`, `finPrevue`, `dateRetrait`, `dateRetourReelle`, `remisPar` (userId pédago), `receptionnePar`, `motif`, `motifRefus`, `codeRetrait` (6 caractères, circuit valeur), `photoEmprunt` (base64 JPEG, self), `photoRetour` (base64 JPEG, self), `checklistRetour` (tableau `{ ligne, ok, commentaire }`), `commentaire`.
@@ -88,7 +88,7 @@ Toutes les entités ont un `id` (string unique), `createdAt`, `updatedAt`.
 `date`, `auteurId`, `action` (chaîne normalisée : `item.cree`, `loan.reservee`, `loan.remise`, `loan.retour`, `booking.entree`…), `itemId`, `loanId`, `bookingId`, `userId` (cible), `detail` (texte libre). **Chaque mutation métier écrit une entrée.**
 
 ### `Settings`
-`horaires` (`[{ debut: 8, fin: 12 }, { debut: 13, fin: 17 }]`), `dureeMaxReservationJours` (5), `fenetreRetraitMinutes` (60), `bloquerSiRetard` (bool), `horlogeDemo` (offset en ms ou date fixée, null = temps réel).
+`horaires` (`[{ debut: 8, fin: 12 }, { debut: 13, fin: 17 }]`), `dureeMaxReservationJours` (7), `fenetreRetraitMinutes` (60), `bloquerSiRetard` (bool), `horlogeDemo` (offset en ms ou date fixée, null = temps réel).
 
 ## 5. Règles métier
 
@@ -100,7 +100,11 @@ Toutes les entités ont un `id` (string unique), `createdAt`, `updatedAt`.
 - Refus : objet `maintenance`/`hs`, objet `emprunte` par quelqu'un d'autre, déjà un exemplaire de cette référence, bureau fermé (retrait), utilisateur bloqué pour retard (si `bloquerSiRetard`).
 
 ### 5.2 Matériel de valeur
-- Réservation depuis la fiche objet : `debutPrevu`, `finPrevue` (≤ `dureeMaxReservationJours`, comptés en **jours calendaires** entre les dates de début et de fin), `motif`. L'`Item` passe `reserve` immédiatement ; d'autres utilisateurs ne peuvent plus le réserver sur la période.
+- **La disponibilité se calcule par période, jamais par état.** Une réservation occupe un exemplaire sur l'intervalle `[debutPrevu, finPrevue]` ; deux réservations du même exemplaire sont en conflit si leurs intervalles se chevauchent. Réserver un appareil pour novembre ne le rend pas indisponible aujourd'hui — l'`Item` reste `disponible` et ne passe `emprunte` qu'à la remise physique. Un emprunt `en_cours` occupe son exemplaire jusqu'à `finPrevue`, et au-delà tant qu'il n'est pas rendu : c'est le seul cas d'indisponibilité sans borne, parce que l'objet est physiquement dehors.
+- Réservation depuis la **référence** (`#/reserver/<reference>`), pas depuis un exemplaire : l'emprunteur choisit une période, le système lui attribue un exemplaire libre. S'il en reste un seul de libre, la réservation passe.
+- **Granularité : la demi-journée.** Les deux demi-journées se déduisent des `horaires` réglés — matin = première plage, après-midi = seconde — et suivent donc leurs modifications. Une réservation va d'une demi-journée de retrait à une demi-journée de retour, bornes comprises ; le minimum est une demi-journée.
+- Durée maximale : `dureeMaxReservationJours` (7 par défaut), comptés en **jours calendaires** entre les dates de début et de fin.
+- L'écran de réservation répond sur la période choisie avant toute validation : nombre d'exemplaires libres, ou première date où il en reste un.
 - Il n'y a pas d'étape de validation séparée : **la validation est la remise physique**.
 - Fenêtre de retrait : `[debutPrevu, debutPrevu + fenetreRetraitMinutes]`. Avant `debutPrevu`, le QR de retrait n'est pas actif. Après la fenêtre sans retrait → `expiree`, `Item` `disponible`, notification à l'emprunteur, badge « non retiré » côté admin.
 - Remise : l'emprunteur affiche son QR de retrait (`LOAN-<id>-<code6>`) ; la pédago clique **Remettre** et scanne (ou saisit le code court) → `en_cours`, `dateRetrait`, `remisPar`.
@@ -150,7 +154,7 @@ Mêmes tokens, déclinés en mobile-first (largeur cible 360-430 px). Header sim
 | `#/accueil` | Salutation · « Mes emprunts en cours » (retour attendu, badge retard) · « Ma prochaine réservation salle » avec bouton *État des lieux* si le créneau est en cours · notifications (expiration, refus, retard) |
 | `#/catalogue` | Recherche + chips de catégorie · cartes objet (photo, nom, badge d'état, pastille circuit) |
 | `#/catalogue/:reference` | Fiche d’une référence (une carte du catalogue par référence, pas par exemplaire ; liste des exemplaires) · bouton contextuel selon circuit : *Scanner pour emprunter* / *Réserver* / *Disponible dans la salle photo → Réserver la salle* |
-| `#/reserver/:id` | Dates début/fin, motif, rappel « à retirer dans l'heure suivant le début » → *Confirmer* |
+| `#/reserver/:reference` | Date + demi-journée de retrait, date + demi-journée de retour, motif · réponse immédiate sur la période (exemplaires libres, ou première date disponible) · rappel « à retirer dans l'heure suivant le début » → *Confirmer* |
 | `#/scan` | Lecteur caméra carré (`html5-qrcode`, pas un plein écran) + bouton **Simuler un scan** (liste déroulante des codes) · détection emprunt vs retour · **prise de photo** (caméra → canvas → JPEG 640 px) · confirmation ou mini-checklist · messages d'erreur explicites |
 | `#/salle` | Grille semaine (jours en horizontal, heures en vertical) · sélection de créneaux contigus → *Réserver* · mes réservations · état des lieux entrée/sortie |
 | `#/emprunts` | Onglets *En cours / Réservations / Historique* · réservation valeur active : **QR de retrait** + code court (actif seulement dans la fenêtre de retrait) · emprunt en cours : date, photo prise à l'emprunt |
