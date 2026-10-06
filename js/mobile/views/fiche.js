@@ -16,11 +16,18 @@ const CIRCUIT_HELP = {
 
 function ctaHtml(group, reserved) {
   if (reserved) return `<div class="alert alert--info">Vous avez déjà réservé ce matériel (retrait le ${escapeHtml(formatDate(reserved.loan.debutPrevu))} à ${escapeHtml(formatTime(reserved.loan.debutPrevu))}).</div><a class="btn btn--secondary btn--block" href="#/emprunts">Voir ma réservation</a>`;
-  const free = group.exemplaires.find((i) => i.etat === ITEM_STATES.DISPONIBLE);
   if (group.circuit === CIRCUITS.SALLE) return '<p class="body-sm">Disponible dans la salle photo.</p><a class="btn btn--primary btn--block" href="#/salle">Réserver la salle</a>';
-  if (!free) return '<p class="body-sm text-secondary">Aucun exemplaire disponible pour le moment.</p>';
-  if (group.circuit === CIRCUITS.SELF) return '<a class="btn btn--primary btn--block" href="#/scan">Scanner pour emprunter</a>';
-  return `<a class="btn btn--primary btn--block" href="#/reserver/${escapeHtml(free.id)}">Réserver</a>`;
+  // Le self-service se scanne sur place : il lui faut un objet qui soit là, maintenant.
+  if (group.circuit === CIRCUITS.SELF) {
+    if (!group.exemplaires.some((i) => i.etat === ITEM_STATES.DISPONIBLE)) return '<p class="body-sm text-secondary">Aucun exemplaire disponible pour le moment.</p>';
+    return '<a class="btn btn--primary btn--block" href="#/scan">Scanner pour emprunter</a>';
+  }
+  // La réservation, elle, porte sur une période : un exemplaire sorti aujourd’hui est
+  // réservable pour la semaine prochaine. Seuls la maintenance et le hors service excluent
+  // une référence ; c’est l’écran de réservation qui répond sur la période choisie.
+  const presentable = group.exemplaires.some((i) => i.etat !== ITEM_STATES.MAINTENANCE && i.etat !== ITEM_STATES.HS);
+  if (!presentable) return '<p class="body-sm text-secondary">Aucun exemplaire disponible pour le moment.</p>';
+  return `<a class="btn btn--primary btn--block" href="#/reserver/${escapeHtml(group.reference)}">Réserver</a>`;
 }
 
 // Le texte d’aide d’un circuit ; celui du self-service cite les horaires réglés (`settings`).

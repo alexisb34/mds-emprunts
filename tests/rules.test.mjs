@@ -163,7 +163,9 @@ test('canReserveValeur : cohérence des dates et heures d’ouverture du retrait
 });
 
 test('canReserveValeur : durée en jours calendaires, bornes comprises', () => {
-  const lundi9h = new Date(2026, 8, 14, 9);
+  // Un lundi À VENIR : le verdict refuse désormais une période passée, et ce test ne parle
+  // que d’arithmétique de durée — les bornes comptées restent exactement les mêmes.
+  const lundi9h = new Date(2026, 8, 21, 9);
   const base = { reference: items[2].reference, user, loans: [], items, settings: S, debutPrevu: lundi9h, finPrevue: fromYmd(ymd(addDays(lundi9h, 4)), 17), date: jeudi10h };
   assert.equal(canReserveValeur(base).ok, true, 'lundi au vendredi = 5 jours');
   // Bornes comprises : debut + (max - 1) jours est le dernier jour permis.
@@ -479,4 +481,19 @@ test('occupiesWindow : un emprunt en retard occupe aussi sa propre période, pas
   assert.equal(occupiesWindow(retard, new Date(2026, 9, 1, 9), new Date(2026, 9, 1, 17), jeudi10h), true);
   // Avant son retrait, en revanche, il n’occupait rien.
   assert.equal(occupiesWindow(retard, new Date(2026, 8, 14, 9), new Date(2026, 8, 14, 17), jeudi10h), false);
+});
+
+test('canReserveValeur : une période passée se refuse dans le verdict, pas seulement à l’écriture', () => {
+  const base = { reference: items[2].reference, user, loans: [], items, settings: S, date: jeudi10h };
+  // La veille : l’écran de réservation doit pouvoir le dire avant toute validation (spec §5.2).
+  assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-16', 9), finPrevue: fromYmd('2026-09-16', 17) }).reason, REASONS.DATE_PASSEE);
+  // Le jour même, avant l’heure courante : la fenêtre de retrait est déjà close.
+  assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-17', 8), finPrevue: fromYmd('2026-09-17', 12) }).reason, REASONS.DATE_PASSEE);
+  // La borne : un retrait à 9h avec une fenêtre d’une heure se clôt À 10h pile, et il est 10h —
+  // la fenêtre est encore ouverte, puisqu’elle se juge sur « close AVANT maintenant ».
+  assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-17', 9), finPrevue: fromYmd('2026-09-17', 12) }).ok, true, 'fenêtre close à 10h pile : encore ouverte');
+  assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-17', 13), finPrevue: fromYmd('2026-09-17', 17) }).ok, true, 'cet après-midi : permis');
+  // La fenêtre de retrait réglée mène ce jugement, pas une heure écrite en dur.
+  const large = { ...base, settings: { ...S, fenetreRetraitMinutes: 240 }, debutPrevu: fromYmd('2026-09-17', 8), finPrevue: fromYmd('2026-09-17', 12) };
+  assert.equal(canReserveValeur(large).ok, true, 'une fenêtre de quatre heures est encore ouverte à 10h');
 });

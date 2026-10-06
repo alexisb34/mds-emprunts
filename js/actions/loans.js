@@ -147,11 +147,8 @@ export function reserveValeur({ reference, userId, debutPrevu, finPrevue, motif 
   const debut = new Date(debutPrevu);
   const fin = new Date(finPrevue);
   if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime())) throw new Error('Dates invalides.');
-  if (debut < new Date(date.getFullYear(), date.getMonth(), date.getDate())) throw refusal(REASONS.DATE_PASSEE);
-  // Une réservation dont la fenêtre de retrait est déjà close serait balayée par expireDueLoans
-  // dès le prochain rendu : autant la refuser tout de suite.
-  const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
-  if (new Date(debut.getTime() + minutes * 60000) < date) throw refusal(REASONS.DATE_PASSEE);
+  // Les périodes passées et les fenêtres de retrait déjà closes sont jugées par le verdict :
+  // les redoubler ici, c’est se donner deux vérités qui peuvent diverger.
   const loans = store.loans.list();
   const items = store.items.list();
   const check = canReserveValeur({ reference, user, loans, items, settings: store.settings.get(), debutPrevu: debut, finPrevue: fin, date });

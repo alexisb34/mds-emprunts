@@ -366,6 +366,14 @@ export function canReserveValeur(ctx) {
     return { ok: false, reason: UNAVAILABLE_REASON[etat] };
   }
   if (toDate(finPrevue) <= toDate(debutPrevu)) return { ok: false, reason: REASONS.DATES_INCOHERENTES };
+  // Une période passée se refuse DANS le verdict, et non à l’écriture seulement : l’écran de
+  // réservation doit pouvoir répondre sur la période choisie avant toute validation (spec §5.2).
+  // Une fenêtre de retrait déjà close vaut une date passée : `expireDueLoans` la balaierait
+  // au prochain rendu.
+  const debutJour = toDate(debutPrevu);
+  const aujourdhui = toDate(date);
+  if (debutJour < new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate())) return { ok: false, reason: REASONS.DATE_PASSEE };
+  if (new Date(debutJour.getTime() + S.fenetreRetraitMinutes * 60000) < aujourdhui) return { ok: false, reason: REASONS.DATE_PASSEE };
   if (!isOfficeOpen(debutPrevu, S.horaires)) return { ok: false, reason: REASONS.HORS_OUVERTURE };
   const days = Math.round((fromYmd(ymd(finPrevue)) - fromYmd(ymd(debutPrevu))) / DAY) + 1;
   if (days > S.dureeMaxReservationJours) return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };

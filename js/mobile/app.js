@@ -42,7 +42,7 @@ const routes = [
   { path: '/scan', view: guard(scanView) },
   { path: '/emprunts', view: guard(empruntsView) },
   { path: '/salle', view: guard(salleView) },
-  { path: '/reserver/:id', view: guard(reserverView) },
+  { path: '/reserver/:reference', view: guard(reserverView) },
   { path: '/profil', view: guard(profilView) },
 ];
 
