@@ -14,7 +14,7 @@ test('TABS_ADMIN_LOANS et loanRows : répartition conforme au seed', () => {
   assert.deepEqual(TABS_ADMIN_LOANS.map((t) => t.key), ['enCours', 'reserves', 'retards', 'historique']);
   assert.equal(loanRows('enCours', NOW).length, 8, '10 en cours moins les 2 en retard');
   assert.equal(loanRows('retards', NOW).length, 2);
-  assert.equal(loanRows('reserves', NOW).length, 2);
+  assert.equal(loanRows('reserves', NOW).length, 3, '2 cette semaine + 1 le mois prochain');
   assert.ok(loanRows('historique', NOW).length >= 40);
   const r = loanRows('retards', NOW)[0];
   assert.ok(r.item && r.user && r.loan);

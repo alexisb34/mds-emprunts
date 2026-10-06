@@ -10,7 +10,7 @@ import {
   maintenanceRows, immobilises, resolveItemState,
 } from '../js/actions/maintenance.js';
 import { receiveLoan, returnSelf, reserveValeur, refuseLoan, cancelLoan, expireDueLoans } from '../js/actions/loans.js';
-import { addDays, freeExemplaires } from '../js/rules.js';
+import { addDays, freeExemplaires, now } from '../js/rules.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const PEDAGO = 'user_041';
@@ -254,10 +254,19 @@ test('resolveItemState : une transition interdite rend l’état courant, un obj
 // ---- une réservation qui se termine ne remet pas au catalogue un objet signalé ----
 
 const DEMAIN9 = new Date(2026, 8, 18, 9, 0);
-// Un exemplaire de valeur que personne n’a réservé ni emprunté : le seed en réserve deux, et une
-// réservation ne bloque plus l’objet, donc « le premier disponible » pourrait être l’un d’eux.
-const itemValeurLibre = () => store.items.list((i) => i.circuit === 'valeur' && i.etat === ITEM_STATES.DISPONIBLE
-  && !store.loans.list((l) => l.itemId === i.id && (l.statut === LOAN_STATES.RESERVEE || l.statut === LOAN_STATES.EN_COURS)).length)[0];
+// L’exemplaire que les RÈGLES attribueraient pour la période de ces tests. Demander « celui qui
+// n’a aucun emprunt actif » serait une autre question : le seed réserve une carte SD le mois
+// prochain, et cette carte-là reste la première libre demain — comme `reserveValeur` l’attribuerait.
+const itemValeurLibre = () => {
+  const items = store.items.list();
+  const loans = store.loans.list();
+  const references = [...new Set(items.filter((i) => i.circuit === 'valeur').map((i) => i.reference))];
+  for (const reference of references) {
+    const libre = freeExemplaires({ items, loans, reference, debut: DEMAIN9, fin: addDays(DEMAIN9, 1), date: now() })[0];
+    if (libre) return libre;
+  }
+  throw new Error('aucun exemplaire de valeur libre sur la période de ces tests');
+};
 const reservationSignalee = () => {
   const item = itemValeurLibre();
   const loan = reserveValeur({ reference: item.reference, userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });

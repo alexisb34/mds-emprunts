@@ -48,12 +48,23 @@ test('cohérence emprunts ↔ états du matériel', () => {
   }
 });
 
-test('volumes : ~40 retournés, 8 en cours dont 2 en retard, 2 réservés', () => {
+test('volumes : ~40 retournés, 8 en cours dont 2 en retard, 3 réservés', () => {
   assert.equal(db.loans.filter((l) => l.statut === LOAN_STATES.RETOURNEE).length, 41); // 40 générés + 1 retour avec problème
   assert.equal(db.loans.filter((l) => l.statut === LOAN_STATES.EN_COURS).length, 10);  // 6 self + 2 valeur + 2 en retard
   assert.equal(db.loans.filter((l) => isLate(l, NOW)).length, 2);
-  assert.equal(db.loans.filter((l) => l.statut === LOAN_STATES.RESERVEE).length, 2);
-  assert.ok(db.loans.filter((l) => l.statut === LOAN_STATES.RESERVEE).every((l) => l.codeRetrait?.length === 6));
+  // 2 à venir cette semaine + 1 LOINTAINE, qui rend visible en démonstration qu’une
+  // réservation du mois prochain ne bloque pas l’objet aujourd’hui.
+  const reservees = db.loans.filter((l) => l.statut === LOAN_STATES.RESERVEE);
+  assert.equal(reservees.length, 3);
+  assert.ok(reservees.every((l) => l.codeRetrait?.length === 6));
+  // Et la lointaine porte bien sur une référence à plusieurs exemplaires, dont les autres
+  // restent libres : une seule carte prise n’en ferme pas trois.
+  const lointaine = reservees.find((l) => new Date(l.debutPrevu) > new Date(NOW.getTime() + 20 * 24 * 3600 * 1000));
+  assert.ok(lointaine, 'une réservation à plus de vingt jours');
+  const prise = db.items.find((i) => i.id === lointaine.itemId);
+  const fratrie = db.items.filter((i) => i.reference === prise.reference);
+  assert.ok(fratrie.length >= 3, 'la référence a plusieurs exemplaires');
+  assert.ok(fratrie.every((i) => i.etat === ITEM_STATES.DISPONIBLE), 'aucun n’est bloqué, pas même celui qui est réservé');
 });
 
 test('maintenance : 1 objet en maintenance avec signalement ouvert, 1 HS, 1 intervention externe close', () => {
