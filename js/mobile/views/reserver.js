@@ -4,7 +4,7 @@ import { store } from '../../store.js';
 import { auth } from '../../auth.js';
 import { navigate } from '../../router.js';
 import {
-  now, addDays, ymd, fromYmd, isWeekday, withDefaults, MOMENTS, halfDays, halfDayBounds,
+  now, addDays, ymd, fromYmd, isWeekday, withDefaults, MOMENTS, halfDays, halfDayBounds, calendarDays,
   freeExemplaires, canReserveValeur, isOfficeOpen, formatHeure, reasonLabel, REASONS,
 } from '../../rules.js';
 import { escapeHtml, badge, formatDate, formatTime, toast } from '../../ui.js';
@@ -59,15 +59,8 @@ function demiJourneeSuivante({ jour, moment }) {
   return { jour: ymd(addDays(fromYmd(jour), 1)), moment: MOMENTS.MATIN };
 }
 
-// Jours calendaires d’une période, bornes comprises — la même mesure que `canReserveValeur`.
-function joursCalendaires(debut, fin) {
-  let jours = 1;
-  for (let d = fromYmd(ymd(debut)); ymd(d) < ymd(fin); d = addDays(d, 1)) jours += 1;
-  return jours;
-}
-
 // Horizon de réservation : le jour même est permis par les règles.
-export function defaultDates(date, dureeMax) {
+export function defaultDates(date) {
   // Le retrait doit tomber un jour ouvré : on propose le prochain, pas simplement demain.
   let d = addDays(date, 1);
   while (!isWeekday(d)) d = addDays(d, 1);
@@ -83,7 +76,7 @@ export function prochaineDisponibilite({ items, loans, reference, debut, fin, da
   const S = withDefaults(settings);
   let d = { jour: ymd(debut), moment: momentDeDebut(debut, S) };
   let f = { jour: ymd(fin), moment: momentDeFin(fin, S) };
-  const limite = ymd(addDays(debut, HORIZON_JOURS));
+  const limite = ymd(addDays(date, HORIZON_JOURS));
   // `AAAA-MM-JJ` se compare comme du texte dans l’ordre chronologique.
   while (d.jour <= limite) {
     d = demiJourneeSuivante(d);
@@ -98,7 +91,7 @@ export function prochaineDisponibilite({ items, loans, reference, debut, fin, da
     if (!isOfficeOpen(periode.debut, S.horaires)) continue;
     // Le retour se rend en main propre : un jour fermé ne vaut pas mieux pour la fin que pour le début.
     if (!isWeekday(periode.fin)) continue;
-    if (joursCalendaires(periode.debut, periode.fin) > S.dureeMaxReservationJours) continue;
+    if (calendarDays(periode.debut, periode.fin) > S.dureeMaxReservationJours) continue;
     if (freeExemplaires({ items, loans, reference, debut: periode.debut, fin: periode.fin, date }).length) return periode;
   }
   return null;
@@ -115,7 +108,7 @@ export function disponibiliteHtml({ libres = [], reason = null, prochaine = null
   if (reason === REASONS.COMPLET_SUR_LA_PERIODE) {
     const suite = prochaine
       ? `Premier créneau libre : <strong>${escapeHtml(periodeLabel(prochaine, settings))}</strong>.`
-      : 'Aucune disponibilité dans les deux mois.';
+      : `Aucun créneau de cette longueur dans les ${HORIZON_JOURS} prochains jours.`;
     return `<p class="alert alert--warning">${escapeHtml(reasonLabel(reason, settings))} ${suite}</p>`;
   }
   return `<p class="alert alert--error">${escapeHtml(reasonLabel(reason, settings))}</p>`;
@@ -168,7 +161,7 @@ export function reserverView(container, { reference }) {
   setHeader({ title: 'Réserver', back: `/catalogue/${reference}` });
   container.innerHTML = reserverHtml({
     group: { nom: baseName(exemplaires[0].nom), reference, circuit: exemplaires[0].circuit, total: exemplaires.length },
-    dates: defaultDates(now(), settings.dureeMaxReservationJours),
+    dates: defaultDates(now()),
     moments: momentOptions(settings),
     dureeMax: settings.dureeMaxReservationJours,
     fenetreMinutes: settings.fenetreRetraitMinutes,

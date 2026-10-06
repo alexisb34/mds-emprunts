@@ -199,6 +199,13 @@ export function selfReturnDeadline(date, heureRetourSelf = returnHour(null)) {
   return atHour(date, entier, Math.round((heureRetourSelf - entier) * 60));
 }
 
+// Jours calendaires d’une période, bornes comprises — la mesure de `dureeMaxReservationJours`.
+// `Math.round` absorbe la journée de 25 heures du passage à l’heure d’hiver ; `ceil` compterait
+// un jour de trop et refuserait une période légale.
+export function calendarDays(debut, fin) {
+  return Math.round((fromYmd(ymd(fin)) - fromYmd(ymd(debut))) / DAY) + 1;
+}
+
 export const MOMENTS = { MATIN: 'matin', APRES_MIDI: 'apres_midi' };
 
 // Les deux demi-journées se déduisent des horaires réglés : matin = première plage,
@@ -375,8 +382,7 @@ export function canReserveValeur(ctx) {
   if (debutJour < new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate())) return { ok: false, reason: REASONS.DATE_PASSEE };
   if (new Date(debutJour.getTime() + S.fenetreRetraitMinutes * 60000) < aujourdhui) return { ok: false, reason: REASONS.DATE_PASSEE };
   if (!isOfficeOpen(debutPrevu, S.horaires)) return { ok: false, reason: REASONS.HORS_OUVERTURE };
-  const days = Math.round((fromYmd(ymd(finPrevue)) - fromYmd(ymd(debutPrevu))) / DAY) + 1;
-  if (days > S.dureeMaxReservationJours) return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };
+  if (calendarDays(debutPrevu, finPrevue) > S.dureeMaxReservationJours) return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };
   if (hasActiveLoanOfReference(loans, items, user.id, reference)) return { ok: false, reason: REASONS.DEJA_UN_EXEMPLAIRE };
   if (S.bloquerSiRetard && userHasLateLoan(loans, user.id, date)) return { ok: false, reason: REASONS.RETARD_EN_COURS };
   const libres = freeExemplaires({ items, loans, reference, debut: debutPrevu, fin: finPrevue, date, ignoreLoanId });

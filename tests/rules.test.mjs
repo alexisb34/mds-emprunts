@@ -9,7 +9,7 @@ import {
   slotsAreContiguous, slotsInRoomHours, slotsConflict,
   hasActiveLoanOfReference, userHasLateLoan, canBorrowSelf, canReserveValeur, withDefaults, sortByDateDesc,
   openHours, reasonLabel, formatOpenHours,
-  MOMENTS, halfDays, halfDayBounds, occupiesWindow, freeExemplaires,
+  MOMENTS, halfDays, halfDayBounds, occupiesWindow, freeExemplaires, calendarDays,
 } from '../js/rules.js';
 
 const jeudi10h = new Date(2026, 8, 17, 10, 0);
@@ -173,9 +173,14 @@ test('canReserveValeur : durée en jours calendaires, bornes comprises', () => {
   assert.equal(canReserveValeur({ ...base, finPrevue: dernierJour }).ok, true, 'sept jours pile');
   const unDeTrop = fromYmd(ymd(addDays(lundi9h, S.dureeMaxReservationJours)), 17);
   assert.equal(canReserveValeur({ ...base, finPrevue: unDeTrop }).reason, REASONS.DUREE_TROP_LONGUE);
-  // Traversée du changement d’heure : le compte reste en jours calendaires.
+  // Traversée du changement d’heure, SUR LA BORNE : c’est le seul endroit où le mode d’arrondi
+  // se voit. La journée de 25 heures donne 6,0417 jours bruts ; `Math.round` compte sept jours
+  // et accepte, `Math.ceil` en compterait huit et refuserait une période légale. Une période
+  // plus courte passerait quel que soit le mode, et ne prouverait donc rien.
   const debutDst = new Date(2026, 9, 22, 9);
-  assert.equal(canReserveValeur({ ...base, debutPrevu: debutDst, finPrevue: fromYmd(ymd(addDays(debutDst, 5)), 17) }).ok, true);
+  const dernierDst = fromYmd(ymd(addDays(debutDst, S.dureeMaxReservationJours - 1)), 17);
+  assert.equal(canReserveValeur({ ...base, debutPrevu: debutDst, finPrevue: dernierDst }).ok, true, 'sept jours pile à travers le changement d’heure');
+  assert.equal(calendarDays(debutDst, dernierDst), S.dureeMaxReservationJours, 'et le compte lui-même');
 });
 
 test('chaque motif a un libellé français', () => {

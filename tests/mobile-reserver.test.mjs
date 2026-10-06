@@ -3,7 +3,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { DEFAULT_SETTINGS, REASONS, MOMENTS, fromYmd, halfDayBounds, isWeekday } from '../js/rules.js';
+import { DEFAULT_SETTINGS, REASONS, MOMENTS, fromYmd, halfDayBounds, isWeekday, calendarDays, canReserveValeur } from '../js/rules.js';
 import {
   defaultDates, momentOptions, reserverHtml, readReserveForm,
   disponibiliteHtml, prochaineDisponibilite,
@@ -11,23 +11,25 @@ import {
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const S = DEFAULT_SETTINGS;
+// Un emprunteur sans emprunt actif : les tests de période ne doivent pas buter sur un doublon.
+const user = { id: 'u-neuf', actif: true };
 beforeEach(() => { localStorage.clear(); store.init(() => buildSeed(NOW)); });
 
 // Un faux formulaire : `readReserveForm` ne lit que des `[name=…].value`, pas un vrai DOM.
 const formulaire = (champs) => ({ querySelector: (sel) => ({ value: champs[sel.replace(/\[name="|"\]/g, '')] }) });
 
 test('defaultDates : demain, même jour par défaut, aujourd’hui permis, horizon de 60 jours', () => {
-  assert.deepEqual(defaultDates(NOW, 5), { debut: '2026-09-18', fin: '2026-09-18', min: '2026-09-17', max: '2026-11-16' });
+  assert.deepEqual(defaultDates(NOW), { debut: '2026-09-18', fin: '2026-09-18', min: '2026-09-17', max: '2026-11-16' });
 });
 
 test('defaultDates : le retrait proposé tombe toujours un jour ouvré', () => {
-  const vendredi = defaultDates(new Date(2026, 8, 18, 10, 0), 5);
+  const vendredi = defaultDates(new Date(2026, 8, 18, 10, 0));
   assert.equal(vendredi.debut, '2026-09-21', 'un vendredi → le lundi suivant');
   assert.equal(vendredi.fin, '2026-09-21');
   assert.equal(vendredi.min, '2026-09-18', 'min reste le jour courant');
   assert.equal(vendredi.max, '2026-11-17');
-  assert.equal(defaultDates(new Date(2026, 8, 19, 10, 0), 5).debut, '2026-09-21', 'un samedi → le lundi suivant');
-  assert.equal(defaultDates(new Date(2026, 8, 20, 10, 0), 5).debut, '2026-09-21', 'un dimanche → le lundi suivant');
+  assert.equal(defaultDates(new Date(2026, 8, 19, 10, 0)).debut, '2026-09-21', 'un samedi → le lundi suivant');
+  assert.equal(defaultDates(new Date(2026, 8, 20, 10, 0)).debut, '2026-09-21', 'un dimanche → le lundi suivant');
 });
 
 test('momentOptions : deux demi-journées, étiquetées avec les heures RÉGLÉES', () => {
@@ -98,7 +100,9 @@ test('disponibiliteHtml : complet → la première période libre, ou l’aveu q
   assert.match(avec, /le 21 sept\. 2026 matin/, 'une seule demi-journée');
   assert.match(avec, /alert--warning/);
   const sans = disponibiliteHtml({ reason: REASONS.COMPLET_SUR_LA_PERIODE, prochaine: null, settings: S });
-  assert.match(sans, /Aucune disponibilité dans les deux mois/);
+  // Le message nomme l’horizon réel et la vraie raison : c’est un créneau de CETTE longueur qui
+  // manque, pas tout exemplaire — dire « aucune disponibilité » serait plus large que le fait.
+  assert.match(sans, /Aucun créneau de cette longueur dans les 60 prochains jours/);
   assert.doesNotMatch(sans, /Premier créneau/);
   // Le même jour en entier ne répète pas la date ; deux jours la nomment aux deux bouts.
   const journee = disponibiliteHtml({ reason: REASONS.COMPLET_SUR_LA_PERIODE, prochaine: { debut: fromYmd('2026-09-21', 8), fin: fromYmd('2026-09-21', 17) }, settings: S });
@@ -150,10 +154,14 @@ test('prochaineDisponibilite : un autre exemplaire libre suffit, et la durée re
   const trouve = prochaineDisponibilite({ items, loans: [], reference: 'sd-256', debut, fin, date: NOW, settings: S });
   assert.equal(+trouve.debut, +fromYmd('2026-09-18', 13), 'glissée d’une demi-journée');
   assert.equal(+trouve.fin, +fromYmd('2026-09-23', 12), 'et la fin a glissé d’autant');
-  // La longueur demandée dépasse le maximum une demi-journée sur deux : la fonction ne rend
-  // jamais une période que `canReserveValeur` refuserait pour sa durée.
+  // La longueur demandée dépasse le maximum une demi-journée sur deux. L'aller-retour par le
+  // verdict est la seule assertion qui le prouve : un simple « c’est un jour ouvré, et c’est
+  // plus tard » passerait même si la garde de durée disparaissait.
   const long = prochaineDisponibilite({ items, loans: [], reference: 'sd-256', debut, fin: fromYmd('2026-09-24', 17), date: NOW, settings: S });
   assert.ok(long, 'une période est trouvée');
-  assert.ok(isWeekday(long.debut) && isWeekday(long.fin), 'retrait et retour tombent un jour ouvré');
-  assert.ok(+long.debut > +debut, 'et elle est postérieure à celle demandée');
+  assert.ok(+long.debut > +debut, 'elle est postérieure à celle demandée');
+  const verdict = canReserveValeur({ reference: 'sd-256', user, loans: [], items, settings: S, debutPrevu: long.debut, finPrevue: long.fin, date: NOW });
+  assert.deepEqual({ ok: verdict.ok, reason: verdict.reason }, { ok: true, reason: null }, 'et les règles l’accepteraient telle quelle');
+  assert.ok(calendarDays(long.debut, long.fin) <= S.dureeMaxReservationJours, 'sa durée tient dans le maximum');
+  assert.ok(isWeekday(long.fin), 'et le retour ne tombe pas un jour fermé')
 });
