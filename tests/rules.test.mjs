@@ -138,17 +138,22 @@ test('canReserveValeur : durée max, circuit et doublon de référence', () => {
   assert.equal(canReserveValeur(base).ok, true);
   assert.equal(canReserveValeur({ ...base, finPrevue: fromYmd(ymd(addDays(debut, 7)), 17) }).reason, REASONS.DUREE_TROP_LONGUE);
   assert.equal(canReserveValeur({ ...base, finPrevue: addDays(debut, -1) }).reason, REASONS.DATES_INCOHERENTES);
-  assert.equal(canReserveValeur({ ...base, reference: items[0].reference }).reason, REASONS.MAUVAIS_CIRCUIT);
-  // Détenir déjà un exemplaire de la référence prime sur la disponibilité de la période.
-  const sienne = [{ id: 'l1', userId: 'u1', itemId: items[2].id, statut: 'reservee', debutPrevu: debut.toISOString(), finPrevue: debut.toISOString() }];
+  assert.equal(canReserveValeur({ ...base, reference: items[0].reference }).reason, REASONS.MAUVAIS_CIRCUIT, 'self');
+  assert.equal(canReserveValeur({ ...base, reference: items[3].reference }).reason, REASONS.MAUVAIS_CIRCUIT, 'salle');
+  // Détenir déjà un exemplaire prime sur la disponibilité : la réservation occupe PRÉCISÉMENT la
+  // période demandée du seul exemplaire, donc « complet » serait l’autre réponse possible.
+  const sienne = [{ id: 'l1', userId: 'u1', itemId: items[2].id, statut: 'reservee', debutPrevu: base.debutPrevu.toISOString(), finPrevue: base.finPrevue.toISOString() }];
   assert.equal(canReserveValeur({ ...base, loans: sienne }).reason, REASONS.DEJA_UN_EXEMPLAIRE);
+  assert.equal(canReserveValeur({ ...base, loans: [{ ...sienne[0], userId: 'u2' }] }).reason, REASONS.COMPLET_SUR_LA_PERIODE, 'la même période prise par un autre');
 });
 
 test('canReserveValeur : cohérence des dates et heures d’ouverture du retrait', () => {
   const jeudi9h = new Date(2026, 8, 17, 9);
   const jeudi17h = new Date(2026, 8, 17, 17);
   const base = { reference: items[2].reference, user, loans: [], items, settings: S, debutPrevu: jeudi9h, finPrevue: jeudi17h, date: jeudi10h };
-  assert.deepEqual(canReserveValeur(base), { ok: true, reason: null });
+  const verdict = canReserveValeur(base);
+  assert.deepEqual({ ok: verdict.ok, reason: verdict.reason }, { ok: true, reason: null });
+  assert.deepEqual(verdict.libres.map((i) => i.id), [items[2].id], 'le verdict rend l’exemplaire qu’il a retenu');
   assert.equal(canReserveValeur({ ...base, debutPrevu: new Date(2026, 8, 19, 9), finPrevue: new Date(2026, 8, 19, 17) }).reason, REASONS.HORS_OUVERTURE, 'samedi');
   assert.equal(canReserveValeur({ ...base, debutPrevu: new Date(2026, 8, 17, 12, 30) }).reason, REASONS.HORS_OUVERTURE, 'pause de midi');
   assert.equal(canReserveValeur({ ...base, finPrevue: new Date(2026, 8, 16, 17) }).reason, REASONS.DATES_INCOHERENTES, 'retour la veille du retrait');
@@ -442,4 +447,36 @@ test('canReserveValeur : refuse quand aucun exemplaire n’est libre sur la pér
   });
   assert.equal(verdict.ok, false);
   assert.equal(verdict.reason, REASONS.COMPLET_SUR_LA_PERIODE);
+});
+
+test('une référence dont tous les exemplaires sont immobilisés le dit, au lieu de « complet sur la période »', () => {
+  const debut = new Date(2026, 8, 18, 9);
+  const base = { reference: items[2].reference, user, loans: [], settings: S, debutPrevu: debut, finPrevue: fromYmd(ymd(debut), 17), date: jeudi10h };
+  const enMaint = items.map((i) => (i.id === items[2].id ? { ...i, etat: 'maintenance' } : i));
+  const hs = items.map((i) => (i.id === items[2].id ? { ...i, etat: 'hs' } : i));
+  assert.equal(canReserveValeur({ ...base, items: enMaint }).reason, REASONS.EN_MAINTENANCE);
+  assert.equal(canReserveValeur({ ...base, items: hs }).reason, REASONS.HORS_SERVICE);
+  // Aucune autre date n’y changerait rien : le motif ne doit pas inviter à chercher un créneau.
+  assert.equal(canReserveValeur({ ...base, items: hs, debutPrevu: fromYmd('2026-11-03', 9), finPrevue: fromYmd('2026-11-03', 17) }).reason, REASONS.HORS_SERVICE);
+});
+
+test('halfDayBounds : une plage de largeur impaire coupe à la demi-heure sans tronquer', () => {
+  const S1 = { ...S, horaires: [{ debut: 8, fin: 15 }] };
+  assert.deepEqual(halfDays(S1), { matin: { debut: 8, fin: 11.5 }, apres_midi: { debut: 11.5, fin: 15 } });
+  const matin = halfDayBounds('2026-09-17', MOMENTS.MATIN, S1);
+  const aprem = halfDayBounds('2026-09-17', MOMENTS.APRES_MIDI, S1);
+  assert.equal(matin.fin.getHours(), 11);
+  assert.equal(matin.fin.getMinutes(), 30, 'et non 11h00 par troncature');
+  assert.equal(aprem.debut.getMinutes(), 30);
+  assert.equal(+matin.fin, +aprem.debut, 'les deux moitiés restent jointives');
+});
+
+test('occupiesWindow : un emprunt en retard occupe aussi sa propre période, passé compris', () => {
+  const retard = { statut: 'en_cours', debutPrevu: new Date(2026, 8, 15, 9).toISOString(), finPrevue: new Date(2026, 8, 16, 17).toISOString() };
+  // Une fenêtre entièrement dans la période de l’emprunt, mais déjà passée : l’objet y était dehors.
+  assert.equal(occupiesWindow(retard, new Date(2026, 8, 15, 10), new Date(2026, 8, 15, 12), jeudi10h), true);
+  // Et il occupe tout l’avenir, puisque nul ne sait quand il rentre.
+  assert.equal(occupiesWindow(retard, new Date(2026, 9, 1, 9), new Date(2026, 9, 1, 17), jeudi10h), true);
+  // Avant son retrait, en revanche, il n’occupait rien.
+  assert.equal(occupiesWindow(retard, new Date(2026, 8, 14, 9), new Date(2026, 8, 14, 17), jeudi10h), false);
 });

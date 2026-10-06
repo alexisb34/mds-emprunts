@@ -7,6 +7,7 @@ import { REASONS, now, addDays, isLate, pickupWindow, freeExemplaires } from '..
 import { ACTIONS } from '../js/log.js';
 import { ITEM_STATES, LOAN_STATES, MAINT_STATES } from '../js/models.js';
 import { buildChecklist } from '../js/checklists.js';
+import { reportIssue } from '../js/actions/maintenance.js';
 import { loanQrPayload } from '../js/qr.js';
 import {
   reserveValeur, handOver, receiveLoan, refuseLoan, cancelLoan, extendLoan,
@@ -409,4 +410,54 @@ test('les messages des gardes métier priment sur celui de la table', () => {
   try { receiveLoan({ loanId: rendu.id, pedagoId: PEDAGO }); } catch (e) { message = e.message; }
   assert.match(message, /n’est plus en cours/, 'la garde métier parle, pas la table');
   assert.doesNotMatch(message, /Transition/);
+});
+
+test('handOver : l’exemplaire encore dehors au créneau suivant est refusé lisiblement', () => {
+  // Deux demi-journées du même jour sur la seule Hoya : légitime, et le même exemplaire.
+  const item = freeValeur('hoya-nd');
+  const matin = reserveValeur({ reference: 'hoya-nd', userId: ELEVE, debutPrevu: new Date(2026, 8, 18, 9, 0), finPrevue: new Date(2026, 8, 18, 12, 0) });
+  const aprem = reserveValeur({ reference: 'hoya-nd', userId: 'user_011', debutPrevu: new Date(2026, 8, 18, 13, 0), finPrevue: DEMAIN17 });
+  assert.equal(aprem.itemId, matin.itemId, 'le même exemplaire, deux créneaux jointifs');
+  clock(new Date(2026, 8, 18, 9, 30));
+  handOver({ code: matin.codeRetrait, pedagoId: PEDAGO });
+  // 13h : le premier n’a pas rendu, le second se présente dans sa fenêtre.
+  clock(new Date(2026, 8, 18, 13, 0));
+  let message = '';
+  try { handOver({ code: aprem.codeRetrait, pedagoId: PEDAGO }); } catch (e) { message = e.message; }
+  assert.match(message, /déjà emprunté par quelqu’un d’autre/);
+  assert.doesNotMatch(message, /Transition/, 'la pédago ne lit jamais le message de la table');
+  assert.equal(store.loans.get(aprem.id).statut, LOAN_STATES.RESERVEE, 'la réservation reste en attente');
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.EMPRUNTE, 'et rien n’a été écrit');
+});
+
+test('handOver : un exemplaire signalé entre la réservation et la remise est refusé lisiblement', () => {
+  const item = freeValeur('hoya-nd');
+  const loan = reserveValeur({ reference: 'hoya-nd', userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN17 });
+  reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Filtre rayé', immobiliser: true });
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.MAINTENANCE);
+  clock(new Date(2026, 8, 18, 9, 30));
+  let message = '';
+  try { handOver({ code: loan.codeRetrait, pedagoId: PEDAGO }); } catch (e) { message = e.message; }
+  assert.match(message, /en maintenance/);
+  assert.doesNotMatch(message, /Transition/);
+  assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.RESERVEE, 'la pédago la refuse ensuite avec un motif');
+  const refus = refuseLoan(loan.id, PEDAGO, 'Objet en maintenance');
+  assert.equal(refus.statut, LOAN_STATES.REFUSEE);
+});
+
+test('extendLoan : prolonger ne mord pas sur la réservation suivante du même exemplaire', () => {
+  const item = freeValeur('hoya-nd');
+  const jeudi = reserveValeur({ reference: 'hoya-nd', userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: DEMAIN17 });
+  const lundi = reserveValeur({ reference: 'hoya-nd', userId: 'user_011', debutPrevu: new Date(2026, 8, 21, 9, 0), finPrevue: new Date(2026, 8, 21, 17, 0) });
+  assert.equal(lundi.itemId, jeudi.itemId);
+  clock(new Date(2026, 8, 18, 9, 30));
+  handOver({ code: jeudi.codeRetrait, pedagoId: PEDAGO });
+  let message = '';
+  try { extendLoan(jeudi.id, new Date(2026, 8, 21, 17, 0), PEDAGO); } catch (e) { message = e.message; }
+  assert.match(message, /réservé par quelqu’un d’autre sur la période demandée/);
+  assert.equal(store.loans.get(jeudi.id).finPrevue, DEMAIN17.toISOString(), 'la date de retour n’a pas bougé');
+  // Jusqu’à la veille de ce créneau, en revanche, la prolongation passe.
+  const prolonge = extendLoan(jeudi.id, new Date(2026, 8, 20, 17, 0), PEDAGO);
+  assert.equal(prolonge.finPrevue, new Date(2026, 8, 20, 17, 0).toISOString());
+  assert.equal(store.items.get(item.id).etat, ITEM_STATES.EMPRUNTE);
 });

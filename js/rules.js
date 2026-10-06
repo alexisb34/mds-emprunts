@@ -34,6 +34,7 @@ export const REASONS = {
   CRENEAU_VIDE: 'creneau_vide',
   CRENEAUX_NON_CONTIGUS: 'creneaux_non_contigus',
   COMPLET_SUR_LA_PERIODE: 'complet_sur_la_periode',
+  RESERVE_SUR_LA_PERIODE: 'reserve_sur_la_periode',
   CRENEAU_OCCUPE: 'creneau_occupe',
   CRENEAU_PASSE: 'creneau_passe',
   SALLE_FERMEE: 'salle_fermee',
@@ -71,12 +72,13 @@ export const REASON_LABELS = {
   creneau_vide: 'Choisissez au moins un créneau.',
   creneaux_non_contigus: 'Les créneaux doivent se suivre sans interruption.',
   complet_sur_la_periode: 'Aucun exemplaire n’est libre sur cette période.',
+  reserve_sur_la_periode: 'Cet exemplaire est réservé par quelqu’un d’autre sur la période demandée.',
   creneau_occupe: 'Un de ces créneaux est déjà réservé.',
   creneau_passe: 'Ce créneau est déjà passé.',
   salle_fermee: salleFermeeLabel(DEFAULT_SETTINGS),
 };
 
-const UNAVAILABLE_REASON = {
+export const UNAVAILABLE_REASON = {
   emprunte: REASONS.EMPRUNTE_PAR_AUTRE,
   maintenance: REASONS.EN_MAINTENANCE,
   hs: REASONS.HORS_SERVICE,
@@ -214,7 +216,10 @@ export function halfDays(settings) {
 // glisser d’un jour selon le fuseau.
 export function halfDayBounds(jour, moment, settings) {
   const plage = halfDays(settings)[moment === MOMENTS.APRES_MIDI ? 'apres_midi' : 'matin'];
-  return { debut: fromYmd(jour, plage.debut), fin: fromYmd(jour, plage.fin) };
+  // Une plage de largeur impaire coupe la journée à la demi-heure (8h → 15h donne 11h30) :
+  // `fromYmd(jour, 11.5)` tronquerait à 11h et mentirait sur l’étiquette affichée.
+  const aHeure = (h) => { const entier = Math.floor(h); return atHour(fromYmd(jour), entier, Math.round((h - entier) * 60)); };
+  return { debut: aHeure(plage.debut), fin: aHeure(plage.fin) };
 }
 
 const OCCUPANTS = [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS];
@@ -226,8 +231,9 @@ export function occupiesWindow(loan, debut, fin, date) {
   if (!OCCUPANTS.includes(loan.statut)) return false;
   const lDebut = toDate(loan.debutPrevu);
   const lFin = toDate(loan.finPrevue);
-  if (loan.statut === LOAN_STATES.EN_COURS && toDate(date) > lFin) return toDate(fin) > toDate(date);
-  return lDebut < toDate(fin) && toDate(debut) < lFin;
+  const chevauche = lDebut < toDate(fin) && toDate(debut) < lFin;
+  if (loan.statut === LOAN_STATES.EN_COURS && toDate(date) > lFin) return chevauche || toDate(fin) > toDate(date);
+  return chevauche;
 }
 
 // Les exemplaires d’une référence réellement disponibles sur une période. C’est ici que se
@@ -353,6 +359,12 @@ export function canReserveValeur(ctx) {
   const exemplaires = items.filter((i) => i.reference === reference);
   if (!exemplaires.length) return { ok: false, reason: REASONS.CODE_INCONNU };
   if (exemplaires.some((i) => i.circuit !== CIRCUITS.VALEUR)) return { ok: false, reason: REASONS.MAUVAIS_CIRCUIT };
+  // Une référence dont tous les exemplaires sont immobilisés n’est pas « complète sur la période » :
+  // aucune autre date n’y changerait rien, et le dire invite à chercher un créneau pour rien.
+  if (!exemplaires.some((i) => i.etat !== ITEM_STATES.MAINTENANCE && i.etat !== ITEM_STATES.HS)) {
+    const etat = exemplaires.some((i) => i.etat === ITEM_STATES.MAINTENANCE) ? ITEM_STATES.MAINTENANCE : ITEM_STATES.HS;
+    return { ok: false, reason: UNAVAILABLE_REASON[etat] };
+  }
   if (toDate(finPrevue) <= toDate(debutPrevu)) return { ok: false, reason: REASONS.DATES_INCOHERENTES };
   if (!isOfficeOpen(debutPrevu, S.horaires)) return { ok: false, reason: REASONS.HORS_OUVERTURE };
   const days = Math.round((fromYmd(ymd(finPrevue)) - fromYmd(ymd(debutPrevu))) / DAY) + 1;
@@ -361,5 +373,7 @@ export function canReserveValeur(ctx) {
   if (S.bloquerSiRetard && userHasLateLoan(loans, user.id, date)) return { ok: false, reason: REASONS.RETARD_EN_COURS };
   const libres = freeExemplaires({ items, loans, reference, debut: debutPrevu, fin: finPrevue, date, ignoreLoanId });
   if (!libres.length) return { ok: false, reason: REASONS.COMPLET_SUR_LA_PERIODE };
-  return { ok: true, reason: null };
+  // Le verdict rend l’exemplaire qu’il a trouvé : `reserveValeur` n’a pas à refaire le calcul,
+  // et ne peut donc pas tomber sur un résultat différent du nôtre.
+  return { ok: true, reason: null, libres };
 }
