@@ -1,12 +1,12 @@
 // js/actions/loans.js — emprunts : circuit self-service (scan → emprunt / retour) et matériel de valeur (réservation, remise, réception, refus, expiration).
 import { store } from '../store.js';
-import { CIRCUITS, ITEM_STATES, LOAN_STATES, MAINT_TYPES, MAINT_STATES } from '../models.js';
+import { CIRCUITS, ITEM_STATES, LOAN_STATES, LOAN_TRANSITIONS, assertTransition } from '../models.js';
 import {
   now, returnHour, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, REASONS, reasonLabel,
 } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
-import { resolveItemState } from './maintenance.js';
+import { reportIssue, resolveItemState } from './maintenance.js';
 import { buildChecklist, hasProblem, problemLines } from '../checklists.js';
 import { isItemCode, parseLoanCode, CODE_ALPHABET } from '../qr.js';
 import { fullName } from '../ui.js';
@@ -80,7 +80,7 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
   const lines = checklist || buildChecklist(item.reference);
   const problem = hasProblem(lines);
   return store.transaction(() => {
-    const updated = store.loans.update(loanId, { statut: LOAN_STATES.RETOURNEE, dateRetourReelle: date.toISOString(), photoRetour: photo, checklistRetour: lines });
+    const updated = setLoanStatus(loanId, LOAN_STATES.RETOURNEE, { dateRetourReelle: date.toISOString(), photoRetour: photo, checklistRetour: lines });
     // L’objet peut déjà être en maintenance (intervention pédago pendant l’emprunt) : on ne force l’état
     // que s’il est encore « emprunté ».
     // Un signalement déposé pendant l’emprunt immobilise l’objet à son retour même si la
@@ -89,11 +89,11 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
     logAction({ auteurId: userId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId, detail: `${item.nom} rendu${problem ? ' avec un problème' : ''}` });
     if (!problem) return { loan: updated, maintenance: null };
     const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
-    const maintenance = store.maintenance.create({
-      itemId: item.id, type: MAINT_TYPES.SIGNALEMENT, auteurId: userId, date: date.toISOString(), statut: MAINT_STATES.OUVERT,
-      description: `Signalé au retour : ${detail}`, prestataire: '', cout: 0, loanId, bookingId: null,
+    const maintenance = reportIssue({
+      itemId: item.id, auteurId: userId,
+      description: `Signalé au retour : ${detail}`,
+      loanId, immobiliser: false, date,
     });
-    logAction({ auteurId: userId, action: ACTIONS.MAINT_SIGNALEMENT, itemId: item.id, loanId, detail: maintenance.description });
     return { loan: updated, maintenance };
   });
 }
@@ -130,6 +130,15 @@ function requireLoan(id) {
   const loan = store.loans.get(id);
   if (!loan) throw new Error(`Emprunt introuvable (${id})`);
   return loan;
+}
+
+// Spec §9 : la couche d’actions vérifie les transitions déclarées dans `models.js`.
+// Les gardes métier en amont restent : elles donnent le message lisible, la table n’est
+// qu’un filet pour un chemin imprévu.
+function setLoanStatus(loanId, statut, patch = {}) {
+  const loan = requireLoan(loanId);
+  assertTransition(LOAN_TRANSITIONS, loan.statut, statut, 'emprunt');
+  return store.loans.update(loanId, { statut, ...patch });
 }
 
 export function reserveValeur({ itemId, userId, debutPrevu, finPrevue, motif = '' }) {
@@ -178,7 +187,7 @@ export function handOver({ code, pedagoId, date = now() }) {
   const item = store.items.get(loan.itemId);
   const user = store.users.get(loan.userId);
   return store.transaction(() => {
-    const updated = store.loans.update(loan.id, { statut: LOAN_STATES.EN_COURS, dateRetrait: date.toISOString(), remisPar: pedagoId });
+    const updated = setLoanStatus(loan.id, LOAN_STATES.EN_COURS, { dateRetrait: date.toISOString(), remisPar: pedagoId });
     applyItemState(item.id, ITEM_STATES.EMPRUNTE);
     logAction({ auteurId: pedagoId, action: ACTIONS.LOAN_REMISE, itemId: item.id, loanId: loan.id, userId: loan.userId, detail: `${item.nom} remis à ${fullName(user)}` });
     return updated;
@@ -195,8 +204,8 @@ export function receiveLoan({ loanId, pedagoId, checklist = null, commentaire = 
   const lines = checklist || buildChecklist(item.reference);
   const problem = hasProblem(lines);
   return store.transaction(() => {
-    const updated = store.loans.update(loanId, {
-      statut: LOAN_STATES.RETOURNEE, dateRetourReelle: date.toISOString(), receptionnePar: pedagoId,
+    const updated = setLoanStatus(loanId, LOAN_STATES.RETOURNEE, {
+      dateRetourReelle: date.toISOString(), receptionnePar: pedagoId,
       checklistRetour: lines, commentaire: String(commentaire || '').trim(),
     });
     // Un signalement déposé pendant l’emprunt immobilise l’objet à son retour même si la
@@ -205,11 +214,11 @@ export function receiveLoan({ loanId, pedagoId, checklist = null, commentaire = 
     logAction({ auteurId: pedagoId, action: ACTIONS.LOAN_RETOUR, itemId: item.id, loanId, userId: loan.userId, detail: `${item.nom} réceptionné${problem ? ' avec un problème' : ''}` });
     if (!problem) return { loan: updated, maintenance: null };
     const detail = problemLines(lines).map((l) => `${l.ligne}${l.commentaire ? ` → ${l.commentaire}` : ''}`).join(' ; ');
-    const maintenance = store.maintenance.create({
-      itemId: item.id, type: MAINT_TYPES.SIGNALEMENT, auteurId: pedagoId, date: date.toISOString(), statut: MAINT_STATES.OUVERT,
-      description: `Signalé à la réception : ${detail}`, prestataire: '', cout: 0, loanId, bookingId: null,
+    const maintenance = reportIssue({
+      itemId: item.id, auteurId: pedagoId,
+      description: `Signalé à la réception : ${detail}`,
+      loanId, immobiliser: false, date,
     });
-    logAction({ auteurId: pedagoId, action: ACTIONS.MAINT_SIGNALEMENT, itemId: item.id, loanId, detail: maintenance.description });
     return { loan: updated, maintenance };
   });
 }
@@ -217,7 +226,7 @@ export function receiveLoan({ loanId, pedagoId, checklist = null, commentaire = 
 function releaseReservation(loan, { statut, action, auteurId, detail, patch = {} }) {
   const item = store.items.get(loan.itemId);
   return store.transaction(() => {
-    const updated = store.loans.update(loan.id, { statut, ...patch });
+    const updated = setLoanStatus(loan.id, statut, patch);
     // Un signalement déposé pendant la réservation garde l’objet hors du catalogue.
     if (item && item.etat === ITEM_STATES.RESERVE) applyItemState(item.id, resolveItemState(item.id, ITEM_STATES.DISPONIBLE));
     logAction({ auteurId, action, itemId: loan.itemId, loanId: loan.id, userId: loan.userId, detail });

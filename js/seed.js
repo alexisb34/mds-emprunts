@@ -81,6 +81,11 @@ function makeRandom(seed) {
 
 export function buildSeed(now = new Date()) {
   const rand = makeRandom(42);
+  // Un horodatage nominal tombé dans le futur (le jeu est généré avant l’heure prévue) est
+  // ramené à `minutes` avant « maintenant » ; à défaut d’écarts différents, tous les
+  // horodatages bornés s’empileraient à la minute près et le journal du tableau de bord
+  // s’ouvrirait sur cinq entrées collées.
+  const avant = (nominal, minutes) => (nominal.getTime() <= now.getTime() ? nominal : new Date(now.getTime() - minutes * 60 * 1000));
   const pick = (arr) => arr[Math.floor(rand() * arr.length)];
   // Duplication volontaire de `code6` (js/actions/loans.js) : celui-ci tire dans le générateur `rand`
   // pour que le seed reste déterministe, alors que l’action utilise Math.random.
@@ -227,13 +232,17 @@ export function buildSeed(now = new Date()) {
     const it = item(ref);
     const user = emprunteurs[10 + i];
     const start = atHour(nextWeekday(base, nStart), 9 + i);
+    // Borné comme les autres horodatages du jeu : à 9h, `atHour(base, 9, 30)` tomberait
+    // 30 minutes après « maintenant », et le journal du tableau de bord ouvrirait sur des
+    // événements qui n’ont pas eu lieu.
+    const pose = avant(atHour(base, 9, 30 + i), [35, 15][i]);
     const l = addLoan({
       itemId: it.id, userId: user.id, statut: LOAN_STATES.RESERVEE, motif, codeRetrait: code6(),
-      dateReservation: iso(atHour(base, 9, 30 + i)), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(start, dLen), 17)),
-      createdAt: iso(atHour(base, 9, 30 + i)), updatedAt: iso(atHour(base, 9, 30 + i)),
+      dateReservation: iso(pose), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(start, dLen), 17)),
+      createdAt: iso(pose), updatedAt: iso(pose),
     });
     it.etat = ITEM_STATES.RESERVE;
-    addLog(atHour(base, 9, 30 + i), user.id, 'loan.reservee', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} — ${who(user)}`);
+    addLog(pose, user.id, 'loan.reservee', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} — ${who(user)}`);
   });
 
   // ---- Maintenance ----
@@ -340,7 +349,9 @@ export function buildSeed(now = new Date()) {
   [[1, [8, 9, 10, 11, 12], 7], [2, [14, 15], 18], [3, [9, 10], 32]].forEach(([nOff, creneaux, uIdx]) => {
     const day = nextWeekday(base, nOff);
     const user = emprunteurs[uIdx];
-    const created = atHour(base, 8, 30);
+    // Borné comme les autres horodatages : avant 8h30, `atHour(base, 8, 30)` serait dans
+    // le futur et le journal du tableau de bord s’ouvrirait sur des événements à venir.
+    const created = avant(atHour(base, 8, 30), [55, 25, 5][nOff - 1]);
     const b = addBooking({
       userId: user.id, date: ymd(day), creneaux, statut: BOOKING_STATES.A_VENIR, createdAt: iso(created), updatedAt: iso(created),
     });

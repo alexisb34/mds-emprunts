@@ -2,10 +2,10 @@
 // Réserver la salle vaut responsabilité de son contenu (spec §5.3) : le matériel « salle »
 // ne fait pas l’objet d’emprunts individuels, il est contrôlé à l’entrée et à la sortie.
 import { store } from '../store.js';
-import { BOOKING_STATES, CIRCUITS, ITEM_STATES, MAINT_TYPES, MAINT_STATES, ROLES } from '../models.js';
+import { BOOKING_STATES, BOOKING_TRANSITIONS, CIRCUITS, ITEM_STATES, ROLES, assertTransition } from '../models.js';
 import { now, ymd, bookingStart, bookingEnd, isBookingActive, sortByDateDesc, REASONS, reasonLabel } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
-import { applyItemState } from './items.js';
+import { reportIssue } from './maintenance.js';
 import { buildRoomChecklist, hasProblem, problemLines } from '../checklists.js';
 import { selectionIsValid, startOfWeek, weekDays } from '../weekGrid.js';
 import { fullName, formatSlots } from '../ui.js';
@@ -19,6 +19,15 @@ function requireBooking(id) {
   const booking = store.bookings.get(id);
   if (!booking) throw new Error(`Réservation introuvable (${id})`);
   return booking;
+}
+
+// Spec §9 : la couche d’actions vérifie les transitions déclarées dans `models.js`.
+// Les gardes métier en amont restent : elles donnent le message lisible, la table n’est
+// qu’un filet pour un chemin imprévu.
+function setBookingStatus(id, statut, patch = {}) {
+  const booking = requireBooking(id);
+  assertTransition(BOOKING_TRANSITIONS, booking.statut, statut, 'réservation');
+  return store.bookings.update(id, { statut, ...patch });
 }
 
 export function roomItems() {
@@ -56,7 +65,7 @@ export function cancelBooking(id, auteurId) {
     if (now() >= bookingStart(booking)) throw new Error('Le créneau a commencé : prévenez la pédago pour l’annuler.');
   }
   return store.transaction(() => {
-    const updated = store.bookings.update(id, { statut: BOOKING_STATES.ANNULEE });
+    const updated = setBookingStatus(id, BOOKING_STATES.ANNULEE);
     logAction({ auteurId, action: ACTIONS.BOOKING_ANNULEE, bookingId: id, userId: booking.userId, detail: `Salle photo ${formatSlots(booking.creneaux)} du ${booking.date}` });
     return updated;
   });
@@ -70,11 +79,12 @@ function recordEtatDesLieux({ booking, userId, checklist, moment }) {
   const lignes = checklist || roomChecklist();
   const problem = hasProblem(lignes);
   const entree = moment === 'entree';
+  const statut = entree ? BOOKING_STATES.EN_COURS : BOOKING_STATES.TERMINEE;
   const patch = entree
-    ? { statut: BOOKING_STATES.EN_COURS, etatEntree: { date: date.toISOString(), lignes } }
-    : { statut: BOOKING_STATES.TERMINEE, etatSortie: { date: date.toISOString(), lignes } };
+    ? { etatEntree: { date: date.toISOString(), lignes } }
+    : { etatSortie: { date: date.toISOString(), lignes } };
   return store.transaction(() => {
-    const updated = store.bookings.update(booking.id, patch);
+    const updated = setBookingStatus(booking.id, statut, patch);
     logAction({
       auteurId: userId, action: entree ? ACTIONS.BOOKING_ENTREE : ACTIONS.BOOKING_SORTIE,
       bookingId: booking.id, userId: booking.userId,
@@ -83,16 +93,14 @@ function recordEtatDesLieux({ booking, userId, checklist, moment }) {
     if (!problem) return { booking: updated, maintenance: null };
     const lignesProblemes = problemLines(lignes);
     const libelleMoment = entree ? 'd’entrée' : 'de sortie';
+    // Une ligne dont l’objet n’existe plus fait échouer tout l’état des lieux (`reportIssue`
+    // exige l’objet) : choix assumé, le cas est inatteignable (aucun code ne supprime un objet).
     const events = lignesProblemes.map((ligne) => {
       const description = `Signalé à l’état des lieux ${libelleMoment} : ${ligne.ligne}${ligne.commentaire ? ` → ${ligne.commentaire}` : ''}`;
-      const event = store.maintenance.create({
-        itemId: ligne.itemId || null, type: MAINT_TYPES.SIGNALEMENT, auteurId: userId, date: date.toISOString(), statut: MAINT_STATES.OUVERT,
-        description, prestataire: '', cout: 0, loanId: null, bookingId: booking.id,
+      return reportIssue({
+        itemId: ligne.itemId || null, auteurId: userId, description,
+        bookingId: booking.id, date,
       });
-      const item = ligne.itemId ? store.items.get(ligne.itemId) : null;
-      if (item && item.etat === ITEM_STATES.DISPONIBLE) applyItemState(item.id, ITEM_STATES.MAINTENANCE);
-      logAction({ auteurId: userId, action: ACTIONS.MAINT_SIGNALEMENT, itemId: ligne.itemId || null, bookingId: booking.id, detail: description });
-      return event;
     });
     // `maintenance` reste le premier signalement (interface inchangée pour les vues) ;
     // `maintenances` donne la liste complète.
@@ -136,7 +144,7 @@ export function closeDueBookings(date = now()) {
     for (const candidat of dues) {
       const booking = store.bookings.get(candidat.id);
       if (!booking || booking.etatEntree || booking.statut === BOOKING_STATES.TERMINEE || booking.statut === BOOKING_STATES.ANNULEE) continue;
-      store.bookings.update(booking.id, { statut: BOOKING_STATES.TERMINEE });
+      setBookingStatus(booking.id, BOOKING_STATES.TERMINEE);
       logAction({ auteurId: booking.userId, action: ACTIONS.BOOKING_SORTIE, bookingId: booking.id, userId: booking.userId, detail: `Créneau ${formatSlots(booking.creneaux)} terminé — salle non occupée` });
       closes += 1;
     }
@@ -154,7 +162,7 @@ export function forceCloseBooking(id, pedagoId) {
   if (!auteur || auteur.role !== ROLES.PEDAGO) throw new Error('Seule la pédagogie peut clore un créneau.');
   if (booking.statut !== BOOKING_STATES.EN_COURS) throw new Error('Ce créneau n’est pas en cours.');
   return store.transaction(() => {
-    const updated = store.bookings.update(id, { statut: BOOKING_STATES.TERMINEE });
+    const updated = setBookingStatus(id, BOOKING_STATES.TERMINEE);
     logAction({ auteurId: pedagoId, action: ACTIONS.BOOKING_SORTIE, bookingId: id, userId: booking.userId, detail: `Créneau ${formatSlots(booking.creneaux)} clos par la pédagogie — état des lieux de sortie manquant` });
     return updated;
   });

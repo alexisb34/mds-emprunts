@@ -330,3 +330,11 @@ test('reserveValeur est transactionnel : un échec sur l’objet ne laisse aucun
   assert.equal(store.loans.list().length, nb, 'aucun emprunt créé');
   assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
 });
+
+test('les messages des gardes métier priment sur celui de la table', () => {
+  const rendu = store.loans.list((l) => l.statut === LOAN_STATES.RETOURNEE)[0];
+  let message = '';
+  try { receiveLoan({ loanId: rendu.id, pedagoId: PEDAGO }); } catch (e) { message = e.message; }
+  assert.match(message, /n’est plus en cours/, 'la garde métier parle, pas la table');
+  assert.doesNotMatch(message, /Transition/);
+});
