@@ -108,6 +108,7 @@ Toutes les entités ont un `id` (string unique), `createdAt`, `updatedAt`.
 - Il n'y a pas d'étape de validation séparée : **la validation est la remise physique**.
 - Fenêtre de retrait : `[debutPrevu, debutPrevu + fenetreRetraitMinutes]`. Avant `debutPrevu`, le QR de retrait n'est pas actif. Après la fenêtre sans retrait → `expiree`, `Item` `disponible`, notification à l'emprunteur, badge « non retiré » côté admin.
 - Remise : l'emprunteur affiche son QR de retrait (`LOAN-<id>-<code6>`) ; la pédago clique **Remettre** et scanne (ou saisit le code court) → `en_cours`, `dateRetrait`, `remisPar`.
+- **La remise vérifie que l'objet est là.** Comme la réservation n'immobilise plus l'exemplaire, il peut, entre-temps, être parti avec l'emprunteur du créneau précédent ou avoir été signalé. La remise est alors refusée avec un motif lisible (`emprunte_par_autre`, `en_maintenance`, `hors_service`), la réservation reste en attente, et la pédago la clôt par **Refuser** avec un motif. De même, **Prolonger** est refusé (`reserve_sur_la_periode`) si la nouvelle période mord sur une réservation du même exemplaire.
 - La pédago peut **Refuser** (motif obligatoire) une réservation avant remise, et **Prolonger** un emprunt en cours.
 - Retour : la pédago clique **Réceptionner** → checklist complète de la référence → `retournee` ou `maintenance` + signalement.
 - Un emprunt `en_cours` au-delà de `finPrevue` est affiché en retard partout (rouge) ; si `bloquerSiRetard`, l'utilisateur ne peut plus réserver de matériel valeur.

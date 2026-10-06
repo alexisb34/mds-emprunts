@@ -2,7 +2,7 @@
 import { store } from '../store.js';
 import { CIRCUITS, ITEM_STATES, LOAN_STATES, LOAN_TRANSITIONS, assertTransition } from '../models.js';
 import {
-  now, returnHour, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, REASONS, reasonLabel,
+  now, returnHour, canBorrowSelf, canReserveValeur, selfReturnDeadline, withDefaults, isLate, sortByDateDesc, pickupWindow, isInPickupWindow, isExpired, occupiesWindow, UNAVAILABLE_REASON, REASONS, reasonLabel,
 } from '../rules.js';
 import { logAction, ACTIONS } from '../log.js';
 import { applyItemState } from './items.js';
@@ -141,31 +141,31 @@ function setLoanStatus(loanId, statut, patch = {}) {
   return store.loans.update(loanId, { statut, ...patch });
 }
 
-export function reserveValeur({ itemId, userId, debutPrevu, finPrevue, motif = '' }) {
+export function reserveValeur({ reference, userId, debutPrevu, finPrevue, motif = '' }) {
   const date = now();
-  const item = store.items.get(itemId);
-  if (!item) throw refusal(REASONS.CODE_INCONNU);
   const user = store.users.get(userId);
   const debut = new Date(debutPrevu);
   const fin = new Date(finPrevue);
   if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime())) throw new Error('Dates invalides.');
-  if (debut < new Date(date.getFullYear(), date.getMonth(), date.getDate())) throw refusal(REASONS.DATE_PASSEE);
-  // Une réservation dont la fenêtre de retrait est déjà close serait balayée par expireDueLoans
-  // dès le prochain rendu : autant la refuser tout de suite.
-  const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
-  if (new Date(debut.getTime() + minutes * 60000) < date) throw refusal(REASONS.DATE_PASSEE);
+  // Les périodes passées et les fenêtres de retrait déjà closes sont jugées par le verdict :
+  // les redoubler ici, c’est se donner deux vérités qui peuvent diverger.
   const loans = store.loans.list();
-  const check = canReserveValeur({ item, user, loans, items: store.items.list(), settings: store.settings.get(), debutPrevu: debut, finPrevue: fin, date });
+  const items = store.items.list();
+  const check = canReserveValeur({ reference, user, loans, items, settings: store.settings.get(), debutPrevu: debut, finPrevue: fin, date });
   if (!check.ok) throw refusal(check.reason);
+  // L’exemplaire vient du verdict lui-même : refaire le calcul ici, c’est risquer de tomber
+  // sur une autre réponse que celle qui vient d’autoriser la réservation.
+  // L’ordre de la liste est l’ordre de création, donc stable.
+  const exemplaire = check.libres[0];
   return store.transaction(() => {
     const loan = store.loans.create({
-      itemId, userId, statut: LOAN_STATES.RESERVEE, motif: String(motif || '').trim(), motifRefus: '', dateRefus: null, codeRetrait: code6(),
+      itemId: exemplaire.id, userId, statut: LOAN_STATES.RESERVEE, motif: String(motif || '').trim(), motifRefus: '', dateRefus: null, codeRetrait: code6(),
       dateReservation: date.toISOString(), debutPrevu: debut.toISOString(), finPrevue: fin.toISOString(),
       dateRetrait: null, dateRetourReelle: null, remisPar: null, receptionnePar: null,
       photoEmprunt: null, photoRetour: null, checklistRetour: null, commentaire: '',
     });
-    applyItemState(itemId, ITEM_STATES.RESERVE);
-    logAction({ auteurId: userId, action: ACTIONS.LOAN_RESERVEE, itemId, loanId: loan.id, userId, detail: `${item.nom} — ${fullName(user)}` });
+    // Aucun état d’objet n’est écrit : la réservation occupe une période, pas un objet.
+    logAction({ auteurId: userId, action: ACTIONS.LOAN_RESERVEE, itemId: exemplaire.id, loanId: loan.id, userId, detail: `${exemplaire.nom} — ${fullName(user)}` });
     return loan;
   });
 }
@@ -185,6 +185,11 @@ export function handOver({ code, pedagoId, date = now() }) {
   const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
   if (!isInPickupWindow(loan, date, minutes)) throw refusal(REASONS.FENETRE_RETRAIT);
   const item = store.items.get(loan.itemId);
+  // Réserver n’immobilise plus l’objet : entre la réservation et la remise, il peut être parti
+  // avec l’emprunteur du créneau précédent ou avoir été signalé. Sans cette garde, la pédago
+  // lirait au comptoir le message brut de la table des transitions.
+  if (!item) throw refusal(REASONS.CODE_INCONNU);
+  if (item.etat !== ITEM_STATES.DISPONIBLE) throw refusal(UNAVAILABLE_REASON[item.etat] || REASONS.INDISPONIBLE);
   const user = store.users.get(loan.userId);
   return store.transaction(() => {
     const updated = setLoanStatus(loan.id, LOAN_STATES.EN_COURS, { dateRetrait: date.toISOString(), remisPar: pedagoId });
@@ -224,11 +229,9 @@ export function receiveLoan({ loanId, pedagoId, checklist = null, commentaire = 
 }
 
 function releaseReservation(loan, { statut, action, auteurId, detail, patch = {} }) {
-  const item = store.items.get(loan.itemId);
   return store.transaction(() => {
     const updated = setLoanStatus(loan.id, statut, patch);
-    // Un signalement déposé pendant la réservation garde l’objet hors du catalogue.
-    if (item && item.etat === ITEM_STATES.RESERVE) applyItemState(item.id, resolveItemState(item.id, ITEM_STATES.DISPONIBLE));
+    // Rien à restituer à l’objet : une réservation n’écrit aucun état, donc sa fin n’en défait aucun.
     logAction({ auteurId, action, itemId: loan.itemId, loanId: loan.id, userId: loan.userId, detail });
     return updated;
   });
@@ -258,6 +261,12 @@ export function extendLoan(loanId, finPrevue, pedagoId) {
   if (Number.isNaN(fin.getTime())) throw new Error('Date invalide.');
   if (fin <= new Date(loan.finPrevue)) throw new Error('La nouvelle date doit être postérieure à la date de retour actuelle.');
   const item = store.items.get(loan.itemId);
+  // Prolonger, c’est occuper une période de plus sur CE exemplaire : la réservation suivante
+  // y aurait droit, et c’est la seule écriture qui créait une occupation sans rien demander.
+  const date = now();
+  const suivante = store.loans.list((l) => l.itemId === loan.itemId && l.id !== loanId
+    && occupiesWindow(l, new Date(loan.finPrevue), fin, date));
+  if (suivante.length) throw refusal(REASONS.RESERVE_SUR_LA_PERIODE);
   return store.transaction(() => {
     const updated = store.loans.update(loanId, { finPrevue: fin.toISOString() });
     logAction({ auteurId: pedagoId, action: ACTIONS.LOAN_PROLONGEE, itemId: loan.itemId, loanId, userId: loan.userId, detail: `${item ? item.nom : loan.itemId} jusqu’au ${new Date(fin).toLocaleDateString('fr-FR')}` });

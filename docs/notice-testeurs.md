@@ -21,7 +21,7 @@ Trois parcours courts, sans demander d’aide, puis répondez à la question de 
 
 1. **Emprunter un objet avec le QR code d’une étiquette.** Touchez **Scanner un QR code**, visez l’étiquette qu’on vous a remise, puis suivez l’écran jusqu’à la confirmation. Rendez-le ensuite de la même façon. *Avez-vous su quoi faire sans explication ?*
 2. **Réserver un créneau de la salle photo.** Onglet **Salle** : touchez un ou plusieurs créneaux libres qui se suivent, puis **Réserver**. *Avez-vous compris quels créneaux étaient libres et lesquels étaient pris ?*
-3. **Réserver un objet de valeur.** Onglet **Catalogue** : choisissez un objet marqué « Sur réservation », puis **Réserver** et **Confirmer la réservation**. *Avez-vous compris ce qui se passe ensuite et quand vous viendriez le récupérer ?*
+3. **Réserver un objet de valeur.** Onglet **Catalogue** : choisissez un objet marqué « Sur réservation », puis **Réserver**. Vous choisissez une période par demi-journées — matin ou après-midi, au retrait comme au retour — et une ligne vous dit aussitôt combien d’exemplaires sont libres sur cette période. Essayez d’abord une période impossible, pour voir ce qu’elle répond, avant de **Confirmer la réservation**. *Avez-vous compris ce qui se passe ensuite, quand vous viendriez le récupérer, et pourquoi une période était refusée ?*
 
 ## Ce qu’on veut savoir
 

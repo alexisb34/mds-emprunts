@@ -241,9 +241,25 @@ export function buildSeed(now = new Date()) {
       dateReservation: iso(pose), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(start, dLen), 17)),
       createdAt: iso(pose), updatedAt: iso(pose),
     });
-    it.etat = ITEM_STATES.RESERVE;
     addLog(pose, user.id, 'loan.reservee', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} — ${who(user)}`);
   });
+
+  // 1 réservation LOINTAINE sur une référence à plusieurs exemplaires : c’est elle qui rend le
+  // correctif visible en démonstration. Une carte SD prise trois jours le mois prochain, et les
+  // deux autres libres aujourd’hui — avant, cette seule réservation bloquait la carte sans fin.
+  {
+    const it = item('sd-256');
+    const user = emprunteurs[12];
+    // Une trentaine de jours ouvrés plus loin : « le mois prochain » sans dépendre du calendrier.
+    const start = atHour(nextWeekday(base, 30), 13);
+    const pose = avant(atHour(base, 9, 45), 45);
+    const l = addLoan({
+      itemId: it.id, userId: user.id, statut: LOAN_STATES.RESERVEE, motif: 'Workshop photo du mois prochain', codeRetrait: code6(),
+      dateReservation: iso(pose), debutPrevu: iso(start), finPrevue: iso(atHour(addDays(start, 2), 17)),
+      createdAt: iso(pose), updatedAt: iso(pose),
+    });
+    addLog(pose, user.id, 'loan.reservee', { itemId: it.id, loanId: l.id, userId: user.id }, `${it.nom} — ${who(user)}`);
+  }
 
   // ---- Maintenance ----
   const addMaint = (fields) => {

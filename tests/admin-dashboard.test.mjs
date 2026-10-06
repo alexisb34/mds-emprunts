@@ -16,7 +16,7 @@ test('dashboardHtml : KPI, retards, signalements, activités', () => {
     reports: openReports(db), activity, users: db.users, date: NOW,
     horlogeDemo: null, status: officeStatus(NOW, db.settings),
   });
-  assert.match(html, /kpi__value">30</);
+  assert.match(html, /kpi__value">32</);
   assert.match(html, /kpi__value">10</);
   assert.match(html, /kpi--alert[^>]*>[\s\S]*?kpi__value">2</);
   assert.match(html, /DJI Ronin RSC2/);

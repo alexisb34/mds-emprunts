@@ -9,7 +9,8 @@ const db = buildSeed(NOW);
 
 test('computeKpis sur le seed du jeudi 10h', () => {
   assert.deepEqual(computeKpis(db, NOW), {
-    disponibles: 30, enCours: 10, retards: 2, reservationsSalle: 3, signalements: 1, aRemettre: 0,
+    // 32 : les deux objets réservés à venir sont physiquement là, donc disponibles (une réservation n’écrit aucun état).
+    disponibles: 32, enCours: 10, retards: 2, reservationsSalle: 3, signalements: 1, aRemettre: 0,
   });
 });
 

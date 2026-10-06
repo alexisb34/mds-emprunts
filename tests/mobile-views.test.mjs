@@ -84,11 +84,19 @@ test('ficheHtml : exemplaires et bouton selon le circuit', () => {
   const salle = ficheHtml({ group: groups.find((g) => g.reference === 'leofoto-trepied'), date: NOW });
   assert.match(salle, /Disponible dans la salle photo/);
   assert.match(salle, /href="#\/salle"/);
+  // On réserve une RÉFÉRENCE, pas un exemplaire : c’est le système qui attribue l’objet.
   const valeur = ficheHtml({ group: groups.find((g) => g.reference === 'sd-256'), date: NOW });
-  assert.match(valeur, /href="#\/reserver\/item_0\d\d"[^>]*>Réserver/);
+  assert.match(valeur, /href="#\/reserver\/sd-256"[^>]*>Réserver/);
+  // Tous les Canon sont dehors AUJOURD’HUI : la référence reste réservable pour plus tard,
+  // puisque la disponibilité se juge sur une période. Cacher le bouton reproduirait le défaut.
   const allOut = ficheHtml({ group: groups.find((g) => g.reference === 'canon-r10'), date: NOW });
-  assert.match(allOut, /Aucun exemplaire disponible/);
-  assert.doesNotMatch(allOut, /href="#\/reserver/);
+  assert.match(allOut, /href="#\/reserver\/canon-r10"[^>]*>Réserver/);
+  assert.doesNotMatch(allOut, /Aucun exemplaire disponible/);
+  // En revanche, une référence dont tout est immobilisé n’a rien à proposer : aucune date n’y changerait rien.
+  const canon = groups.find((g) => g.reference === 'canon-r10');
+  const touteEnMaintenance = ficheHtml({ group: { ...canon, disponibles: 0, exemplaires: canon.exemplaires.map((i) => ({ ...i, etat: 'maintenance' })) }, date: NOW });
+  assert.match(touteEnMaintenance, /Aucun exemplaire disponible/);
+  assert.doesNotMatch(touteEnMaintenance, /href="#\/reserver/);
 });
 
 test('ficheHtml : réservation déjà faite → lien vers Mes emprunts, pas de bouton Réserver', () => {

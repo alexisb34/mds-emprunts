@@ -15,7 +15,7 @@ export const CATEGORIES = ['Bureautique', 'Audio', 'Photo', 'Vidéo', 'Lumière'
 export const ITEM_CODE_RE = /^MDS-(\d{4})$/;
 
 export const ITEM_STATES = {
-  DISPONIBLE: 'disponible', EMPRUNTE: 'emprunte', RESERVE: 'reserve', MAINTENANCE: 'maintenance', HS: 'hs',
+  DISPONIBLE: 'disponible', EMPRUNTE: 'emprunte', MAINTENANCE: 'maintenance', HS: 'hs',
 };
 
 export const LOAN_STATES = {
@@ -33,8 +33,7 @@ export const MAINT_TYPES = {
 export const MAINT_STATES = { OUVERT: 'ouvert', EN_COURS: 'en_cours', CLOS: 'clos' };
 
 export const ITEM_TRANSITIONS = {
-  disponible: ['reserve', 'emprunte', 'maintenance', 'hs'],
-  reserve: ['disponible', 'emprunte', 'maintenance', 'hs'],
+  disponible: ['emprunte', 'maintenance', 'hs'],
   emprunte: ['disponible', 'maintenance'],
   maintenance: ['disponible', 'hs'],
   hs: ['maintenance', 'disponible'],
@@ -74,7 +73,7 @@ export function assertTransition(table, from, to, label) {
 export const LABELS = {
   role: { eleve: 'Élève', intervenant: 'Intervenant', pedago: 'Pédagogie' },
   circuit: { self: 'Self-service', salle: 'Salle photo', valeur: 'Sur réservation' },
-  itemState: { disponible: 'Disponible', emprunte: 'Emprunté', reserve: 'Réservé', maintenance: 'Maintenance', hs: 'Hors service' },
+  itemState: { disponible: 'Disponible', emprunte: 'Emprunté', maintenance: 'Maintenance', hs: 'Hors service' },
   loanState: { reservee: 'Réservé', en_cours: 'En cours', retournee: 'Retourné', refusee: 'Refusé', expiree: 'Non retiré', annulee: 'Annulé' },
   bookingState: { a_venir: 'À venir', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' },
   maintType: { signalement: 'Signalement', intervention_interne: 'Intervention interne', intervention_externe: 'Intervention externe', remise_en_service: 'Remise en service' },

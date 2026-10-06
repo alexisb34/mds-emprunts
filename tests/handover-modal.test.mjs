@@ -12,7 +12,6 @@ import { codeMatchesLoan, handOverChecked, isKnownRetraitCode } from '../js/admi
 const NOW = new Date(2026, 8, 17, 10, 0);
 const DEMAIN9 = new Date(2026, 8, 18, 9, 0);
 const PEDAGO = 'user_041';
-const freeValeur = (ref, n = 0) => store.items.list((i) => i.reference === ref && i.etat === ITEM_STATES.DISPONIBLE)[n];
 
 let a;
 let b;
@@ -21,8 +20,8 @@ beforeEach(() => {
   store.init(() => buildSeed(NOW));
   store.settings.update({ horlogeDemo: NOW.toISOString() });
   // Deux réservations distinctes pour demain 9h ; on avance ensuite l’horloge dans la fenêtre de retrait.
-  a = reserveValeur({ itemId: freeValeur('hoya-nd').id, userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
-  b = reserveValeur({ itemId: freeValeur('sd-256').id, userId: 'user_011', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  a = reserveValeur({ reference: 'hoya-nd', userId: 'user_010', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
+  b = reserveValeur({ reference: 'sd-256', userId: 'user_011', debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
   store.settings.update({ horlogeDemo: new Date(2026, 8, 18, 9, 10).toISOString() });
 });
 
@@ -55,7 +54,7 @@ test('handOverChecked : le code d’une autre réservation est refusé sans rien
     assert.equal(lu.statut, LOAN_STATES.RESERVEE);
     assert.equal(lu.remisPar ?? null, null);
     assert.equal(lu.dateRetrait ?? null, null);
-    assert.equal(store.items.get(l.itemId).etat, ITEM_STATES.RESERVE);
+    assert.equal(store.items.get(l.itemId).etat, ITEM_STATES.DISPONIBLE, 'un refus ne remet rien : l’objet n’est pas sorti');
   }
   assert.equal(store.log.list().length, logAvant, 'aucune ligne de journal');
 });

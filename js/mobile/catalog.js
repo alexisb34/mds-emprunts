@@ -35,6 +35,5 @@ export function availability(group) {
   }
   const etats = group.exemplaires.map((i) => i.etat);
   if (etats.includes(ITEM_STATES.EMPRUNTE)) return { kind: 'item', value: ITEM_STATES.EMPRUNTE, text: '' };
-  if (etats.includes(ITEM_STATES.RESERVE)) return { kind: 'item', value: ITEM_STATES.RESERVE, text: '' };
   return { kind: 'item', value: ITEM_STATES.MAINTENANCE, text: 'Indisponible' };
 }

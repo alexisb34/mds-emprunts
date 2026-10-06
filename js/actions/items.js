@@ -7,7 +7,7 @@ import { sortByDateDesc } from '../rules.js';
 
 const PROTECTED_FIELDS = ['id', 'code', 'etat', 'createdAt', 'updatedAt'];
 
-// États que la pédago peut fixer à la main ; emprunte/reserve sont pilotés par les emprunts.
+// États que la pédago peut fixer à la main ; `emprunte` est piloté par les emprunts ; une réservation n’écrit aucun état.
 export const MANUAL_STATES = [ITEM_STATES.DISPONIBLE, ITEM_STATES.MAINTENANCE, ITEM_STATES.HS];
 
 export function slugify(s) {
