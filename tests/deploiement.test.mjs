@@ -59,9 +59,12 @@ function segmentAbsent(chemin) {
 function problemes(html, dossier = '') {
   const out = [];
   for (const ref of references(html)) {
-    // `${…}` : un gabarit de balisage dont l’adresse se décide à l’exécution ; ce n’est pas un chemin.
-    if (!ref || ref.includes('${') || estExterne(ref)) continue;
+    if (!ref || estExterne(ref)) continue;
+    // Le chemin absolu se juge AVANT le gabarit : `/js/${nom}.js` est absolu quoi qu’il
+    // advienne de la partie calculée, et l’ordre inverse le laissait passer.
     if (ref.startsWith('/')) { out.push(`${ref} : chemin absolu, hors du site une fois publié`); continue; }
+    // `${…}` : un gabarit de balisage dont l’adresse se décide à l’exécution ; ce n’est pas un chemin.
+    if (ref.includes('${')) continue;
     const chemin = cheminLocal(ref);
     if (!chemin) continue; // fragment seul
     const resolu = posix.normalize(posix.join(dossier, chemin));
@@ -133,6 +136,14 @@ test('la page d’accueil mène aux quatre interfaces', () => {
   for (const cible of ['admin.html', 'mobile.html', 'etiquettes.html', 'kit.html']) {
     assert.match(html, new RegExp(`href="${cible}"`), `index.html ne mène pas à ${cible}`);
   }
+});
+
+test('le détecteur juge le chemin absolu avant le gabarit', () => {
+  // Une adresse calculée reste absolue : la sauter d’abord l’aurait laissée passer.
+  assert.deepEqual(problemes('<script src="/js/${nom}.js"></script>'),
+    ['/js/${nom}.js : chemin absolu, hors du site une fois publié']);
+  // Un gabarit relatif reste ignoré : son adresse n’existe qu’à l’exécution.
+  assert.deepEqual(problemes('<a href="catalogue/${ref}.html">x</a>'), []);
 });
 
 test('le détecteur voit un attribut sans guillemets ou en capitales', () => {
