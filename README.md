@@ -63,6 +63,7 @@ cloudflared tunnel --url http://localhost:8000
 - Feuille de route : `docs/superpowers/plans/2026-09-17-mds-emprunts-roadmap.md`
 - Scénarios de démonstration : `docs/scenarios-demo.md`
 - Notice à remettre aux testeurs : `docs/notice-testeurs.md`
+- Guide d’entretien pour animer une séance de test : `docs/guide-entretien-test.md`
 
 ## État d’avancement
 

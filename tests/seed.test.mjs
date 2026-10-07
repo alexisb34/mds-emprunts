@@ -2,7 +2,7 @@ import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSeed, CATALOG } from '../js/seed.js';
-import { PROMOS, ROLES, ITEM_STATES, LOAN_STATES, BOOKING_STATES, MAINT_STATES } from '../js/models.js';
+import { PROMOS, ROLES, CIRCUITS, ITEM_STATES, LOAN_STATES, BOOKING_STATES, MAINT_STATES } from '../js/models.js';
 import { DEFAULT_SETTINGS, isLate, isWeekday, slotsAreContiguous, slotsInRoomHours, fromYmd } from '../js/rules.js';
 import { CHECKLISTS } from '../js/checklists.js';
 
@@ -154,8 +154,10 @@ test('à 8h00 un lundi, les entrées bornées ne s’empilent pas : au moins qua
 });
 
 test('les repères que citent les documents de démonstration existent dans le jeu', () => {
-  // `docs/scenarios-demo.md` et `docs/notice-testeurs.md` nomment des comptes et des codes.
-  // Sans ce test, réordonner CATALOG ou renommer un compte les rendrait faux en silence.
+  // `docs/scenarios-demo.md`, `docs/notice-testeurs.md` et `docs/guide-entretien-test.md`
+  // nomment des comptes, des codes et des quantités. Sans ce test, réordonner CATALOG ou
+  // renommer un compte les rendrait faux en silence — et un guide d’entretien faux fait perdre
+  // une séance de test à une vraie personne.
   const nom = (u) => `${u.prenom} ${u.nom}`;
   const parNom = (n) => db.users.find((u) => nom(u) === n);
   assert.equal(parNom('Camille Dubois')?.role, ROLES.ELEVE);
@@ -165,6 +167,17 @@ test('les repères que citent les documents de démonstration existent dans le j
   assert.equal(parCode('MDS-0003')?.nom, 'Multiprise #3');
   assert.equal(parCode('MDS-0004')?.nom, 'Multiprise #4');
   assert.equal(parCode('MDS-0042')?.nom, 'Filtre variable Hoya');
+  assert.equal(parCode('MDS-0026')?.circuit, CIRCUITS.SALLE, 'le trépied LeoFoto reste dans la salle');
+  // Le guide d’entretien s’appuie sur DEUX quantités, et ses tâches tombent à plat sans elles :
+  // la carte SD montre un compte d’exemplaires libres qui change avec la période, et le Tascam,
+  // seul de sa référence et réservé d’avance par le jeu, garantit un « complet sur la période ».
+  assert.equal(parCode('MDS-0033')?.nom, 'Carte SD 256 Go #1');
+  assert.equal(db.items.filter((i) => i.reference === 'sd-256').length, 3);
+  assert.equal(parCode('MDS-0031')?.nom, 'Tascam DR-70 enregistreur');
+  assert.equal(db.items.filter((i) => i.reference === 'tascam-dr70').length, 1);
+  const surTascam = db.loans.filter((l) => l.itemId === parCode('MDS-0031').id && l.statut === LOAN_STATES.RESERVEE);
+  assert.equal(surTascam.length, 1, 'le jeu réserve le Tascam, sinon la tâche 3 du guide ne refuse rien');
+  assert.ok(new Date(surTascam[0].debutPrevu) > NOW, 'et il le réserve à venir');
   // Les codes doivent rester stables d’une génération à l’autre : les étiquettes imprimées
   // le supposent, et la consigne d’impression le dit.
   const autre = buildSeed(new Date(2026, 11, 1, 14, 0));
