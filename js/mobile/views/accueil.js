@@ -26,7 +26,8 @@ function bookingCard(nextBooking, date, active = null) {
       const autre = !nextBooking || nextBooking.id !== b.id;
       const quoi = active.entreeFaite ? 'de sortie' : 'd’entrée';
       const precision = autre ? ` — ${relativeDay(b.date, date)} ${formatSlots(b.creneaux)}` : '';
-      return `<a class="btn btn--primary btn--block" href="#/salle">${escapeHtml(`Faire l’état des lieux ${quoi}${precision}`)}</a>`;
+      const route = active.entreeFaite ? 'sortie' : 'entree';
+      return `<a class="btn btn--primary btn--block" href="#/salle/${route}">${escapeHtml(`Faire l’état des lieux ${quoi}${precision}`)}</a>`;
     })()
     : '';
   if (!nextBooking) return aFaire || '<div class="empty-state">Aucune réservation de la salle photo.</div>';

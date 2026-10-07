@@ -41,7 +41,9 @@ const routes = [
   { path: '/catalogue/:reference', view: guard(ficheView) },
   { path: '/scan', view: guard(scanView) },
   { path: '/emprunts', view: guard(empruntsView) },
+  { path: '/emprunts/:tab', view: guard(empruntsView) },
   { path: '/salle', view: guard(salleView) },
+  { path: '/salle/:etat', view: guard(salleView) },
   { path: '/reserver/:reference', view: guard(reserverView) },
   { path: '/profil', view: guard(profilView) },
 ];

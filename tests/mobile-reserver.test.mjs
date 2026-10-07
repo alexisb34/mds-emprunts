@@ -49,7 +49,7 @@ test('reserverHtml : quatre champs, bornes, rappel de la fenêtre, durée maxima
   const group = { nom: 'Canon <R10>', reference: 'canon-r10', circuit: 'valeur', total: 2 };
   const html = reserverHtml({
     group, dates: { debut: '2026-09-18', fin: '2026-09-19', min: '2026-09-17', max: '2026-11-16' },
-    moments: momentOptions(S), dureeMax: 7, fenetreMinutes: 60, dispo: '<p>x</p>',
+    moments: momentOptions(S), dureeMax: 7, fermeture: '17h', dispo: '<p>x</p>',
   });
   assert.match(html, /Canon &lt;R10&gt;/, 'le nom est échappé');
   assert.match(html, /2 exemplaires/);
@@ -63,7 +63,8 @@ test('reserverHtml : quatre champs, bornes, rappel de la fenêtre, durée maxima
   assert.match(html, /<option value="matin" selected>Matin \(8h-12h\)/, 'le retrait est proposé le matin');
   assert.match(html, /<option value="apres_midi" selected>Après-midi \(13h-17h\)/, 'le retour l’après-midi');
   assert.match(html, /name="motif"/);
-  assert.match(html, /60 minutes/);
+  assert.match(html, /le jour de la réservation/);
+  assert.match(html, /fermeture \(17h\)/, 'la fermeture réglée, pas une durée en minutes');
   assert.match(html, /7 jours/);
   assert.match(html, /data-role="dispo"><p>x<\/p>/, 'la réponse immédiate a sa place dans le gabarit');
   assert.match(html, /data-action="confirm-reserve"/);

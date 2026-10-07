@@ -4,7 +4,7 @@ import { store } from '../../store.js';
 import { auth } from '../../auth.js';
 import { navigate } from '../../router.js';
 import {
-  now, addDays, ymd, fromYmd, isWeekday, withDefaults, MOMENTS, halfDays, halfDayBounds, calendarDays,
+  now, addDays, ymd, fromYmd, isWeekday, withDefaults, MOMENTS, halfDays, halfDayBounds, calendarDays, closingHour,
   freeExemplaires, canReserveValeur, isOfficeOpen, formatHeure, reasonLabel, REASONS,
 } from '../../rules.js';
 import { escapeHtml, badge, formatDate, formatTime, toast } from '../../ui.js';
@@ -121,7 +121,7 @@ const momentSelect = (name, moments, selected) => `<select class="select" name="
   .map((m) => `<option value="${escapeHtml(m.value)}"${m.value === selected ? ' selected' : ''}>${escapeHtml(m.label)}</option>`)
   .join('')}</select>`;
 
-export function reserverHtml({ group, dates, moments, dureeMax, fenetreMinutes, dispo = '' }) {
+export function reserverHtml({ group, dates, moments, dureeMax, fermeture, dispo = '' }) {
   return `
     <div class="card">
       <div class="card__header"><h2 class="card__title">${escapeHtml(group.nom)}</h2>${badge('circuit', group.circuit)}</div>
@@ -137,7 +137,7 @@ export function reserverHtml({ group, dates, moments, dureeMax, fenetreMinutes, 
       </div>
       <div data-role="dispo">${dispo}</div>
     </div>
-    <div class="alert alert--info">Le matériel se retire auprès de la pédago dans les <strong>${fenetreMinutes} minutes</strong> qui suivent le début de la demi-journée de retrait : passé ce délai, la réservation est annulée et le matériel redevient disponible. Durée maximale : ${dureeMax} jours.</div>
+    <div class="alert alert--info">Le matériel se retire au bureau des pédago <strong>le jour de la réservation</strong>, de l’heure prévue jusqu’à la fermeture (${fermeture}) : passé ce délai, la réservation est annulée et le matériel redevient disponible. Durée maximale : ${dureeMax} jours.</div>
     <button type="button" class="btn btn--primary btn--block" data-action="confirm-reserve">Confirmer la réservation</button>
     <a class="btn btn--ghost btn--block" href="#/catalogue/${escapeHtml(group.reference)}">Annuler</a>`;
 }
@@ -167,7 +167,7 @@ export function reserverView(container, { reference }) {
     dates: defaultDates(now()),
     moments: momentOptions(settings),
     dureeMax: settings.dureeMaxReservationJours,
-    fenetreMinutes: settings.fenetreRetraitMinutes,
+    fermeture: formatHeure(closingHour(settings)),
   });
   const ligne = container.querySelector('[data-role="dispo"]');
   const bouton = container.querySelector('[data-action="confirm-reserve"]');
@@ -197,7 +197,7 @@ export function reserverView(container, { reference }) {
     try {
       const loan = reserveValeur({ ...readReserveForm(container, settings), reference, userId: auth.currentUserId() });
       toast(`Réservé — à retirer le ${new Date(loan.debutPrevu).toLocaleDateString('fr-FR')} à ${formatTime(loan.debutPrevu)}`, 'success');
-      navigate('/emprunts');
+      navigate('/emprunts/reservations');
     } catch (e) {
       toast(e.message, 'error');
     }

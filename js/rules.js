@@ -6,7 +6,6 @@ import { CIRCUITS, ITEM_STATES, LOAN_STATES, BOOKING_STATES } from './models.js'
 export const DEFAULT_SETTINGS = {
   horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 17 }],
   dureeMaxReservationJours: 7, // une semaine complète, bornes comprises (spec §5.2)
-  fenetreRetraitMinutes: 60,
   bloquerSiRetard: true,
   horlogeDemo: null, // ISO string ou null = temps réel
   // `heureRetourSelf` n’a pas de défaut : absente, l’heure de retour se déduit des horaires (voir `returnHour`).
@@ -46,6 +45,10 @@ function horsOuvertureLabel(settings) {
   return `Le retrait doit tomber pendant les heures d’ouverture du bureau (jours ouvrés, ${formatOpenHours(settings)}).`;
 }
 
+function fenetreRetraitLabel(settings) {
+  return `Hors de la fenêtre de retrait : le matériel se retire le jour de la réservation, de l’heure prévue à la fermeture du bureau (${formatHeure(closingHour(settings))}).`;
+}
+
 function salleFermeeLabel(settings) {
   const { heureDebut, heureFin } = openRoomHours(settings);
   return `La salle photo est ouverte du lundi au vendredi, de ${formatHeure(heureDebut)} à ${formatHeure(heureFin)}.`;
@@ -64,7 +67,7 @@ export const REASON_LABELS = {
   utilisateur_inactif: 'Ce compte est désactivé.',
   code_inconnu: 'Code non reconnu : scannez l’étiquette MDS-XXXX collée sur l’objet.',
   code_retrait_inconnu: 'Aucune réservation en attente ne correspond à ce code de retrait.',
-  fenetre_retrait: 'Hors de la fenêtre de retrait : le matériel se retire dans l’heure qui suit le début de la réservation.',
+  fenetre_retrait: fenetreRetraitLabel(DEFAULT_SETTINGS),
   date_passee: 'La date de début est déjà passée.',
   dates_incoherentes: 'La date de retour doit être postérieure à la date de retrait.',
   hors_ouverture: horsOuvertureLabel(DEFAULT_SETTINGS),
@@ -159,6 +162,7 @@ export function reasonLabel(reason, settings = null) {
     return `Le bureau de la pédagogie est fermé (jours ouvrés, ${formatOpenHours(settings)}) : le self-service reprendra à l’ouverture.`;
   }
   if (reason === REASONS.SALLE_FERMEE) return salleFermeeLabel(settings);
+  if (reason === REASONS.FENETRE_RETRAIT) return fenetreRetraitLabel(settings);
   return REASON_LABELS[reason] || '';
 }
 
@@ -263,19 +267,30 @@ export function isLate(loan, date) {
   return loan.statut === LOAN_STATES.EN_COURS && toDate(date) > new Date(loan.finPrevue);
 }
 
-export function pickupWindow(loan, fenetreRetraitMinutes = DEFAULT_SETTINGS.fenetreRetraitMinutes) {
-  const start = new Date(loan.debutPrevu);
-  return { start, end: new Date(start.getTime() + fenetreRetraitMinutes * MIN) };
+// La dernière heure de fermeture des horaires réglés : c’est elle qui ferme la journée de retrait.
+export function closingHour(settings) {
+  const plages = openHours(settings);
+  return plages[plages.length - 1].fin;
 }
 
-export function isInPickupWindow(loan, date, minutes) {
-  const { start, end } = pickupWindow(loan, minutes);
+// Le retrait court du début de la réservation à la FERMETURE DU BUREAU, le même jour. Une
+// fenêtre d’une heure obligeait l’emprunteur à se libérer à la minute près entre deux cours ;
+// la journée entière lui laisse passer quand il peut, sans que l’objet dorme pour autant.
+export function pickupWindow(loan, settings = null) {
+  const start = toDate(loan.debutPrevu);
+  const fermeture = closingHour(settings);
+  const entier = Math.floor(fermeture);
+  return { start, end: atHour(start, entier, Math.round((fermeture - entier) * 60)) };
+}
+
+export function isInPickupWindow(loan, date, settings) {
+  const { start, end } = pickupWindow(loan, settings);
   const d = toDate(date);
   return d >= start && d <= end;
 }
 
-export function isExpired(loan, date, minutes) {
-  return loan.statut === LOAN_STATES.RESERVEE && toDate(date) > pickupWindow(loan, minutes).end;
+export function isExpired(loan, date, settings) {
+  return loan.statut === LOAN_STATES.RESERVEE && toDate(date) > pickupWindow(loan, settings).end;
 }
 
 // ---- Salle photo ----
@@ -379,12 +394,12 @@ export function canReserveValeur(ctx) {
   if (toDate(finPrevue) <= toDate(debutPrevu)) return { ok: false, reason: REASONS.DATES_INCOHERENTES };
   // Une période passée se refuse DANS le verdict, et non à l’écriture seulement : l’écran de
   // réservation doit pouvoir répondre sur la période choisie avant toute validation (spec §5.2).
-  // Une fenêtre de retrait déjà close vaut une date passée : `expireDueLoans` la balaierait
+  // Une journée de retrait déjà close vaut une date passée : `expireDueLoans` la balaierait
   // au prochain rendu.
   const debutJour = toDate(debutPrevu);
   const aujourdhui = toDate(date);
   if (debutJour < new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate())) return { ok: false, reason: REASONS.DATE_PASSEE };
-  if (new Date(debutJour.getTime() + S.fenetreRetraitMinutes * 60000) < aujourdhui) return { ok: false, reason: REASONS.DATE_PASSEE };
+  if (pickupWindow({ debutPrevu }, S).end < aujourdhui) return { ok: false, reason: REASONS.DATE_PASSEE };
   if (!isOfficeOpen(debutPrevu, S.horaires)) return { ok: false, reason: REASONS.HORS_OUVERTURE };
   if (calendarDays(debutPrevu, finPrevue) > S.dureeMaxReservationJours) return { ok: false, reason: REASONS.DUREE_TROP_LONGUE };
   if (hasActiveLoanOfReference(loans, items, user.id, reference)) return { ok: false, reason: REASONS.DEJA_UN_EXEMPLAIRE };

@@ -43,7 +43,6 @@ export function settingsFormHtml(settings) {
         ${nombre('Ouverture de l’après-midi', 'apresMidiDebut', apresMidi.debut, ' min="0" max="24" step="0.5"')}
         ${nombre('Fermeture de l’après-midi', 'apresMidiFin', apresMidi.fin, ' min="0" max="24" step="0.5"')}
         ${nombre('Durée maximale d’une réservation (jours)', 'dureeMaxReservationJours', S.dureeMaxReservationJours, ' min="1" max="60" step="1"')}
-        ${nombre('Fenêtre de retrait (minutes)', 'fenetreRetraitMinutes', S.fenetreRetraitMinutes, ' min="5" max="480" step="5"')}
         ${nombre('Premier créneau de la salle', 'salleHeureDebut', salle.heureDebut, ' min="0" max="23" step="1"')}
         ${nombre('Dernier créneau de la salle (fin)', 'salleHeureFin', salle.heureFin, ' min="1" max="24" step="1"')}
       </div>
@@ -64,7 +63,6 @@ export function readSettingsForm(root) {
       { debut: num('apresMidiDebut'), fin: num('apresMidiFin') },
     ],
     dureeMaxReservationJours: num('dureeMaxReservationJours'),
-    fenetreRetraitMinutes: num('fenetreRetraitMinutes'),
     salle: { heureDebut: num('salleHeureDebut'), heureFin: num('salleHeureFin') },
     bloquerSiRetard: root.querySelector('[name="bloquerSiRetard"]').checked,
   };

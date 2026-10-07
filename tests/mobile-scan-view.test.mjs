@@ -1,7 +1,8 @@
 import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scanStepHtml, returnListHtml, photoStepHtml, confirmStepHtml, checklistStepHtml, resultHtml, errorHtml, friendlyError } from '../js/mobile/views/scan.js';
+import { STEPS } from '../js/mobile/scanFlow.js';
+import { scanStepHtml, returnListHtml, stepperHtml, headerTitle, loaderStepHtml, photoStepHtml, confirmStepHtml, checklistStepHtml, resultHtml, errorHtml, friendlyError } from '../js/mobile/views/scan.js';
 
 const item = { id: 'item_001', code: 'MDS-0001', nom: 'Multiprise #1', reference: 'multiprise', circuit: 'self' };
 const PHOTO = 'data:image/jpeg;base64,AAAA';
@@ -23,7 +24,14 @@ test('photoStepHtml : caméra ou image de démonstration selon le contexte', () 
   assert.match(cam, /<video id="video"/);
   assert.match(cam, /data-action="capture"/);
   assert.match(cam, /data-action="placeholder"/);
-  assert.match(cam, /Photo de l’objet/);
+  assert.match(cam, /Prendre une photo de l’objet/, 'le titre nomme l’action, pas la chose');
+  assert.match(cam, /Prendre la photo de l’objet/);
+  // Le bouton de prise de vue porte l’icône appareil photo (correctif d’interface).
+  assert.match(cam, /data-action="capture"><svg/);
+  // Et le fil des étapes situe le parcours : deuxième sur trois.
+  assert.match(cam, /aria-label="Étape 2 sur 3"/);
+  assert.match(cam, /stepper__dot--done/);
+  assert.match(cam, /stepper__dot--active/);
   const noCam = photoStepHtml({ mode: 'retour', item, camera: false });
   assert.doesNotMatch(noCam, /<video/);
   assert.doesNotMatch(noCam, /data-action="capture"/);
@@ -106,4 +114,49 @@ test('errorHtml : pas de bouton « Réserver » quand l’objet est déjà entre
   // Un refus « mauvais circuit » (objet qu’il ne détient pas) garde l’aide vers le catalogue.
   const autre = errorHtml({ reason: 'mauvais_circuit', error: null, item: valeur });
   assert.match(autre, /href="#\/catalogue\/canon-r10"/);
+});
+
+test('loaderStepHtml : nomme ce qui vient d’être reconnu, et le dit aux lecteurs d’écran', () => {
+  const item = { code: 'MDS-0003', nom: 'Multiprise <#3>' };
+  const emprunt = loaderStepHtml({ mode: 'emprunt', item });
+  assert.match(emprunt, /Multiprise &lt;#3&gt;/, 'le nom est échappé');
+  assert.match(emprunt, /Objet reconnu/);
+  assert.match(emprunt, /préparation de la photo/);
+  // Sans `role=status`, le changement d’écran passe inaperçu d’un lecteur d’écran.
+  assert.match(emprunt, /role="status"/);
+  assert.match(emprunt, /aria-live="polite"/);
+  assert.match(emprunt, /class="spinner"[^>]*aria-hidden="true"/);
+  // Au retour, c’est l’emprunt qu’on a retrouvé, pas un objet à prendre.
+  assert.match(loaderStepHtml({ mode: 'retour', item }), /Emprunt retrouvé/);
+});
+
+test('stepperHtml : où l’on en est, et ce qui reste', () => {
+  const premier = stepperHtml(1);
+  assert.match(premier, /aria-label="Étape 1 sur 3"/);
+  assert.equal((premier.match(/stepper__dot--done/g) || []).length, 0);
+  assert.equal((premier.match(/stepper__dot--active/g) || []).length, 1);
+  assert.equal((premier.match(/stepper__dot--todo/g) || []).length, 2);
+  // Le trait qui suit l’étape en cours est à moitié parcouru, les suivants sont vides.
+  assert.equal((premier.match(/stepper__line--half/g) || []).length, 1);
+  assert.equal((premier.match(/stepper__line--todo/g) || []).length, 1);
+
+  const dernier = stepperHtml(3);
+  assert.equal((dernier.match(/stepper__dot--done/g) || []).length, 2);
+  assert.equal((dernier.match(/stepper__line--done/g) || []).length, 2);
+  // À la fin du parcours, tout est fait et plus rien n’est en cours.
+  const fini = stepperHtml(4);
+  assert.equal((fini.match(/stepper__dot--done/g) || []).length, 3);
+  assert.doesNotMatch(fini, /stepper__dot--active/);
+  assert.match(fini, /aria-label="Étape 3 sur 3"/, 'le libellé ne dépasse pas le total');
+});
+
+test('headerTitle : le bandeau nomme l’étape, pas l’écran', () => {
+  assert.equal(headerTitle(STEPS.SCAN, 'emprunt'), 'Scanner');
+  assert.equal(headerTitle(STEPS.CHARGEMENT, 'emprunt'), 'Scanner');
+  assert.equal(headerTitle(STEPS.PHOTO, 'emprunt'), 'Prendre une photo');
+  assert.equal(headerTitle(STEPS.CONFIRM, 'emprunt'), 'Confirmer l’emprunt');
+  assert.equal(headerTitle(STEPS.CHECKLIST, 'retour'), 'Rendre le matériel');
+  assert.equal(headerTitle(STEPS.DONE, 'emprunt'), 'Matériel emprunté');
+  assert.equal(headerTitle(STEPS.DONE, 'retour'), 'Matériel rendu');
+  assert.equal(headerTitle(STEPS.ERREUR, 'emprunt'), 'Scanner', 'un refus n’est pas une étape');
 });

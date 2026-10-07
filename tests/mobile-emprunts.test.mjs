@@ -37,12 +37,12 @@ test('empruntsHtml : réservations et historique', () => {
 });
 
 import { reservationCardHtml } from '../js/mobile/views/emprunts.js';
-import { pickupWindow } from '../js/rules.js';
+import { DEFAULT_SETTINGS, pickupWindow } from '../js/rules.js';
 
 test('reservationCardHtml : avant la fenêtre, pendant (QR + code), après', () => {
   const loan = { id: 'loan_x', debutPrevu: new Date(2026, 8, 18, 9, 0).toISOString(), finPrevue: new Date(2026, 8, 19, 17, 0).toISOString(), codeRetrait: 'AB12CD', statut: 'reservee' };
   const item = { nom: 'Canon R10', code: 'MDS-0029', reference: 'canon-r10' };
-  const window = pickupWindow(loan, 60);
+  const window = pickupWindow(loan, DEFAULT_SETTINGS);
 
   const avant = reservationCardHtml({ loan, item, pickupOpen: false, expired: false, window }, NOW);
   assert.match(avant, /Canon R10/);
@@ -53,10 +53,10 @@ test('reservationCardHtml : avant la fenêtre, pendant (QR + code), après', () 
   const pendant = reservationCardHtml({ loan, item, pickupOpen: true, expired: false, window }, new Date(2026, 8, 18, 9, 20));
   assert.match(pendant, /data-role="qr" data-code="LOAN-loan_x-AB12CD"/);
   assert.match(pendant, /AB12CD/);
-  assert.match(pendant, /avant 10h00/);
+  assert.match(pendant, /avant 17h00/, 'le retrait court jusqu’à la fermeture du bureau');
   assert.match(pendant, /Montrez ce code à la pédago/);
 
-  const apres = reservationCardHtml({ loan, item, pickupOpen: false, expired: true, window }, new Date(2026, 8, 18, 11, 0));
+  const apres = reservationCardHtml({ loan, item, pickupOpen: false, expired: true, window }, new Date(2026, 8, 18, 17, 30));
   assert.match(apres, /Réservation expirée/);
   assert.doesNotMatch(apres, /data-role="qr"/);
   assert.doesNotMatch(apres, /data-action="cancel"/);

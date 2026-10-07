@@ -88,7 +88,7 @@ Toutes les entités ont un `id` (string unique), `createdAt`, `updatedAt`.
 `date`, `auteurId`, `action` (chaîne normalisée : `item.cree`, `loan.reservee`, `loan.remise`, `loan.retour`, `booking.entree`…), `itemId`, `loanId`, `bookingId`, `userId` (cible), `detail` (texte libre). **Chaque mutation métier écrit une entrée.**
 
 ### `Settings`
-`horaires` (`[{ debut: 8, fin: 12 }, { debut: 13, fin: 17 }]`), `dureeMaxReservationJours` (7), `fenetreRetraitMinutes` (60), `bloquerSiRetard` (bool), `horlogeDemo` (offset en ms ou date fixée, null = temps réel).
+`horaires` (`[{ debut: 8, fin: 12 }, { debut: 13, fin: 17 }]`), `dureeMaxReservationJours` (7), `bloquerSiRetard` (bool), `horlogeDemo` (offset en ms ou date fixée, null = temps réel).
 
 ## 5. Règles métier
 
@@ -106,7 +106,7 @@ Toutes les entités ont un `id` (string unique), `createdAt`, `updatedAt`.
 - Durée maximale : `dureeMaxReservationJours` (7 par défaut), comptés en **jours calendaires** entre les dates de début et de fin.
 - L'écran de réservation répond sur la période choisie avant toute validation : nombre d'exemplaires libres, ou première date où il en reste un.
 - Il n'y a pas d'étape de validation séparée : **la validation est la remise physique**.
-- Fenêtre de retrait : `[debutPrevu, debutPrevu + fenetreRetraitMinutes]`. Avant `debutPrevu`, le QR de retrait n'est pas actif. Après la fenêtre sans retrait → `expiree`, `Item` `disponible`, notification à l'emprunteur, badge « non retiré » côté admin.
+- **Fenêtre de retrait : la journée de la réservation**, soit `[debutPrevu, fermeture du bureau ce jour-là]`, la fermeture étant la dernière des `horaires` réglés. Une heure obligeait l'emprunteur à se libérer à la minute près entre deux cours ; la journée lui laisse passer quand il peut. Avant `debutPrevu`, le QR de retrait n'est pas actif. Non retiré à la fermeture → `expiree`, notification à l'emprunteur, badge « non retiré » côté admin — et la période se libère, l'`Item` n'ayant jamais changé d'état.
 - Remise : l'emprunteur affiche son QR de retrait (`LOAN-<id>-<code6>`) ; la pédago clique **Remettre** et scanne (ou saisit le code court) → `en_cours`, `dateRetrait`, `remisPar`.
 - **La remise vérifie que l'objet est là.** Comme la réservation n'immobilise plus l'exemplaire, il peut, entre-temps, être parti avec l'emprunteur du créneau précédent ou avoir été signalé. La remise est alors refusée avec un motif lisible (`emprunte_par_autre`, `en_maintenance`, `hors_service`), la réservation reste en attente, et la pédago la clôt par **Refuser** avec un motif. De même, **Prolonger** est refusé (`reserve_sur_la_periode`) si la nouvelle période mord sur une réservation du même exemplaire.
 - La pédago peut **Refuser** (motif obligatoire) une réservation avant remise, et **Prolonger** un emprunt en cours.

@@ -154,9 +154,10 @@ chemins existent — notez lequel elle tente **en premier**.
   remarque-t-elle ? Comprend-elle que « 3 exemplaires libres sur cette période » parle de la
   période qu’elle vient de choisir, et pas du stock de l’école ?
 - Comprend-elle qu’elle réserve **une** carte sans savoir laquelle ? Est-ce que ça la dérange ?
-- **La fenêtre de retrait d’une heure.** Après confirmation, sait-elle qu’elle doit venir dans
-  l’heure qui suit le début de son créneau, et que sinon la réservation tombe ? C’est le point
-  le plus coûteux s’il n’est pas compris : il produit du matériel immobilisé pour rien.
+- **La journée de retrait.** Après confirmation, sait-elle qu’elle doit venir **le jour même**,
+  à partir de l’heure prévue et jusqu’à la fermeture du bureau, et que sinon la réservation
+  tombe le soir ? C’est le point le plus coûteux s’il n’est pas compris : il produit du matériel
+  immobilisé pour rien. Écoutez si elle dit « dans l’heure » : ce fut la règle, elle ne l’est plus.
 
 **Relances**
 
@@ -258,8 +259,6 @@ Si un testeur tombe sur l’un de ces cas, c’est déjà au registre. Notez-le 
   de serveur. Un conflit entre deux testeurs ne se verra donc jamais.
 - **On peut réserver avec un retour un samedi ou un dimanche.** Seul le retrait est vérifié
   contre les heures d’ouverture. Le correctif est identifié.
-- **Le raccourci « Jour ouvré 9h »** de l’interface pédagogie tombe exactement à la fermeture de
-  la fenêtre de retrait d’un créneau du matin. Réglez l’heure à la main.
 - **L’icône ajoutée à l’écran d’accueil** peut avoir ses propres données, séparées de celles du
   navigateur. Choisissez l’un ou l’autre et restez-y.
 - Le prototype est **bâti sur un jeu de démonstration** : des emprunts, des retards et des

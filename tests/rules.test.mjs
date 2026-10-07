@@ -53,17 +53,24 @@ test('retard = en_cours et date > finPrevue', () => {
   assert.equal(isLate({ ...loan, statut: 'retournee' }, new Date(2026, 8, 18)), false);
 });
 
-test('fenêtre de retrait = [début, début + 60 min]', () => {
+test('fenêtre de retrait = [début, fermeture du bureau le même jour]', () => {
   const loan = { statut: 'reservee', debutPrevu: new Date(2026, 8, 17, 9, 0).toISOString() };
-  const w = pickupWindow(loan, S.fenetreRetraitMinutes);
+  const w = pickupWindow(loan, S);
   assert.equal(w.start.getHours(), 9);
-  assert.equal(w.end.getHours(), 10);
-  assert.equal(isInPickupWindow(loan, new Date(2026, 8, 17, 8, 59), 60), false);
-  assert.equal(isInPickupWindow(loan, new Date(2026, 8, 17, 9, 30), 60), true);
-  assert.equal(isInPickupWindow(loan, new Date(2026, 8, 17, 10, 0), 60), true);
-  assert.equal(isExpired(loan, new Date(2026, 8, 17, 10, 0), 60), false);
-  assert.equal(isExpired(loan, new Date(2026, 8, 17, 10, 1), 60), true);
-  assert.equal(isExpired({ ...loan, statut: 'en_cours' }, new Date(2026, 8, 18), 60), false);
+  assert.equal(w.end.getHours(), 17, 'la fenêtre court jusqu’à la fermeture, pas une heure');
+  assert.equal(w.end.getDate(), 17, 'et pas au-delà du jour de la réservation');
+  assert.equal(isInPickupWindow(loan, new Date(2026, 8, 17, 8, 59), S), false, 'avant l’heure prévue');
+  assert.equal(isInPickupWindow(loan, new Date(2026, 8, 17, 10, 0), S), true);
+  // Toute la journée, et non plus une heure : c’est le changement.
+  assert.equal(isInPickupWindow(loan, new Date(2026, 8, 17, 16, 59), S), true, 'une heure avant la fermeture');
+  assert.equal(isInPickupWindow(loan, new Date(2026, 8, 17, 17, 0), S), true, 'à la fermeture pile');
+  assert.equal(isExpired(loan, new Date(2026, 8, 17, 17, 0), S), false);
+  assert.equal(isExpired(loan, new Date(2026, 8, 17, 17, 1), S), true, 'après la fermeture');
+  assert.equal(isExpired({ ...loan, statut: 'en_cours' }, new Date(2026, 8, 18), S), false);
+  // La fermeture RÉGLÉE mène la fenêtre : une après-midi qui finit à 18h la rallonge d’autant.
+  const tard = { ...S, horaires: [{ debut: 8, fin: 12 }, { debut: 13, fin: 18 }] };
+  assert.equal(pickupWindow(loan, tard).end.getHours(), 18);
+  assert.equal(isExpired(loan, new Date(2026, 8, 17, 17, 30), tard), false);
 });
 
 test('réservation salle : début, fin, active, sortie non faite', () => {
@@ -205,7 +212,9 @@ test('withDefaults : fusionne des settings partiels avec les défauts', () => {
   assert.deepEqual(withDefaults(undefined), DEFAULT_SETTINGS);
   assert.deepEqual(withDefaults({}), DEFAULT_SETTINGS);
   assert.equal(withDefaults({ dureeMaxReservationJours: 2 }).dureeMaxReservationJours, 2);
-  assert.equal(withDefaults({ dureeMaxReservationJours: 2 }).fenetreRetraitMinutes, DEFAULT_SETTINGS.fenetreRetraitMinutes);
+  // Un réglage fourni n’efface pas les autres : `horaires` doit survivre intact.
+  assert.deepEqual(withDefaults({ dureeMaxReservationJours: 2 }).horaires, DEFAULT_SETTINGS.horaires);
+  assert.equal(withDefaults({ dureeMaxReservationJours: 2 }).bloquerSiRetard, DEFAULT_SETTINGS.bloquerSiRetard);
 });
 
 test('canBorrowSelf avec des settings vides se comporte comme DEFAULT_SETTINGS', () => {
@@ -492,13 +501,12 @@ test('canReserveValeur : une période passée se refuse dans le verdict, pas seu
   const base = { reference: items[2].reference, user, loans: [], items, settings: S, date: jeudi10h };
   // La veille : l’écran de réservation doit pouvoir le dire avant toute validation (spec §5.2).
   assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-16', 9), finPrevue: fromYmd('2026-09-16', 17) }).reason, REASONS.DATE_PASSEE);
-  // Le jour même, avant l’heure courante : la fenêtre de retrait est déjà close.
-  assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-17', 8), finPrevue: fromYmd('2026-09-17', 12) }).reason, REASONS.DATE_PASSEE);
-  // La borne : un retrait à 9h avec une fenêtre d’une heure se clôt À 10h pile, et il est 10h —
-  // la fenêtre est encore ouverte, puisqu’elle se juge sur « close AVANT maintenant ».
-  assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-17', 9), finPrevue: fromYmd('2026-09-17', 12) }).ok, true, 'fenêtre close à 10h pile : encore ouverte');
+  // Le jour même, le matin déjà entamé : le retrait reste ouvert jusqu’à la fermeture, donc
+  // une réservation du matin se prend encore à 10h — c’est précisément la souplesse gagnée.
+  assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-17', 8), finPrevue: fromYmd('2026-09-17', 12) }).ok, true, 'ce matin : le retrait court jusqu’à 17h');
   assert.equal(canReserveValeur({ ...base, debutPrevu: fromYmd('2026-09-17', 13), finPrevue: fromYmd('2026-09-17', 17) }).ok, true, 'cet après-midi : permis');
-  // La fenêtre de retrait réglée mène ce jugement, pas une heure écrite en dur.
-  const large = { ...base, settings: { ...S, fenetreRetraitMinutes: 240 }, debutPrevu: fromYmd('2026-09-17', 8), finPrevue: fromYmd('2026-09-17', 12) };
-  assert.equal(canReserveValeur(large).ok, true, 'une fenêtre de quatre heures est encore ouverte à 10h');
+  // La fermeture RÉGLÉE mène ce jugement, pas une heure écrite en dur : un bureau qui ferme
+  // à 9h rend la matinée déjà passée à 10h.
+  const tot = { ...S, horaires: [{ debut: 8, fin: 9 }] };
+  assert.equal(canReserveValeur({ ...base, settings: tot, debutPrevu: fromYmd('2026-09-17', 8), finPrevue: fromYmd('2026-09-17', 9) }).reason, REASONS.DATE_PASSEE, 'bureau fermé à 9h, il est 10h');
 });

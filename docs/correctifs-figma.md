@@ -9,19 +9,7 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
 
 ## À faire
 
-### Onglet « Salle » → « Salle photo »
-
-**Décidé le 7 octobre 2026**, délibérément, dans la barre de navigation basse du kit.
-
-Le code écrit `Salle` ; la maquette écrit `Salle photo`. À changer :
-
-- `js/mobile/layout.js:19` — l’entrée `TABS` du chemin `/salle`.
-- `tests/mobile-layout.test.mjs:30` — épingle les quatre libellés, le test tombera sinon.
-- `docs/notice-testeurs.md:23` — « Onglet **Salle** », le seul document qui nomme l’onglet
-  littéralement. Les autres parlent de « la salle photo » et restent justes.
-
-Raison du report : c’est une retouche d’interface sans urgence, et la grouper avec d’autres
-évite trois commits pour trois mots.
+*Rien en attente.*
 
 ## Divergences connues, laissées telles quelles
 
@@ -29,12 +17,15 @@ Raison du report : c’est une retouche d’interface sans urgence, et la groupe
   repris et n’appartient pas à la palette (le plus proche est `border/strong` `#c8c9cc`). Il est
   désormais rangé dans la variable `border/muted`, donc alignable en un point le jour où vous le
   déciderez — mais il reste hors système tant que ce n’est pas tranché.
-- **Icônes `Salle` et `Emprunts`.** L’app les dessine à sa façon (`js/mobile/layout.js`,
-  `ICONS.salle` et `ICONS.emprunts`) ; le kit utilise `Icon/clock` et `Icon/arrow-right-left`.
-  Les deux jeux se ressemblent sans être identiques. La maquette suit le kit.
 
 ## Fait
 
+- **Onglet « Salle » → « Salle photo »** (7 octobre 2026). Décidé dans la maquette, porté dans
+  `js/mobile/layout.js`, `tests/mobile-layout.test.mjs` et `docs/notice-testeurs.md`.
+- **Les trois icônes de la barre de navigation suivent le kit** (7 octobre 2026) : le bouton
+  central passe du viseur au QR code (`Icon/qr-code`), l’horloge de l’onglet Salle photo prend un
+  rayon de 10 au lieu de 9 (`Icon/clock`), et les flèches de l’onglet Emprunts deviennent celles
+  du kit (`Icon/arrow-right-left`). Tracés relevés sur les vecteurs du kit, pas approchés à l’œil.
 - **`Text Field` : hauteur de cadre 10 px → épouse son contenu** (7 octobre 2026). Les
   20 variantes avaient un cadre de 10 px pour un contenu de 70 : invisible dans la bibliothèque,
   mais les champs se chevauchaient dès qu’on les posait dans un auto-layout. Correctif côté

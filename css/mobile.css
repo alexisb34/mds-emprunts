@@ -95,6 +95,29 @@
 .result__icon--error { background: var(--status-late-bg); color: var(--status-late-fg); }
 .thumb-lg { width: 72px; height: 54px; object-fit: cover; border-radius: var(--radius-md); border: var(--stroke-thin) solid var(--border-default); }
 
+/* Fil des étapes du scan — géométrie reprise du kit : pastille 24, anneau 1,5, point 7,5. */
+.stepper { display: flex; align-items: center; }
+.stepper__dot { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--border-muted); }
+.stepper__dot--todo::after, .stepper__dot--active::after { content: ''; width: 7.5px; height: 7.5px; border-radius: 50%; background: var(--border-muted); }
+.stepper__dot--active { border-color: var(--brand-primary); }
+.stepper__dot--active::after { background: var(--brand-primary); }
+.stepper__dot--done { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--text-on-brand); }
+.stepper__dot--done svg { width: 15px; height: 15px; }
+.stepper__line { flex: 1; height: 3px; background: var(--border-muted); }
+.stepper__line--done { background: var(--brand-primary); }
+/* L’étape en cours : le trait qui la suit est à moitié parcouru. */
+.stepper__line--half { background: linear-gradient(to right, var(--brand-primary) 50%, var(--border-muted) 50%); }
+
+/* Une icône dans un bouton : le bouton est déjà en flex, elle se range toute seule. */
+.btn > svg { flex: none; width: 20px; height: 20px; }
+
+/* Chargement entre le scan et la photo */
+.loader-step { display: flex; flex-direction: column; align-items: center; gap: var(--space-md); padding: var(--space-3xl) var(--space-lg); text-align: center; }
+.spinner { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--border-default); border-top-color: var(--brand-primary); animation: spin .8s linear infinite; }
+/* Un mouvement perpétuel se fige pour qui a demandé moins d’animations ; le repère reste lisible. */
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-top-color: var(--brand-primary); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Navigation basse */
 .m-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(480px, 100%); height: calc(72px + env(safe-area-inset-bottom)); padding: 0 var(--space-sm) env(safe-area-inset-bottom); display: grid; grid-template-columns: 1fr 1fr 72px 1fr 1fr; align-items: center; background: var(--bg-surface); border-top: var(--stroke-thin) solid var(--border-default); z-index: 10; }
 .m-nav__tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 700; color: var(--text-secondary); padding: var(--space-sm) 0; }

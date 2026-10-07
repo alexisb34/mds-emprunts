@@ -7,10 +7,39 @@ import { CIRCUITS, ITEM_STATES } from '../../models.js';
 import { escapeHtml, badge, formatTime, relativeDay, toast } from '../../ui.js';
 import { resolveScan, borrowSelf, returnSelf, userLoans } from '../../actions/loans.js';
 import { hasCamera, startScanner, stopScanner, startCamera, stopCamera, capturePhoto, placeholderPhoto, normalizeScanText } from '../../scanner.js';
-import { STEPS, initialState, onScanResolved, onPhoto, setChecklistLine, onDone, onError } from '../scanFlow.js';
-import { setHeader } from '../layout.js';
+import { STEPS, initialState, onScanResolved, onLoaded, onPhoto, setChecklistLine, onDone, onError } from '../scanFlow.js';
+import { setHeader, ICONS } from '../layout.js';
+
+// Fil des trois étapes du scan. Le numéro seul ne disait ni combien il en reste, ni d’où
+// l’on vient : le fil répond aux deux d’un coup d’œil.
+const ETAPES = 3;
+export function stepperHtml(etape) {
+  const morceaux = [];
+  for (let i = 1; i <= ETAPES; i += 1) {
+    const etat = i < etape ? 'done' : (i === etape ? 'active' : 'todo');
+    morceaux.push(`<span class="stepper__dot stepper__dot--${etat}">${etat === 'done' ? ICONS.check : ''}</span>`);
+    // Le trait qui suit l’étape en cours est à moitié parcouru.
+    if (i < ETAPES) morceaux.push(`<span class="stepper__line stepper__line--${i < etape ? 'done' : (i === etape ? 'half' : 'todo')}"></span>`);
+  }
+  return `<div class="stepper" role="group" aria-label="Étape ${Math.min(etape, ETAPES)} sur ${ETAPES}">${morceaux.join('')}</div>`;
+}
+
+// Le bandeau nomme l’étape en cours plutôt que « Scanner » du début à la fin.
+export function headerTitle(step, mode) {
+  if (step === STEPS.PHOTO) return 'Prendre une photo';
+  if (step === STEPS.CONFIRM) return 'Confirmer l’emprunt';
+  if (step === STEPS.CHECKLIST) return 'Rendre le matériel';
+  if (step === STEPS.DONE) return mode === 'retour' ? 'Matériel rendu' : 'Matériel emprunté';
+  return 'Scanner';
+}
+
+const bouton = (classes, action, icone, libelle) =>
+  `<button type="button" class="btn ${classes}" data-action="${action}">${icone}<span>${escapeHtml(libelle)}</span></button>`;
 
 const stepTitle = (n, text) => `<h2 class="step-title"><span class="step-num">${n}</span><span class="h6">${escapeHtml(text)}</span></h2>`;
+// Assez long pour qu’on voie l’écran changer, assez court pour ne pas donner l’impression d’une panne.
+const DELAI_CHARGEMENT_MS = 700;
+
 const itemLine = (item) => `<div class="m-item"><span class="m-item__body"><strong>${escapeHtml(item.nom)}</strong><span class="body-tiny text-secondary">${escapeHtml(item.code)}</span></span>${badge('circuit', item.circuit)}</div>`;
 
 // localStorage plein (photos) : message utile plutôt que l’exception du navigateur.
@@ -45,6 +74,7 @@ export function scanStepHtml({ codes, camera, returnable = [] }) {
     : '<p class="body-sm text-secondary">Aucun objet disponible à emprunter pour le moment.</p>';
   return `
     ${returnListHtml(returnable)}
+    ${stepperHtml(1)}
     ${stepTitle(1, 'Emprunter : scannez l’étiquette de l’objet')}
     ${reader}
     <div class="card">
@@ -57,11 +87,26 @@ export function scanStepHtml({ codes, camera, returnable = [] }) {
     </div>`;
 }
 
+// Temps mort volontaire entre le scan et la photo : il nomme ce qui vient d’être reconnu.
+export function loaderStepHtml({ mode, item }) {
+  const quoi = mode === 'retour' ? 'Emprunt retrouvé' : 'Objet reconnu';
+  return `
+    ${stepperHtml(2)}
+    <div class="loader-step" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <strong class="h6">${escapeHtml(item.nom)}</strong>
+      <span class="body-sm text-secondary">${quoi} — préparation de la photo…</span>
+    </div>`;
+}
+
 export function photoStepHtml({ mode, item, camera }) {
   const why = mode === 'retour' ? 'Photographiez l’objet avant de le rendre : elle atteste de son état.' : 'Photographiez l’objet : elle atteste de son état au moment de l’emprunt.';
-  const capture = camera ? '<div class="video-box"><video id="video" playsinline muted></video></div><button type="button" class="btn btn--primary btn--block" data-action="capture">Prendre la photo</button>' : '';
+  const capture = camera
+    ? `<div class="video-box"><video id="video" playsinline muted></video></div>${bouton('btn--primary btn--block', 'capture', ICONS.camera, 'Prendre la photo de l’objet')}`
+    : '';
   return `
-    ${stepTitle(2, 'Photo de l’objet')}
+    ${stepperHtml(2)}
+    ${stepTitle(2, 'Prendre une photo de l’objet')}
     ${itemLine(item)}
     <p class="body-sm text-secondary">${why}</p>
     ${capture}
@@ -71,12 +116,13 @@ export function photoStepHtml({ mode, item, camera }) {
 
 export function confirmStepHtml({ item, photo, deadline }) {
   return `
+    ${stepperHtml(3)}
     ${stepTitle(3, 'Confirmer l’emprunt')}
     ${itemLine(item)}
     <img class="photo-preview" src="${escapeHtml(photo)}" alt="Photo de l’objet à l’emprunt">
     <div class="alert alert--info">Retour attendu ${escapeHtml(relativeDay(deadline, deadline).toLowerCase())} avant ${escapeHtml(formatTime(deadline))}, au bureau des pédago.</div>
-    <button type="button" class="btn btn--primary btn--block" data-action="confirm-borrow">Confirmer l’emprunt</button>
-    <button type="button" class="btn btn--ghost btn--block" data-action="cancel">Annuler</button>`;
+    ${bouton('btn--primary btn--block', 'confirm-borrow', ICONS.check, 'Confirmer l’emprunt')}
+    ${bouton('btn--ghost btn--block', 'cancel', ICONS.croix, 'Annuler l’emprunt')}`;
 }
 
 export function checklistStepHtml({ item, photo, checklist }) {
@@ -90,6 +136,7 @@ export function checklistStepHtml({ item, photo, checklist }) {
       <textarea class="textarea checklist__comment" data-comment="${i}" placeholder="Décrivez le problème (optionnel)">${escapeHtml(line.commentaire)}</textarea>
     </div>`).join('');
   return `
+    ${stepperHtml(3)}
     ${stepTitle(3, 'État de l’objet')}
     ${itemLine(item)}
     <img class="photo-preview" src="${escapeHtml(photo)}" alt="Photo de l’objet au retour">
@@ -101,18 +148,19 @@ export function checklistStepHtml({ item, photo, checklist }) {
 export function resultHtml({ mode, item, result }) {
   let icon = 'ok';
   let title = 'Emprunt enregistré';
-  let text = `Retour attendu ${result && result.finPrevue ? `${relativeDay(result.finPrevue, result.finPrevue).toLowerCase()} avant ${formatTime(result.finPrevue)}` : 'aujourd’hui'}. Bon travail !`;
+  let text = `Retour attendu ${result && result.finPrevue ? `${relativeDay(result.finPrevue, result.finPrevue).toLowerCase()} avant ${formatTime(result.finPrevue)}` : 'aujourd’hui'}. Bonne journée.`;
   if (mode === 'retour') {
     if (result && result.problem) { icon = 'warn'; title = 'Retour enregistré — problème signalé'; text = 'Merci, la pédago est prévenue et l’objet passe en maintenance.'; }
     else { title = 'Retour enregistré'; text = 'Merci ! L’objet est de nouveau disponible.'; }
   }
   return `
+    ${stepperHtml(ETAPES + 1)}
     <div class="card result">
       <div class="result__icon result__icon--${icon}">${icon === 'ok' ? '✓' : '!'}</div>
       <h2 class="h6">${escapeHtml(title)}</h2>
       <p class="body-sm text-secondary">${escapeHtml(item.nom)} · ${escapeHtml(text)}</p>
-      <button type="button" class="btn btn--primary btn--block" data-action="restart">Scanner un autre objet</button>
-      <a class="btn btn--ghost btn--block" href="#/accueil">Retour à l’accueil</a>
+      ${bouton('btn--primary btn--block', 'restart', ICONS.scan, 'Scanner un autre objet')}
+      <a class="btn btn--ghost btn--block" href="#/accueil">${ICONS.accueil}<span>Retour accueil</span></a>
     </div>`;
 }
 
@@ -142,6 +190,7 @@ export function scanView(container) {
   let state = initialState();
   let camera = false;
   let alive = true;
+  let chargement = null;
 
   // La simulation ne propose que ce qui peut réellement être emprunté : un objet déjà emprunté,
   // réservé, en maintenance ou hors service n’a rien à faire dans cette liste.
@@ -230,9 +279,14 @@ export function scanView(container) {
   };
 
   const render = () => {
-    setHeader({ title: 'Scanner', back: '/accueil' });
+    clearTimeout(chargement);
+    if (state.step === STEPS.CHARGEMENT) {
+      chargement = setTimeout(() => { if (alive) set(onLoaded(state)); }, DELAI_CHARGEMENT_MS);
+    }
+    setHeader({ title: headerTitle(state.step, state.mode), back: '/accueil' });
     switch (state.step) {
       case STEPS.SCAN: container.innerHTML = scanStepHtml({ codes: codes(), camera, returnable: returnable() }); bindScan(); break;
+      case STEPS.CHARGEMENT: container.innerHTML = loaderStepHtml({ mode: state.mode, item: state.item }); break;
       case STEPS.PHOTO: container.innerHTML = photoStepHtml({ mode: state.mode, item: state.item, camera }); bindPhoto(); break;
       case STEPS.CONFIRM: {
         const deadline = selfReturnDeadline(now(), returnHour(store.settings.get()));
@@ -259,5 +313,5 @@ export function scanView(container) {
     if (manual2) manual2.value = keep.manual;
   });
   render();
-  return () => { alive = false; stopScanner(); stopCamera(); };
+  return () => { alive = false; clearTimeout(chargement); stopScanner(); stopCamera(); };
 }

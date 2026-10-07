@@ -34,7 +34,8 @@ test('settingsFormHtml : les champs portent les valeurs courantes', () => {
   assert.match(html, /name="apresMidiDebut"[^>]*value="13"/);
   assert.match(html, /name="apresMidiFin"[^>]*value="17"/);
   assert.match(html, /name="dureeMaxReservationJours"[^>]*value="7"/);
-  assert.match(html, /name="fenetreRetraitMinutes"[^>]*value="60"/);
+  // La fenêtre de retrait n’est plus un réglage : le retrait court jusqu’à la fermeture du bureau.
+  assert.doesNotMatch(html, /name="fenetreRetraitMinutes"/);
   assert.match(html, /name="bloquerSiRetard"(?![^>]*checked)/, 'la case suit le réglage');
   assert.match(html, /name="salleHeureDebut"[^>]*value="8"/);
   assert.match(html, /name="salleHeureFin"[^>]*value="17"/);
@@ -81,14 +82,13 @@ function stubForm(values, checked = true) {
 }
 const VALEURS = {
   matinDebut: '9', matinFin: '12', apresMidiDebut: '13.5', apresMidiFin: '18',
-  dureeMaxReservationJours: '7', fenetreRetraitMinutes: '45', salleHeureDebut: '9', salleHeureFin: '16',
+  dureeMaxReservationJours: '7', salleHeureDebut: '9', salleHeureFin: '16',
 };
 
-test('readSettingsForm : les neuf champs prennent la forme que valide updateSettings', () => {
+test('readSettingsForm : les huit champs prennent la forme que valide updateSettings', () => {
   assert.deepEqual(readSettingsForm(stubForm(VALEURS, true)), {
     horaires: [{ debut: 9, fin: 12 }, { debut: 13.5, fin: 18 }],
     dureeMaxReservationJours: 7,
-    fenetreRetraitMinutes: 45,
     salle: { heureDebut: 9, heureFin: 16 },
     bloquerSiRetard: true,
   });
@@ -96,7 +96,7 @@ test('readSettingsForm : les neuf champs prennent la forme que valide updateSett
 });
 
 test('readSettingsForm : un champ vidé vaut NaN et updateSettings le refuse', () => {
-  for (const champ of ['matinDebut', 'apresMidiDebut', 'salleHeureDebut', 'dureeMaxReservationJours', 'fenetreRetraitMinutes']) {
+  for (const champ of ['matinDebut', 'apresMidiDebut', 'salleHeureDebut', 'dureeMaxReservationJours']) {
     const patch = readSettingsForm(stubForm({ ...VALEURS, [champ]: '' }));
     assert.throws(() => updateSettings(patch, 'user_041'), Error, `${champ} vide doit être refusé`);
   }

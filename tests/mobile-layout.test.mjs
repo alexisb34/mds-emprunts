@@ -27,7 +27,9 @@ test('bottomNavHtml : onglet actif, bouton scan central, libellés', () => {
   assert.match(html, /m-nav__tab m-nav__tab--active" href="#\/catalogue"/);
   assert.doesNotMatch(html, /m-nav__tab--active" href="#\/accueil"/);
   assert.match(html, /class="m-nav__scan" href="#\/scan" aria-label="Scanner un QR code"/);
-  for (const label of ['Accueil', 'Catalogue', 'Salle', 'Emprunts']) assert.match(html, new RegExp(`>${label}<`));
+  for (const label of ['Accueil', 'Catalogue', 'Salle photo', 'Emprunts']) assert.match(html, new RegExp(`>${label}<`));
+  // L’onglet dit « Salle photo » : c’est la salle qu’on réserve, pas un créneau quelconque.
+  assert.doesNotMatch(html, />Salle</);
   assert.equal((html.match(/<svg/g) || []).length, 5);
 });
 

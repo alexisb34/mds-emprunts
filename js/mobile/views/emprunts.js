@@ -73,8 +73,10 @@ export function empruntsHtml({ tab, data, date }) {
   return `<div class="card"><div class="tabs">${tabs}</div><div class="stack" data-role="list">${body}</div></div>`;
 }
 
-export function empruntsView(container) {
-  let tab = 'enCours';
+export function empruntsView(container, params = {}) {
+  // L’onglet d’arrivée peut venir de la route (#/emprunts/reservations) : après une réservation,
+  // on atterrit sur l’onglet qui vient de changer, pas sur « En cours ».
+  let tab = TABS_EMPRUNTS.some((t) => t.key === params.tab) ? params.tab : 'enCours';
   const render = () => {
     sweepExpirations(now());
     const user = auth.currentUser();

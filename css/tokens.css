@@ -24,6 +24,7 @@
   /* Bordures */
   --border-default: #e1e2e6;
   --border-strong: #c8c9cc;
+  --border-muted: #d1d5db;   /* fil d’étapes du scan ; variable `border/muted` du kit */
   --border-brand: #662483;
   --stroke-thin: 1px;
 

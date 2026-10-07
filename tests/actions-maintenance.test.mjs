@@ -297,7 +297,7 @@ test('cancelLoan : la fin d’une réservation ne remet pas au catalogue un obje
 
 test('expireDueLoans : la fin d’une réservation ne remet pas au catalogue un objet signalé', () => {
   const { item } = reservationSignalee();
-  assert.ok(expireDueLoans(new Date(2026, 8, 18, 11, 0)) >= 1, 'la réservation de l’objet expire');
+  assert.ok(expireDueLoans(new Date(2026, 8, 18, 17, 30)) >= 1, 'la réservation de l’objet expire');
   enMaintenanceAvecUnEvenement(item);
 });
 

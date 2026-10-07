@@ -99,7 +99,7 @@ export function returnSelf({ loanId, userId, photo = null, checklist = null }) {
 }
 
 export function userLoans(userId, date = now()) {
-  const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
+  const reglages = withDefaults(store.settings.get());
   const items = store.items.list();
   const itemOf = (l) => items.find((i) => i.id === l.itemId) || null;
   const mine = store.loans.list((l) => l.userId === userId);
@@ -108,13 +108,13 @@ export function userLoans(userId, date = now()) {
     // Le retrait le plus proche en premier.
     reservations: mine.filter((l) => l.statut === LOAN_STATES.RESERVEE).sort((a, b) => a.debutPrevu.localeCompare(b.debutPrevu)).map((loan) => ({
       loan, item: itemOf(loan),
-      window: pickupWindow(loan, minutes),
-      pickupOpen: isInPickupWindow(loan, date, minutes),
-      expired: isExpired(loan, date, minutes),
+      window: pickupWindow(loan, reglages),
+      pickupOpen: isInPickupWindow(loan, date, reglages),
+      expired: isExpired(loan, date, reglages),
     })),
     // Réservations expirées dans les dernières 24 h : l’accueil en informe l’emprunteur
     // (elles ne sont plus dans `reservations`, qui ne contient que les réservations en attente).
-    expireesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.EXPIREE && (date - pickupWindow(l, minutes).end) < 24 * 60 * 60 * 1000), (l) => l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
+    expireesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.EXPIREE && (date - pickupWindow(l, reglages).end) < 24 * 60 * 60 * 1000), (l) => l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
     // Réservations refusées dans les dernières 24 h : l’accueil en informe l’emprunteur avec le motif.
     refuseesRecentes: sortByDateDesc(mine.filter((l) => l.statut === LOAN_STATES.REFUSEE && l.dateRefus && (date - new Date(l.dateRefus)) < 24 * 60 * 60 * 1000), (l) => l.dateRefus).map((loan) => ({ loan, item: itemOf(loan) })),
     historique: sortByDateDesc(mine.filter((l) => !ACTIVE.includes(l.statut)), (l) => l.dateRetourReelle || l.dateRetrait || l.debutPrevu).map((loan) => ({ loan, item: itemOf(loan) })),
@@ -182,8 +182,8 @@ export function handOver({ code, pedagoId, date = now() }) {
     : (byCode.find((l) => l.statut === LOAN_STATES.RESERVEE) || byCode[0]);
   if (!loan || (parsed && loan.codeRetrait !== parsed.code6)) throw refusal(REASONS.CODE_RETRAIT_INCONNU);
   if (loan.statut !== LOAN_STATES.RESERVEE) throw new Error('Cette réservation n’est plus en attente de remise.');
-  const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
-  if (!isInPickupWindow(loan, date, minutes)) throw refusal(REASONS.FENETRE_RETRAIT);
+  const reglages = withDefaults(store.settings.get());
+  if (!isInPickupWindow(loan, date, reglages)) throw refusal(REASONS.FENETRE_RETRAIT);
   const item = store.items.get(loan.itemId);
   // Réserver n’immobilise plus l’objet : entre la réservation et la remise, il peut être parti
   // avec l’emprunteur du créneau précédent ou avoir été signalé. Sans cette garde, la pédago
@@ -276,8 +276,8 @@ export function extendLoan(loanId, finPrevue, pedagoId) {
 
 // Appelé au rendu des vues : libère les réservations non retirées dans la fenêtre. Idempotent.
 export function expireDueLoans(date = now()) {
-  const minutes = withDefaults(store.settings.get()).fenetreRetraitMinutes;
-  const due = store.loans.list((l) => isExpired(l, date, minutes));
+  const reglages = withDefaults(store.settings.get());
+  const due = store.loans.list((l) => isExpired(l, date, reglages));
   let libérées = 0;
   for (const candidat of due) {
     // Une écriture de la boucle notifie les abonnés, dont un rendu qui rappelle expireDueLoans :
@@ -285,7 +285,7 @@ export function expireDueLoans(date = now()) {
     const loan = store.loans.get(candidat.id);
     if (!loan || loan.statut !== LOAN_STATES.RESERVEE) continue;
     const item = store.items.get(loan.itemId);
-    releaseReservation(loan, { statut: LOAN_STATES.EXPIREE, action: ACTIONS.LOAN_EXPIREE, auteurId: loan.userId, detail: `${item ? item.nom : loan.itemId} — non retiré dans l’heure` });
+    releaseReservation(loan, { statut: LOAN_STATES.EXPIREE, action: ACTIONS.LOAN_EXPIREE, auteurId: loan.userId, detail: `${item ? item.nom : loan.itemId} — non retiré le jour prévu` });
     libérées += 1;
   }
   return libérées;

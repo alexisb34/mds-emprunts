@@ -93,7 +93,6 @@ test('updateSettings : refuse une plage inversée, une liste vide et une durée 
   assert.throws(() => updateSettings({ horaires: [{ debut: 12, fin: 9 }] }, PEDAGO), /plage horaire/i);
   assert.throws(() => updateSettings({ horaires: [] }, PEDAGO), /au moins une plage/i);
   assert.throws(() => updateSettings({ dureeMaxReservationJours: 0 }, PEDAGO), /durée/i);
-  assert.throws(() => updateSettings({ fenetreRetraitMinutes: 0 }, PEDAGO), /fenêtre/i);
   assert.throws(() => updateSettings({ salle: { heureDebut: 17, heureFin: 8 } }, PEDAGO), /salle/i);
 });
 

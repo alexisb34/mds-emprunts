@@ -84,11 +84,6 @@ export function updateSettings(patch, pedagoId) {
     if (!Number.isInteger(jours) || jours < 1 || jours > 60) throw new Error('La durée maximale doit être un nombre de jours entre 1 et 60.');
     suivant.dureeMaxReservationJours = jours;
   }
-  if (patch.fenetreRetraitMinutes !== undefined) {
-    const minutes = Number(patch.fenetreRetraitMinutes);
-    if (!Number.isInteger(minutes) || minutes < 5 || minutes > 480) throw new Error('La fenêtre de retrait doit être comprise entre 5 et 480 minutes.');
-    suivant.fenetreRetraitMinutes = minutes;
-  }
   if (patch.salle !== undefined) {
     const debut = Number(patch.salle?.heureDebut);
     const fin = Number(patch.salle?.heureFin);

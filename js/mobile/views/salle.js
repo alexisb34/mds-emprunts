@@ -2,6 +2,7 @@
 // mes réservations et états des lieux d’entrée et de sortie.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
+import { navigate } from '../../router.js';
 import { now, addDays, isBookingActive, isWeekday, REASONS, reasonLabel } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatDate, formatSlots, relativeDay, openModal, toast } from '../../ui.js';
@@ -131,17 +132,26 @@ export function salleHtml({ grid, selection, check, mine, semaine, date, setting
     </section>`;
 }
 
-export function salleView(container) {
+export function salleView(container, params = {}) {
   const user = auth.currentUser();
   let semaine = openingWeek(now());
   let selection = emptySelection();
   let etat = null; // { bookingId, moment, lignes } quand un état des lieux est ouvert
+  // #/salle/sortie ouvre l’état des lieux demandé sans passer par le planning : depuis l’accueil,
+  // le bouton mène à ce qu’il annonce. Consommé une seule fois, sinon « Retour » le rouvrirait.
+  let aOuvrir = ['entree', 'sortie'].includes(params.etat) ? params.etat : null;
 
   const render = () => {
     sweepBookings(now());
     const date = now();
     const bookings = store.bookings.list();
     const settings = store.settings.get();
+    if (aOuvrir) {
+      const actif = userBookings(user.id, date).active;
+      const attendu = actif && (aOuvrir === 'entree' ? !actif.entreeFaite : actif.entreeFaite && !actif.sortieFaite);
+      if (attendu) etat = { bookingId: actif.booking.id, moment: aOuvrir, lignes: roomChecklist() };
+      aOuvrir = null;
+    }
     if (etat) {
       const booking = store.bookings.get(etat.bookingId);
       // Sous-état de la route /salle : pas de flèche de retour (le lien ne changerait pas le hash), le bouton « Retour » suffit.
@@ -164,7 +174,8 @@ export function salleView(container) {
           const r = etat.moment === 'entree' ? recordEntry(args) : recordExit(args);
           toast(r.maintenance ? 'État des lieux enregistré — problème signalé' : 'État des lieux enregistré', r.maintenance ? 'warning' : 'success');
           etat = null;
-          render();
+          // Le parcours est fini : on rend la main à l’accueil plutôt que de renvoyer au planning.
+          navigate('/accueil');
         } catch (e) {
           toast(e.message, 'error');
         }

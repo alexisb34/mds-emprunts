@@ -147,9 +147,9 @@ test('handOver : seulement dans la fenêtre de retrait, par code court ou QR', (
 test('expireDueLoans : libère après la fenêtre, idempotent, n’touche pas les autres', () => {
   const item = freeValeur('hoya-nd');
   const loan = reserveValeur({ reference: item.reference, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
-  clock(new Date(2026, 8, 18, 9, 59));
-  assert.equal(expireDueLoans(), 0);
-  clock(new Date(2026, 8, 18, 10, 1));
+  clock(new Date(2026, 8, 18, 16, 59));
+  assert.equal(expireDueLoans(), 0, 'avant la fermeture, la réservation tient encore');
+  clock(new Date(2026, 8, 18, 17, 1));
   assert.equal(expireDueLoans(), 1);
   assert.equal(store.loans.get(loan.id).statut, LOAN_STATES.EXPIREE);
   assert.deepEqual(libresSur('hoya-nd', DEMAIN9, addDays(DEMAIN9, 1)), [item.id], 'expirée, la réservation libère sa période');
@@ -230,9 +230,10 @@ test('userLoans.reservations : fenêtre de retrait et expiration dérivées', ()
   assert.equal(avant.pickupOpen, false);
   assert.equal(avant.expired, false);
   assert.equal(avant.window.start.getHours(), 9);
-  assert.equal(avant.window.end.getHours(), 10);
+  assert.equal(avant.window.end.getHours(), 17, 'la journée entière, et non une heure');
   assert.equal(userLoans(ELEVE, new Date(2026, 8, 18, 9, 30)).reservations[0].pickupOpen, true);
-  const tard = userLoans(ELEVE, new Date(2026, 8, 18, 10, 30)).reservations[0];
+  assert.equal(userLoans(ELEVE, new Date(2026, 8, 18, 16, 30)).reservations[0].pickupOpen, true, 'encore ouvert en fin de journée');
+  const tard = userLoans(ELEVE, new Date(2026, 8, 18, 17, 30)).reservations[0];
   assert.equal(tard.pickupOpen, false);
   assert.equal(tard.expired, true);
 });
@@ -250,17 +251,25 @@ test('extendLoan est transactionnel : un échec du journal laisse la date de ret
   assert.equal(store.loans.get(enCours.id).finPrevue, avant);
 });
 
-test('reserveValeur : une fenêtre de retrait déjà close est refusée d’emblée', () => {
+test('reserveValeur : une journée de retrait déjà close est refusée d’emblée', () => {
   const item = freeValeur('hoya-nd');
-  clock(new Date(2026, 8, 17, 10, 30));
+  // 17h30 : le bureau a fermé, plus rien à retirer aujourd’hui, même pour l’après-midi.
+  clock(new Date(2026, 8, 17, 17, 30));
   const nbLoans = store.loans.list().length;
-  assert.throws(
-    () => reserveValeur({ reference: item.reference, userId: ELEVE, debutPrevu: new Date(2026, 8, 17, 8, 0), finPrevue: new Date(2026, 8, 17, 12, 0), motif: '' }),
-    (e) => e.reason === REASONS.DATE_PASSEE,
-  );
+  for (const [h1, h2, quoi] of [[8, 12, 'ce matin'], [13, 17, 'cet après-midi']]) {
+    assert.throws(
+      () => reserveValeur({ reference: item.reference, userId: ELEVE, debutPrevu: new Date(2026, 8, 17, h1), finPrevue: new Date(2026, 8, 17, h2), motif: '' }),
+      (e) => e.reason === REASONS.DATE_PASSEE, quoi,
+    );
+  }
   assert.equal(store.loans.list().length, nbLoans);
   assert.equal(store.items.get(item.id).etat, ITEM_STATES.DISPONIBLE);
-  const ok = reserveValeur({ reference: item.reference, userId: ELEVE, debutPrevu: new Date(2026, 8, 17, 14, 0), finPrevue: new Date(2026, 8, 17, 17, 0), motif: '' });
+  // Demain reste ouvert : c’est la journée qui est passée, pas la référence. Par un compte
+  // sans emprunt : à 17h30 les retours self du jour sont en retard, et `bloquerSiRetard`
+  // refuserait pour une tout autre raison.
+  const sansRetard = store.users.list((u) => u.actif !== false
+    && !store.loans.list((l) => l.userId === u.id && [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS].includes(l.statut)).length)[0];
+  const ok = reserveValeur({ reference: item.reference, userId: sansRetard.id, debutPrevu: DEMAIN9, finPrevue: DEMAIN17, motif: '' });
   assert.equal(ok.statut, LOAN_STATES.RESERVEE);
 });
 
@@ -269,7 +278,7 @@ test('expireDueLoans : une vue abonnée qui rappelle expireDueLoans ne rejoue pa
   const b = freeValeur('sd-256');
   reserveValeur({ reference: a.reference, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
   reserveValeur({ reference: b.reference, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
-  clock(new Date(2026, 8, 18, 10, 30));
+  clock(new Date(2026, 8, 18, 17, 30));
   const unsubscribe = store.subscribe(() => { expireDueLoans(now()); });
   try {
     expireDueLoans(now());
@@ -288,13 +297,13 @@ test('userLoans : expireesRecentes ne garde que les réservations expirées depu
   const a = freeValeur('hoya-nd');
   const b = freeValeur('sd-256');
   reserveValeur({ reference: a.reference, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
-  clock(new Date(2026, 8, 18, 11, 0)); // fenêtre close à 10h : expirée il y a 1 h
+  clock(new Date(2026, 8, 18, 18, 0)); // journée close à 17h : expirée il y a 1 h
   expireDueLoans(now());
-  const recent = userLoans(ELEVE, new Date(2026, 8, 18, 12, 0)); // expirée il y a 2 h
+  const recent = userLoans(ELEVE, new Date(2026, 8, 18, 19, 0)); // expirée il y a 2 h
   assert.equal(recent.expireesRecentes.length, 1);
   assert.equal(recent.expireesRecentes[0].item.id, a.id);
   assert.equal(recent.reservations.length, 0);
-  const ancienne = userLoans(ELEVE, new Date(2026, 8, 19, 16, 0)); // expirée il y a 30 h
+  const ancienne = userLoans(ELEVE, new Date(2026, 8, 19, 18, 0)); // expirée il y a 25 h
   assert.equal(ancienne.expireesRecentes.length, 0);
   assert.equal(ancienne.reservations.length, 0);
 });
@@ -317,7 +326,7 @@ test('userLoans : refuseesRecentes porte le motif de refus et s’efface après 
 test('sweepExpirations : comme expireDueLoans, mais une écriture qui échoue ne lève jamais', () => {
   const item = freeValeur('hoya-nd');
   const loan = reserveValeur({ reference: item.reference, userId: ELEVE, debutPrevu: DEMAIN9, finPrevue: addDays(DEMAIN9, 1), motif: '' });
-  clock(new Date(2026, 8, 18, 10, 30));
+  clock(new Date(2026, 8, 18, 17, 30));
   const origLog = store.log.create;
   const origError = console.error;
   const traces = [];

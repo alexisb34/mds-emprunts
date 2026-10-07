@@ -48,9 +48,11 @@ test('accueilHtml : bouton d’état des lieux quand le créneau est en cours', 
   const booking = store.bookings.list((b) => b.statut === 'en_cours')[0];
   const base = { user: store.users.get(booking.userId), enCours: [], nextBooking: booking, date: NOW };
   const entree = accueilHtml({ ...base, salle: { active: { booking, entreeFaite: false, sortieFaite: false }, aVenir: [], passees: [] } });
-  assert.match(entree, /<a class="btn btn--primary btn--block" href="#\/salle">Faire l’état des lieux d’entrée<\/a>/);
+  // Le bouton mène à l’état des lieux lui-même, pas au planning : il tient ce qu’il annonce.
+  assert.match(entree, /<a class="btn btn--primary btn--block" href="#\/salle\/entree">Faire l’état des lieux d’entrée<\/a>/);
   const sortie = accueilHtml({ ...base, salle: { active: { booking, entreeFaite: true, sortieFaite: false }, aVenir: [], passees: [] } });
   assert.match(sortie, /état des lieux de sortie/);
+  assert.match(sortie, /href="#\/salle\/sortie"/);
   const fait = accueilHtml({ ...base, salle: { active: { booking, entreeFaite: true, sortieFaite: true }, aVenir: [], passees: [] } });
   assert.doesNotMatch(fait, /Faire l’état des lieux/);
   assert.doesNotMatch(accueilHtml(base), /Faire l’état des lieux/);
