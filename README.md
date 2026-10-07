@@ -64,6 +64,7 @@ cloudflared tunnel --url http://localhost:8000
 - Scénarios de démonstration : `docs/scenarios-demo.md`
 - Notice à remettre aux testeurs : `docs/notice-testeurs.md`
 - Guide d’entretien pour animer une séance de test : `docs/guide-entretien-test.md`
+- Correctifs décidés dans Figma, en attente côté code : `docs/correctifs-figma.md`
 
 ## État d’avancement
 
