@@ -14,7 +14,8 @@
 
 - **Aucune étape de construction, aucune dépendance** hors Google Fonts. On ouvre un fichier, on recharge.
 - **Chemins relatifs partout.** Un chemin absolu casse la publication sous `https://<compte>.github.io/mds-emprunts/`. `tests/deploiement.test.mjs` le vérifie.
-- **Les couleurs, espacements, rayons et typographies viennent de `css/tokens.css`.** Aucune valeur en dur dans `design-system/css/site.css`, sauf les quatre couleurs propres au site déclarées dans son `:root` (`--ds-*`).
+- **Les couleurs, espacements, rayons et typographies viennent de `css/tokens.css`.** Aucune valeur en dur dans `design-system/css/site.css`, sauf les couleurs propres au site, déclarées dans son `:root` sous le préfixe `--ds-`.
+- **Toute page de `design-system/composants/` sauf `demarrer.html` et `fondations.html` porte les six ancres de la trame** : `id="a-quoi"`, `id="exemple"`, `id="variantes"`, `id="code"`, `id="quand-ne-pas"`, `id="accessibilite"`. Le test de la Task 10 balaie le dossier entier et vaut rétroactivement.
 - **Le site n'utilise pour lui-même aucune paire texte/fond sous 4,5:1.** Vérifié par test, Task 2.
 - **Langue : français.** Titres sans jargon non expliqué. Phrases courtes.
 - **Chaque page de `design-system/` charge les polices par `<link>` avant ses feuilles**, comme les pages de la racine (`preconnect` googleapis, `preconnect` gstatic, puis la famille Inter + Bricolage Grotesque).
@@ -283,7 +284,7 @@ Expected: FAIL
 
 - [ ] **Step 3: Implement le mécanisme et les deux pages Bouton**
 
-`exemples/bouton.html` : sections `variantes`, `tailles`, `etats`, `bloc`. `composants/bouton.html` suit la trame des six points de la spec §5 — à quoi ça sert, l'exemple, les variantes et états, le code, quand ne pas l'utiliser, accessibilité. Y écrire que `.btn` n'a aucun style de focus visible aujourd'hui : manque nommé, reporté dans `docs/correctifs-figma.md`.
+`exemples/bouton.html` : sections `variantes`, `tailles`, `etats`, `bloc`. `composants/bouton.html` suit la trame des six points de la spec §5, **chacun dans une section portant son ancre** — `id="a-quoi"`, `id="exemple"`, `id="variantes"`, `id="code"`, `id="quand-ne-pas"`, `id="accessibilite"` — car le test de la Task 10 balaie tout le dossier et vaut pour cette page aussi. Y écrire que `.btn` n'a aucun style de focus visible aujourd'hui : manque nommé, reporté dans `docs/correctifs-figma.md`.
 
 - [ ] **Step 4: Rendre visible un cadre qui ne répond pas**
 
