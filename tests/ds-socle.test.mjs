@@ -225,3 +225,16 @@ test('l’accueil a un seul h1, et c’est la signature de l’école', () => {
   // Le lien d'évitement de l'en-tête a besoin de sa cible.
   assert.match(html, /id="contenu"/);
 });
+
+test('sur téléphone, le sommaire passe après le contenu : le titre arrive en haut de l’écran', () => {
+  // Treize liens avant le premier titre feraient un écran entier de téléphone, sur chacune des
+  // pages de l'étage composants. Sous 900 px le sommaire prend donc `order: 2`, derrière `<main>`.
+  const css = lire('css/site.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const debut = css.indexOf('@media (max-width: 900px)');
+  const fin = css.indexOf('@media (max-width: 600px)');
+  assert.ok(debut >= 0 && fin > debut, 'le bloc 900 px est introuvable');
+  const etroit = css.slice(debut, fin);
+  assert.match(etroit, /\.ds-sommaire\s*\{[^}]*\border:\s*2\b/);
+  // Au-dessus de 900 px il reste à gauche : aucun `order` en dehors du bloc étroit.
+  assert.doesNotMatch(css.replace(etroit, ''), /\.ds-sommaire\s*\{[^}]*\border:/);
+});

@@ -49,10 +49,16 @@ test('sans serveur, la page explique au lieu de rester vide', () => {
 // ---- Ce que les assertions du plan ne couvrent pas ----
 
 test('tous les tokens du vrai fichier sont réclamés : « autres » est vide aujourd’hui', () => {
-  // Si ce test échoue, un token a été ajouté à tokens.css sans groupe. Il s'affiche quand
-  // même (voir plus haut) ; c'est un signal pour lui donner sa place, pas une panne.
+  // Ce test échoue quand un token a été ajouté à tokens.css sans famille. Le site n'est pas
+  // cassé : le token s'affiche quand même, sous « Autres ». C'est un signal pour lui donner sa place.
   const css = readFileSync(new URL('../css/tokens.css', import.meta.url), 'utf8');
-  assert.deepEqual(lireTokens(css).find((g) => g.cle === 'autres').tokens, []);
+  const sansFamille = lireTokens(css).find((g) => g.cle === 'autres').tokens.map((t) => t.nom);
+  assert.deepEqual(sansFamille, [], [
+    `Ces tokens de css/tokens.css ne sont réclamés par aucun groupe : ${sansFamille.join(', ')}.`,
+    'Que faire : ajoutez leur préfixe (ex. « --nouveau- ») au champ `prefixes` du groupe qui convient dans GROUPES',
+    '(design-system/js/tokens.js) — ou créez un groupe si c’est une nouvelle famille.',
+    'Si « Autres » est vraiment le bon classement, retirez ce test : rien d’autre ne casse.',
+  ].join('\n'));
 });
 
 test('les groupes se suivent dans l’ordre annoncé, « autres » en dernier', () => {
@@ -270,8 +276,24 @@ test('la page Fondations porte déjà l’explication du serveur : un module blo
   const html = lireSite('composants/fondations.html');
   assert.match(html, /id="tokens"[^>]*>[\s\S]*serveur[\s\S]*npm run serve/);
 
-  // Ce texte existe deux fois — ici et dans `lireTokensDepuisDocument` — : il ne doit pas diverger.
+  // La cause du fichier local existe deux fois — ici et dans `lireTokensDepuisDocument` — : mot pour mot.
   const { message } = lireTokensDepuisDocument({ styleSheets: [{ get cssRules() { throw new Error('SecurityError'); } }] });
-  const dansLaPage = html.match(/id="tokens"[\s\S]*?<p class="body">([\s\S]*?)<\/p>/)[1].replace(/<\/?code>/g, '`').replace(/&nbsp;/g, ' ');
-  assert.equal(dansLaPage.trim(), message);
+  const raison = html.match(/<p class="body" id="raison">([\s\S]*?)<\/p>/)[1].replace(/<\/?code>/g, '`').replace(/&nbsp;/g, ' ');
+  assert.equal(raison.trim(), message);
+});
+
+test('le message de repli ne prétend pas connaître la cause, et n’apparaît pas à chaque chargement', () => {
+  // Il s'affiche aussi pour un module en 404 ou une exception : le premier paragraphe est neutre.
+  // Et il est retardé, pour ne pas clignoter sur un site qui marche.
+  const html = lireSite('composants/fondations.html');
+  assert.match(html, /class="ds-message ds-message--attente"[^>]*>\s*<p class="body">Le tableau n’a pas pu s’afficher\./);
+  assert.match(lireSite('css/site.css'), /\.ds-message--attente\s*\{[^}]*animation:\s*ds-apparait\s+[\d.]+m?s\s+(?!0m?s)[\d.]+m?s\b/);
+});
+
+test('la page n’attend pas la feuille : une feuille en échec ne doit pas suspendre le module', () => {
+  // Un module est différé, il passe après les feuilles bloquantes : `load` est déjà parti, et
+  // `error` aussi. Attendre l'un des deux ne se résoudrait jamais sur un tokens.css en 404.
+  const html = lireSite('composants/fondations.html');
+  assert.doesNotMatch(html, /\bawait\b[^\n]*(?:new Promise|addEventListener)/);
+  assert.doesNotMatch(html, /addEventListener\(\s*['"](?:load|error)['"]/);
 });

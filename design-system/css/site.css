@@ -470,6 +470,12 @@ summary:focus-visible,
   border: var(--stroke-thin) solid var(--ds-filet);
 }
 
+/* Le message de repli écrit dans le HTML apparaît après un délai : il est invisible le temps que
+   le module construise le tableau, et ne clignote donc pas sur un site qui marche. Sans
+   JavaScript, ou module bloqué, il apparaît une seconde plus tard et reste. */
+.ds-message--attente { animation: ds-apparait .2s 1s both; }
+@keyframes ds-apparait { from { opacity: 0; } to { opacity: 1; } }
+
 /* ---- Pied ---- */
 
 .ds-pied {
@@ -501,7 +507,16 @@ summary:focus-visible,
 @media (max-width: 900px) {
   .ds-grille--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ds-colonnes { grid-template-columns: minmax(0, 1fr); gap: var(--space-3xl); }
-  .ds-sommaire { position: static; }
+  /* Treize liens avant le premier titre feraient un écran entier de téléphone : le sommaire passe
+     APRÈS le contenu. Il reste avant dans le balisage — sur grand écran il est à gauche, et le
+     lien d'évitement mène déjà droit au contenu. Cela suppose que le sommaire et `<main>` soient
+     les deux enfants directs de `.ds-colonnes`, comme sur toute page de l'étage composants. */
+  .ds-sommaire {
+    position: static;
+    order: 2;
+    padding-top: var(--space-3xl);
+    border-top: var(--stroke-thin) solid var(--ds-filet);
+  }
   /* Sur deux ou trois rangs, l'en-tête mange un sixième d'un écran de téléphone : il
      cesse alors d'être collant et se laisse dépasser. */
   .ds-entete { position: static; }

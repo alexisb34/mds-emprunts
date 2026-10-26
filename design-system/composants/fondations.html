@@ -28,12 +28,16 @@
         <p class="body ds-mesure">Cette page lit <code>css/tokens.css</code> au lieu de le recopier. Si un token change ou s’ajoute, elle change avec lui.</p>
       </header>
 
-      <!-- Le tableau se construit ici. Le message qui s’y trouve est celui d’une page qui n’a pas pu le faire :
-           sur un fichier ouvert directement, le navigateur refuse aussi les modules, et ce HTML est alors
-           tout ce qu’on voit. Le module le remplace dès qu’il a lu les tokens. -->
+      <!-- Le tableau se construit ici. Ce message est celui d’une page qui n’a pas pu le faire, quelle que
+           soit la raison : un module en 404, une exception… Sur un fichier ouvert directement, le
+           navigateur refuse aussi les modules, et ce HTML est alors tout ce qu’on voit. Le module le
+           remplace dès qu’il a lu les tokens ; `ds-message--attente` ne le fait apparaître qu’après
+           un délai, pour qu’il ne clignote pas sur un site qui marche. Le premier paragraphe est
+           neutre ; le second dit la cause du fichier local, mot pour mot comme `tokens.js`. -->
       <div id="tokens" class="ds-corps">
-        <div class="ds-message">
-          <p class="body">Cette page lit les tokens depuis la feuille de style, ce qu’un navigateur refuse sur un fichier local. Ouvrez le site depuis un serveur&nbsp;: <code>npm run serve</code>.</p>
+        <div class="ds-message ds-message--attente">
+          <p class="body">Le tableau n’a pas pu s’afficher. Si vous avez ouvert ce fichier directement, voici la raison.</p>
+          <p class="body" id="raison">Cette page lit les tokens depuis la feuille de style, ce qu’un navigateur refuse sur un fichier local. Ouvrez le site depuis un serveur&nbsp;: <code>npm run serve</code>.</p>
         </div>
       </div>
     </main>
@@ -50,15 +54,9 @@
     document.getElementById('sommaire').outerHTML = sommaireHtml('composants/fondations.html');
     document.getElementById('pied').outerHTML = piedHtml('composants/fondations.html');
 
-    // Les règles d’une feuille ne se lisent qu’une fois celle-ci chargée.
-    const lienTokens = document.querySelector('link[href$="tokens.css"]');
-    if (lienTokens && !lienTokens.sheet) {
-      await new Promise((fin) => {
-        lienTokens.addEventListener('load', fin, { once: true });
-        lienTokens.addEventListener('error', fin, { once: true });
-      });
-    }
-
+    // Pas d’attente de la feuille : un script de module est différé et ne s’exécute qu’après les
+    // feuilles qui bloquent le rendu. Si `tokens.css` a échoué (404, mauvais chemin), elle est
+    // simplement absente de `document.styleSheets`, et `lireTokensDepuisDocument` le dit.
     const cible = document.getElementById('tokens');
     const lecture = lireTokensDepuisDocument(document);
     if (lecture.ok) {
