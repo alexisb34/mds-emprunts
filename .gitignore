@@ -1,1 +1,5 @@
 .DS_Store
+
+# Références de design (captures d’interfaces tierces) : utiles en local, mais le dépôt
+# est publié sur GitHub Pages et n’a pas à rediffuser l’interface de quelqu’un d’autre.
+images/

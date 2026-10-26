@@ -41,16 +41,16 @@ test('settingsFormHtml : les champs portent les valeurs courantes', () => {
   assert.match(html, /name="salleHeureFin"[^>]*value="17"/);
 });
 
-test('parametresHtml : les trois cartes et le bouton de réinitialisation', () => {
-  const html = parametresHtml({
-    settings: DEFAULT_SETTINGS, usage: { bytes: 10, budget: 100, percent: 10 },
-    date: NOW, horlogeDemo: NOW.toISOString(), status: officeStatus(NOW, DEFAULT_SETTINGS),
-  });
-  assert.match(html, /Horloge de démonstration/);
+test('parametresHtml : les deux cartes, sans l’horloge de démonstration', () => {
+  const html = parametresHtml({ settings: DEFAULT_SETTINGS, usage: { bytes: 10, budget: 100, percent: 10 } });
   assert.match(html, /Règles d’emprunt/);
   assert.match(html, /Espace occupé/);
   assert.match(html, /data-action="save-settings"/);
-  assert.match(html, /data-action="reset-demo"/);
+  // L’horloge se règle sur l’écran d’accueil : elle vaut pour les deux interfaces, et on la
+  // choisit avant d’entrer quelque part.
+  assert.doesNotMatch(html, /Horloge de démonstration/);
+  assert.doesNotMatch(html, /data-action="reset-demo"/);
+  assert.doesNotMatch(html, /data-action="set-clock"/);
 });
 
 test('settingsFormHtml : une liste d’horaires cassée n’empêche pas d’afficher le formulaire', () => {

@@ -4,16 +4,18 @@ import { now } from '../../rules.js';
 import { recentLog, ACTION_LABELS } from '../../log.js';
 import { navigate } from '../../router.js';
 import { escapeHtml, badge, avatar, formatDate, formatTime, relativeDay, formatSlots, fullName } from '../../ui.js';
-import { officeStatus } from '../../actions/settings.js';
 import { setTopbar } from '../layout.js';
-import { demoClockHtml, bindDemoClock } from '../demoClock.js';
 import { openHandoverModal } from '../handoverModal.js';
 import { computeKpis, lateLoans, dueTodayReservations, openReports, exitMissingRows } from '../kpi.js';
 
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 
-function kpiCard(label, value, extra = '', variant = '') {
-  return `<div class="kpi ${variant}"><span class="kpi__label">${escapeHtml(label)}</span><span class="kpi__value">${value}</span><span class="kpi__delta">${escapeHtml(extra)}</span></div>`;
+// Une carte qui compte quelque chose mène à ce qu’elle compte. Un vrai lien, donc : adresse
+// partageable, retour arrière qui fonctionne, et tabulation sans rien à écrire.
+function kpiCard(label, value, extra = '', variant = '', href = '') {
+  const dedans = `<span class="kpi__label">${escapeHtml(label)}</span><span class="kpi__value">${value}</span><span class="kpi__delta">${escapeHtml(extra)}</span>`;
+  if (!href) return `<div class="kpi ${variant}">${dedans}</div>`;
+  return `<a class="kpi kpi--link ${variant}" href="#${escapeHtml(href)}">${dedans}</a>`;
 }
 
 function lateRows(late, date) {
@@ -66,14 +68,13 @@ function activityList(activity, users, date) {
     </div>`).join('')}</div>`;
 }
 
-export function dashboardHtml({ kpis, late, due, reports, activity, users, date, horlogeDemo, status, exitMissing = [] }) {
+export function dashboardHtml({ kpis, late, due, reports, activity, users, date, exitMissing = [] }) {
   return `
-    ${demoClockHtml({ date, horlogeDemo, status })}
     <div class="grid-4">
-      ${kpiCard('Matériel disponible', kpis.disponibles, 'exemplaires prêts à être empruntés')}
-      ${kpiCard('Emprunts en cours', kpis.enCours, `${plural(kpis.aRemettre, 'remise prévue', 'remises prévues')} aujourd’hui`, 'kpi--brand')}
-      ${kpiCard('Retards', kpis.retards, kpis.retards ? 'à relancer' : 'tout est rentré', kpis.retards ? 'kpi--alert' : '')}
-      ${kpiCard('Réservations salle à venir', kpis.reservationsSalle, `${plural(kpis.signalements, 'signalement à traiter', 'signalements à traiter')}`, 'kpi--teal')}
+      ${kpiCard('Matériel disponible', kpis.disponibles, 'exemplaires prêts à être empruntés', 'kpi--disponible', '/materiel/etat/disponible')}
+      ${kpiCard('Emprunts en cours', kpis.enCours, `${plural(kpis.aRemettre, 'remise prévue', 'remises prévues')} aujourd’hui`, 'kpi--emprunte', '/emprunts/enCours')}
+      ${kpiCard('Retards', kpis.retards, kpis.retards ? 'à relancer' : 'tout est rentré', 'kpi--retard', '/emprunts/retards')}
+      ${kpiCard('Réservations salle à venir', kpis.reservationsSalle, `${plural(kpis.signalements, 'signalement à traiter', 'signalements à traiter')}`, 'kpi--salle', '/salle')}
     </div>
     <div class="grid-2">
       <div class="stack">
@@ -100,12 +101,10 @@ export function dashboardView(container) {
     container.innerHTML = dashboardHtml({
       kpis: computeKpis(data, date), late: lateLoans(data, date), due: dueTodayReservations(data, date),
       reports: openReports(data), activity: recentLog(15), users: data.users, date,
-      horlogeDemo: settings.horlogeDemo || null, status: officeStatus(date, settings),
       exitMissing: exitMissingRows(data.bookings, data.users, date),
     });
     container.querySelectorAll('[data-href]').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.href)));
     container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); openHandoverModal({ loan: store.loans.get(b.dataset.loan) || null }); }));
-    bindDemoClock(container, { date });
   };
   render();
   return store.subscribe(render);

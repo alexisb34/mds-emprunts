@@ -65,7 +65,7 @@ function actionsColumn(tab) {
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 
 export function empruntsHtml({ tab, rows, counts, sort, date }) {
-  const tabs = TABS_ADMIN_LOANS.map((t) => `<button type="button" class="tab${t.key === tab ? ' tab--active' : ''}" data-tab="${t.key}">${escapeHtml(t.label)} <span class="tab__count">${counts[t.key]}</span></button>`).join('');
+  const tabs = TABS_ADMIN_LOANS.map((t) => `<button type="button" class="tab${t.key === tab ? ' is-active' : ''}" data-tab="${t.key}">${escapeHtml(t.label)} <span class="tab__count">${counts[t.key]}</span></button>`).join('');
   const columns = [...LOAN_COLUMNS, actionsColumn(tab)];
   return `
     <div class="page-header">
@@ -77,9 +77,10 @@ export function empruntsHtml({ tab, rows, counts, sort, date }) {
     </div>`;
 }
 
-export function empruntsView(container) {
-  let tab = 'enCours';
-  let sort = { ...DEFAULT_SORT.enCours };
+export function empruntsView(container, params = {}) {
+  // L’onglet d’arrivée peut venir de la route : une carte du tableau de bord mène ici déjà filtrée.
+  let tab = TABS_ADMIN_LOANS.some((t) => t.key === params.tab) ? params.tab : 'enCours';
+  let sort = { ...DEFAULT_SORT[tab] };
 
   const counts = (date) => ({
     enCours: loanRows('enCours', date).length, reserves: loanRows('reserves', date).length,

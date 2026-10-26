@@ -1,12 +1,12 @@
-// tests/admin-demoClock.test.mjs — la carte « horloge de démonstration », partagée par le
-// tableau de bord et l’écran Paramètres.
+// tests/demoClock.test.mjs — la carte « horloge de démonstration », posée sur l’écran
+// d’accueil du prototype, au-dessus du choix d’interface.
 import './helpers/storage.mjs';
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { officeStatus } from '../js/actions/settings.js';
-import { demoClockHtml, bindDemoClock } from '../js/admin/demoClock.js';
+import { demoClockHtml, bindDemoClock } from '../js/demoClock.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const db = buildSeed(NOW);
@@ -38,7 +38,9 @@ test('demoClockHtml : le badge distingue horloge simulée et temps réel', () =>
 });
 
 // Pose une carte horloge factice (boutons et champ stubés) et une modale factice dont on capte les actions.
-function avecCarteFactice(valeurChamp, fn) {
+// `async` et `await fn(...)` : sans cela le `finally` rendait `document` à sa valeur d’origine
+// avant la fin du corps asynchrone, et tout ce qui touchait au DOM après un `await` échouait.
+async function avecCarteFactice(valeurChamp, fn) {
   const clics = {};
   const champ = { value: valeurChamp };
   const root = {
@@ -65,7 +67,7 @@ function avecCarteFactice(valeurChamp, fn) {
     createElement: element,
     body: { classList: { add() {}, remove() {} } },
   };
-  try { return fn({ root, clics, boutons, modalRoot }); } finally { globalThis.document = avant; globalThis.setTimeout = avantTimeout; }
+  try { return await fn({ root, clics, boutons, modalRoot }); } finally { globalThis.document = avant; globalThis.setTimeout = avantTimeout; }
 }
 
 beforeEach(() => {

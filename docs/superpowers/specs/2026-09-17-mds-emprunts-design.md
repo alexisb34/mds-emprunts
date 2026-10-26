@@ -141,7 +141,9 @@ Basée sur l'UI kit Figma : sidebar violette 260 px, topbar 72 px, canvas `#f2f4
 | `#/salle` | Planning semaine (colonnes lun-ven, lignes 8h-17h), navigation semaine ±, réservations colorées · clic → détail avec états des lieux et badge « sortie non faite » · *Annuler* |
 | `#/maintenance` | Liste des événements par statut · *Créer une intervention* · *Clôturer* · vue « Matériel en maintenance / HS » |
 | `#/utilisateurs` | Table (nom, rôle, promo, emprunts en cours, retards) · ajouter / modifier / désactiver · `#/utilisateurs/:id` → historique complet de la personne |
-| `#/parametres` | Horaires d'ouverture, durée max réservation, fenêtre de retrait, règle anti-retard, **horloge de démo**, compteur d'espace `localStorage`/photos, **Réinitialiser les données de démo** |
+| `#/parametres` | Horaires d'ouverture, durée max réservation, règle anti-retard, compteur d'espace `localStorage`/photos |
+
+L'**horloge de démonstration** et la **régénération du jeu de données** ne vivent dans aucune des deux interfaces : elles sont sur la page d'accueil du prototype (`index.html`), au-dessus du choix d'interface. On règle le temps avant d'entrer quelque part, et le réglage vaut pour les deux. N'ayant alors aucun opérateur identifié, ces deux actions n'écrivent pas au journal.
 
 Recherche matériel dans la topbar (objets) ; les écrans Utilisateurs et Emprunts ont leurs propres filtres. En phase 5, un code `LOAN-…`/code court saisi dans cette recherche ouvrira la remise correspondante (la modale de remise sera alors pré-remplie depuis la ligne de l’emprunt). Modales et toasts conformes à la page *Modal & Feedback* du kit.
 

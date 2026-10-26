@@ -78,8 +78,11 @@ export function readItemForm(root) {
   };
 }
 
-export function materielView(container) {
-  const filters = { q: takeSearch(), categorie: '', circuit: '', etat: '' };
+export function materielView(container, params = {}) {
+  // `/materiel/etat/disponible` arrive filtré : le filtre est posé dans le formulaire, visible
+  // et modifiable, pas caché dans l’adresse.
+  const etatDemande = Object.values(ITEM_STATES).includes(params.etat) ? params.etat : '';
+  const filters = { q: takeSearch(), categorie: '', circuit: '', etat: etatDemande };
   let sort = { key: 'code', dir: 'asc' };
 
   const currentRows = () => sortRows(filterItems(store.items.list(), filters), sort, COLUMNS);

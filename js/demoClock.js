@@ -1,9 +1,10 @@
-// js/admin/demoClock.js — la carte « horloge de démonstration », partagée par le tableau
-// de bord (où on la cherche en pleine démo) et l’écran Paramètres (spec §6).
-import { auth } from '../auth.js';
-import { isWeekday } from '../rules.js';
-import { escapeHtml, badge, formatDateTime, openModal, toast } from '../ui.js';
-import { setDemoClock, resetDemoData, toDatetimeLocal, fromDatetimeLocal } from '../actions/settings.js';
+// js/demoClock.js — la carte « horloge de démonstration ». Elle vit sur l’écran d’accueil du
+// prototype, au-dessus du choix d’interface : on règle le temps AVANT d’entrer quelque part,
+// et le réglage vaut pour les deux interfaces (spec §6).
+import { auth } from './auth.js';
+import { isWeekday } from './rules.js';
+import { escapeHtml, badge, formatDateTime, openModal, toast } from './ui.js';
+import { setDemoClock, resetDemoData, toDatetimeLocal, fromDatetimeLocal } from './actions/settings.js';
 
 // Prochain jour ouvré à 9h (aujourd’hui si c’est un jour ouvré avant 9h).
 export function nextOpenDay(date) {

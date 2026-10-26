@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-10-26T08:07:42.288Z",
+        "reason": "Choix du design system MDS, pas un défaut : Inter est la police de corps du kit Figma « MDS — UI Kit — Prêt de matériel » (pyMDlyt4X8jot1ZeHcXvtk), déclarée dans css/tokens.css:78 avec Bricolage Grotesque en titrage, et portée par les 23 styles de texte du kit."
+      }
+    ]
+  }
+}

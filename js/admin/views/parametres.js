@@ -2,10 +2,9 @@
 // de démonstration, espace occupé et réinitialisation.
 import { store } from '../../store.js';
 import { auth } from '../../auth.js';
-import { now, withDefaults, openHours, openRoomHours } from '../../rules.js';
+import { withDefaults, openHours, openRoomHours } from '../../rules.js';
 import { escapeHtml, toast } from '../../ui.js';
-import { officeStatus, updateSettings } from '../../actions/settings.js';
-import { demoClockHtml, bindDemoClock } from '../demoClock.js';
+import { updateSettings } from '../../actions/settings.js';
 import { setTopbar } from '../layout.js';
 
 const MO = 1024 * 1024;
@@ -68,9 +67,8 @@ export function readSettingsForm(root) {
   };
 }
 
-export function parametresHtml({ settings, usage, date, horlogeDemo, status }) {
+export function parametresHtml({ settings, usage }) {
   return `
-    ${demoClockHtml({ date, horlogeDemo, status })}
     <div class="grid-2">
       ${settingsFormHtml(settings)}
       ${usageHtml(usage)}
@@ -81,32 +79,14 @@ export function parametresView(container) {
   // Un ré-rendu pendant la saisie écraserait les champs : on ne redessine pas
   // tant que le formulaire est modifié et non enregistré.
   let dirty = false;
-  // Pendant la saisie, seule la carte horloge est redessinée : l’heure, l’état du bureau et le
-  // « Jour ouvré 9h » (calculé depuis `date`) ne doivent pas rester figés sur le dernier rendu.
-  const refreshClock = () => {
-    const card = container.querySelector('.demo-clock');
-    if (!card) return;
-    const date = now();
-    const settings = store.settings.get();
-    const gabarit = document.createElement('div');
-    gabarit.innerHTML = demoClockHtml({ date, horlogeDemo: settings.horlogeDemo || null, status: officeStatus(date, settings) });
-    const fraiche = gabarit.firstElementChild;
-    card.replaceWith(fraiche);
-    bindDemoClock(fraiche, { date });
-  };
   const render = () => {
-    if (dirty) { refreshClock(); return; }
-    const date = now();
+    // L’horloge ayant quitté cet écran, plus rien n’y vieillit : un rendu figé pendant la saisie
+    // ne cache plus d’information.
+    if (dirty) return;
     const settings = store.settings.get();
-    setTopbar({ title: 'Paramètres', subtitle: 'Règles, horloge de démonstration et espace' });
-    container.innerHTML = parametresHtml({
-      settings, usage: store.usage(), date,
-      horlogeDemo: settings.horlogeDemo || null, status: officeStatus(date, settings),
-    });
-    bindDemoClock(container, { date });
-    container.querySelectorAll('input').forEach((el) => el.addEventListener('input', () => {
-      if (el.name !== 'horloge') dirty = true;
-    }));
+    setTopbar({ title: 'Paramètres', subtitle: 'Règles d’emprunt et espace occupé' });
+    container.innerHTML = parametresHtml({ settings, usage: store.usage() });
+    container.querySelectorAll('input').forEach((el) => el.addEventListener('input', () => { dirty = true; }));
     container.querySelector('[data-action="save-settings"]').addEventListener('click', () => {
       try {
         updateSettings(readSettingsForm(container), auth.currentUserId());

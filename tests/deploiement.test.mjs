@@ -190,3 +190,17 @@ test('les polices se chargent en parallèle : <link> dans chaque page, avant nos
     assert.ok(police < html.indexOf('href="css/tokens.css"'), `${page} : les polices passent avant nos feuilles`);
   }
 });
+
+test('la page d’accueil porte l’horloge de démonstration, au-dessus du choix d’interface', () => {
+  const html = lire('index.html');
+  // Le réglage vaut pour les deux interfaces : il se fait avant d’en choisir une.
+  assert.match(html, /id="horloge"/);
+  assert.match(html, /from '\.\/js\/demoClock\.js'/);
+  assert.ok(html.indexOf('id="horloge"') < html.indexOf('href="admin.html"'), 'l’horloge précède les liens');
+  // La modale de régénération et les toasts ont besoin de leurs racines.
+  for (const racine of ['modal-root', 'toast-root']) {
+    assert.match(html, new RegExp(`id="${racine}"`), `index.html n’a pas de #${racine}`);
+  }
+  // Les cartes et les boutons viennent de la feuille de composants.
+  assert.match(html, /href="css\/components\.css"/);
+});

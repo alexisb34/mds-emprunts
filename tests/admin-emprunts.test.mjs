@@ -33,7 +33,11 @@ test('empruntsHtml : onglets avec compteurs, actions de l’onglet Réservés, �
   const rows = sortRows(loanRows('reserves', NOW), { key: 'debut', dir: 'asc' }, LOAN_COLUMNS);
   const counts = { enCours: 8, reserves: 2, retards: 2, historique: 41 };
   const html = empruntsHtml({ tab: 'reserves', rows, counts, sort: { key: 'debut', dir: 'asc' }, date: NOW });
-  assert.match(html, /tab tab--active" data-tab="reserves">Réservés <span class="tab__count">2<\/span>/);
+  // `is-active` est la marque des onglets admin — la pilule pleine, comme sur Maintenance.
+  // `tab--active` ne colorait qu’un soulignement, invisible sous le style pilule : rien ne
+  // distinguait l’onglet choisi.
+  assert.match(html, /tab is-active" data-tab="reserves">Réservés <span class="tab__count">2<\/span>/);
+  assert.doesNotMatch(html, /tab--active/);
   assert.match(html, /data-action="handover"/);
   assert.match(html, /data-action="refuse" data-loan="/);
   const vide = empruntsHtml({ tab: 'retards', rows: [], counts: { enCours: 0, reserves: 0, retards: 0, historique: 0 }, sort: null, date: NOW });
@@ -85,4 +89,16 @@ test('loanRows : les réservés sont triés par retrait croissant', () => {
 test('empruntsHtml : les dossiers actifs incluent les retards', () => {
   const html = empruntsHtml({ tab: 'enCours', rows: [], counts: { enCours: 8, reserves: 2, retards: 2, historique: 0 }, sort: null, date: NOW });
   assert.match(html, /12 dossiers actifs · 2 retards/);
+});
+
+test('empruntsView : l’onglet d’arrivée vient de la route', () => {
+  // Les cartes du tableau de bord mènent ici déjà filtrées : /emprunts/retards ouvre sur
+  // les retards, et une valeur inconnue retombe sur « En cours » plutôt que sur du vide.
+  for (const [demande, attendu] of [['retards', 'retards'], ['enCours', 'enCours'], ['nawak', 'enCours'], [undefined, 'enCours']]) {
+    const counts = { enCours: 8, reserves: 2, retards: 2, historique: 41 };
+    const tab = TABS_ADMIN_LOANS.some((t) => t.key === demande) ? demande : 'enCours';
+    assert.equal(tab, attendu, `route « ${demande} »`);
+    const html = empruntsHtml({ tab, rows: [], counts, sort: null, date: NOW });
+    assert.match(html, new RegExp(`tab is-active" data-tab="${attendu}"`));
+  }
 });

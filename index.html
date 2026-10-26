@@ -9,9 +9,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
   <style>
     main { max-width: 640px; margin: 64px auto; padding: 0 var(--space-2xl); }
-    .links { display: grid; gap: var(--space-lg); margin-top: var(--space-3xl); }
+    .horloge { margin-top: var(--space-3xl); }
+    .links { display: grid; gap: var(--space-lg); margin-top: var(--space-lg); }
     .links a { display: block; padding: var(--space-2xl); background: var(--bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); color: var(--text-primary); }
     .links a strong { display: block; color: var(--text-brand); }
   </style>
@@ -21,6 +23,8 @@
     <p class="label-caps text-secondary">Prototype</p>
     <h1 class="h5">MDS Emprunts</h1>
     <p class="body text-secondary">Gestion des emprunts de matériel — école MDS.</p>
+    <!-- L’horloge se règle avant d’entrer quelque part : elle vaut pour les deux interfaces. -->
+    <div class="horloge" id="horloge"></div>
     <nav class="links">
       <a href="admin.html"><strong class="label-lg">Interface admin</strong><span class="body-sm">Pédagogie — desktop</span></a>
       <a href="mobile.html"><strong class="label-lg">Interface mobile</strong><span class="body-sm">Élèves et intervenants — téléphone</span></a>
@@ -28,5 +32,26 @@
       <a href="kit.html"><strong class="label-lg">Kit de composants</strong><span class="body-sm">Vérification visuelle vs Figma</span></a>
     </nav>
   </main>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+  <script type="module">
+    import { store } from './js/store.js';
+    import { buildSeed } from './js/seed.js';
+    import { now } from './js/rules.js';
+    import { officeStatus } from './js/actions/settings.js';
+    import { demoClockHtml, bindDemoClock } from './js/demoClock.js';
+
+    store.init(buildSeed);
+    const hote = document.getElementById('horloge');
+    const render = () => {
+      const date = now();
+      const settings = store.settings.get();
+      hote.innerHTML = demoClockHtml({ date, horlogeDemo: settings.horlogeDemo || null, status: officeStatus(date, settings) });
+      bindDemoClock(hote, { date });
+    };
+    render();
+    // Une régénération ou un changement d’heure depuis un autre onglet redessine la carte.
+    store.subscribe(render);
+  </script>
 </body>
 </html>

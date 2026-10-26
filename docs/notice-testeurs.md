@@ -33,7 +33,7 @@ Trois parcours courts, sans demander d’aide, puis répondez à la question de 
 
 - **La caméra demande une autorisation** : acceptez. Sans caméra, ou si vous refusez, l’écran **Scanner** propose de saisir le code imprimé sous le QR code (champ **Ou saisir un code**, puis **Valider le code**), et la photo peut être remplacée par une image de démonstration.
 - **« Le bureau de la pédagogie est fermé… »** : le prototype applique les horaires du bureau, du lundi au vendredi de 8h à 12h et de 13h à 17h. En dehors, l’emprunt en self-service est refusé, et le week-end la salle photo n’offre que la semaine suivante. C’est voulu ; pour tester à toute heure, voir « Pour la pédagogie » ci-dessous (**Jour ouvré 9h**).
-- **Pour repartir de zéro** : dans `admin.html` (voir ci-dessous), **Paramètres** puis **Régénérer les données**, ou supprimez les données du site dans les réglages de votre navigateur.
+- **Pour repartir de zéro** : sur la page d’accueil du prototype, **Régénérer les données**, ou supprimez les données du site dans les réglages de votre navigateur.
 
 ## Pour la pédagogie
 
@@ -41,4 +41,4 @@ Ajoutez `admin.html` à l’adresse (`https://<compte>.github.io/mds-emprunts/ad
 
 Ouvrez-la dans le **même navigateur** que l’application, dans un second onglet : ce que fait l’un apparaît dans l’autre. Si les données diffèrent, c’est sans doute que l’icône de l’écran d’accueil garde ses propres données : ouvrez alors les deux pages dans le navigateur.
 
-Depuis le **Tableau de bord**, **Jour ouvré 9h** place l’horloge de démonstration à 9h un jour ouvré, ce qui permet de tester le self-service le soir ou le week-end. L’horloge vaut pour tout le prototype sur ce téléphone ; **Temps réel** la remet à l’heure du téléphone.
+Sur la **page d’accueil** du prototype — celle qui propose les interfaces — la carte **Horloge de démonstration** place l’heure où vous voulez : **Jour ouvré 9h** suffit pour tester le self-service le soir ou le week-end. Le réglage vaut pour tout le prototype sur ce téléphone, les deux interfaces comprises ; **Temps réel** la remet à l’heure du téléphone.

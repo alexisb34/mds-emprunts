@@ -39,7 +39,7 @@ Faites-les venir **séparément**. À deux, le plus assuré parle et l’autre s
 - [ ] Un **téléphone chargé** (le leur si possible : c’est leur navigateur, leurs habitudes).
 - [ ] L’adresse ouverte, **compte Camille Dubois** choisi d’avance pour ne pas perdre trois
       minutes dans la liste. Vérifiez que **Mes emprunts** n’est pas déjà encombré ; sinon,
-      régénérez les données (admin → Paramètres → **Régénérer les données**).
+      régénérez les données (accueil du prototype → **Régénérer les données**).
 - [ ] **Deux étiquettes QR imprimées** à 100 % et collées sur de vrais objets : la
       **Multiprise #3 (MDS-0003)** et une seconde, pour que le scan ne soit pas une abstraction.
 - [ ] `admin.html` ouvert **sur votre ordinateur**, pas sur leur téléphone : vous y remettez
@@ -49,7 +49,7 @@ Faites-les venir **séparément**. À deux, le plus assuré parle et l’autre s
 
 **Si c’est hors des heures d’ouverture** (avant 8h, après 17h, pause de midi, week-end), le
 self-service sera refusé — c’est voulu. Posez l’horloge de démonstration sur un jour ouvré avant
-de commencer : admin → Tableau de bord → régler **Date et heure simulées** sur un jour ouvré à
+de commencer : sur l’accueil du prototype, régler **Date et heure simulées** sur un jour ouvré à
 **9h30**, puis **Appliquer**. Évitez le raccourci « Jour ouvré 9h » : à 9h pile, la fenêtre de
 retrait d’une réservation du matin se referme, et vous testeriez une coïncidence.
 

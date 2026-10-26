@@ -35,11 +35,16 @@ export function setDemoClock(date, auteurId) {
   const horlogeDemo = date ? (date instanceof Date ? date.toISOString() : String(date)) : null;
   if (horlogeDemo && Number.isNaN(new Date(horlogeDemo).getTime())) throw new Error('Date invalide.');
   store.settings.update({ horlogeDemo });
-  logAction({
-    auteurId, action: ACTIONS.SETTINGS_MODIFIES,
-    detail: horlogeDemo ? `Horloge de démo : ${formatDateTime(horlogeDemo)}` : 'Horloge de démo : temps réel',
-    userId: auteurId,
-  });
+  // L’horloge se règle depuis l’écran d’accueil, où personne n’est encore identifié. Plutôt que
+  // de signer le journal d’un compte choisi au hasard, on n’y écrit rien : une piste d’audit qui
+  // ment vaut moins qu’une piste incomplète.
+  if (auteurId) {
+    logAction({
+      auteurId, action: ACTIONS.SETTINGS_MODIFIES,
+      detail: horlogeDemo ? `Horloge de démo : ${formatDateTime(horlogeDemo)}` : 'Horloge de démo : temps réel',
+      userId: auteurId,
+    });
+  }
   return store.settings.get();
 }
 
@@ -51,7 +56,7 @@ export function resetDemoData(date, auteurId) {
   const horlogeDemo = date ? d.toISOString() : null;
   store.reset(() => buildSeed(d));
   if (horlogeDemo) store.settings.update({ horlogeDemo });
-  logAction({ auteurId, action: ACTIONS.DEMO_RESET, detail: `Données régénérées autour du ${formatDateTime(d)}` });
+  if (auteurId) logAction({ auteurId, action: ACTIONS.DEMO_RESET, detail: `Données régénérées autour du ${formatDateTime(d)}` });
   return store.settings.get();
 }
 

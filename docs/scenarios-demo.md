@@ -8,17 +8,17 @@ Chaque pas dit ce qu’on **fait**, puis ce qu’on doit **voir**. Le gras repè
 
 1. **Imprimer les étiquettes** (une fois, avant la première démonstration ou le premier test avec des élèves) : ouvrir `etiquettes.html` (la page se trouve sous **Étiquettes QR** sur l’accueil ; sans sélection, elle montre tout l’inventaire), imprimer à 100 % (sans « ajuster à la page »), puis coller une étiquette par exemplaire. Sans étiquette imprimée, le « scan réel » de la notice des testeurs n’a rien à viser. Le scénario 1 emprunte la Multiprise #3 (**MDS-0003**) ; le scénario 2 reprend MDS-0003 puis passe à la Multiprise #4 (**MDS-0004**) : ce sont les deux étiquettes à avoir sous la main pour viser un vrai QR au lieu de simuler le scan.
 2. Lancer le prototype : `python3 -m http.server 8000` depuis le dépôt (ou ouvrir l’adresse publiée). La caméra n’est utilisable que sur `localhost` ou en HTTPS ; sans elle, l’écran Scanner propose une simulation, et c’est ce que ce document suit.
-3. Ouvrir `admin.html` et `mobile.html` **dans deux fenêtres côte à côte**. Rétrécir la fenêtre du mobile pour qu’elle ressemble à un téléphone.
-4. Fenêtre admin : l’écran « Qui êtes-vous ? » liste les comptes de la pédagogie. Choisir **Alexis Bengel**. Le **Tableau de bord** s’ouvre sur la carte **Horloge de démonstration**.
-5. Cliquer sur **Jour ouvré 9h**. On voit le toast « Horloge de démo appliquée », la ligne « Maintenant : … à 09h00 », le badge **Horloge simulée** et l’encadré « Bureau ouvert : les emprunts en self-service sont possibles. »
-6. Cliquer sur **Régénérer les données**. Une fenêtre « Régénérer les données de démonstration » s’ouvre ; cliquer sur **Régénérer**. On voit le toast « Données de démonstration régénérées ».
+3. Ouvrir **trois fenêtres** : l’accueil du prototype (`index.html`), `admin.html` et `mobile.html`. Rétrécir celle du mobile pour qu’elle ressemble à un téléphone. L’accueil porte la carte **Horloge de démonstration** : c’est de là qu’on règle le temps, et le réglage vaut pour les deux autres fenêtres. Gardez-la ouverte, vous y reviendrez souvent.
+4. Fenêtre accueil : cliquer sur **Jour ouvré 9h**. On voit le toast « Horloge de démo appliquée », la ligne « Maintenant : … à 09h00 », le badge **Horloge simulée** et l’encadré « Bureau ouvert : les emprunts en self-service sont possibles. »
+5. Cliquer sur **Régénérer les données**. Une fenêtre « Régénérer les données de démonstration » s’ouvre ; cliquer sur **Régénérer**. On voit le toast « Données de démonstration régénérées ».
+6. Fenêtre admin : l’écran « Qui êtes-vous ? » liste les comptes de la pédagogie. Choisir **Alexis Bengel**. Le **Tableau de bord** s’ouvre.
 7. Fenêtre mobile : choisir un compte (voir le tableau ci-dessous).
 
 À savoir :
 
 - Les deux interfaces **partagent les données du navigateur** : un seul navigateur suffit, et ce que fait l’une apparaît dans l’autre sans recharger. En revanche chaque onglet garde son propre compte connecté, ce qui permet d’être Alexis à gauche et Camille à droite.
 - Une **fenêtre de navigation privée** ouvre un second jeu de données, indépendant du premier : utile pour montrer deux personnes qui ne se voient pas.
-- À chaque démonstration, recommencer au point 5 : le jeu de démonstration est calé sur la date de génération.
+- À chaque démonstration, recommencer au point 4 : le jeu de démonstration est calé sur la date de génération.
 
 ## 2. Les comptes
 
@@ -34,7 +34,7 @@ Camille et Sophie sont choisis parce qu’ils n’ont rien dans le jeu neuf. D�
 
 ## 3. Les scénarios
 
-Sauf mention contraire, chaque scénario part d’un jeu neuf (section 1) et d’une horloge sur un jour ouvré à 9h. Pour changer l’horloge, on saisit une date et une heure dans **Date et heure simulées** (Tableau de bord ou **Paramètres**) puis on clique sur **Appliquer** : le toast « Horloge de démo appliquée » confirme.
+Sauf mention contraire, chaque scénario part d’un jeu neuf (section 1) et d’une horloge sur un jour ouvré à 9h. **L’horloge se règle sur l’accueil du prototype**, jamais depuis l’admin : on y saisit une date et une heure dans **Date et heure simulées**, puis **Appliquer** — le toast « Horloge de démo appliquée » confirme, et les deux autres fenêtres suivent sans rechargement.
 
 ### Scénario 1 — Self-service : emprunter, rendre avec un problème
 
@@ -62,12 +62,12 @@ Un retour sans problème (tout sur **OK**) donne « Retour enregistré » et « 
 
 **Bureau fermé**
 
-1. **Admin** : sur le Tableau de bord, régler **Date et heure simulées** sur le jour même à 12h30 (la pause de midi), puis **Appliquer**. L’encadré devient « Bureau fermé : ouvert les jours ouvrés de 8h-12h et 13h-17h. Les emprunts en self-service sont refusés, les retours restent possibles. » (Un samedi donne « Bureau fermé (week-end). … »)
+1. **Accueil** : régler **Date et heure simulées** sur le jour même à 12h30 (la pause de midi), puis **Appliquer**. L’encadré devient « Bureau fermé : ouvert les jours ouvrés de 8h-12h et 13h-17h. Les emprunts en self-service sont refusés, les retours restent possibles. » (Un samedi donne « Bureau fermé (week-end). … »)
 2. **Mobile** : **Scanner un QR code**, puis **Simuler le scan** sur le premier objet de la liste. L’écran affiche une croix, « Impossible », le nom de l’objet et le message : « Le bureau de la pédagogie est fermé (jours ouvrés, 8h-12h et 13h-17h) : le self-service reprendra à l’ouverture. » Les boutons proposés sont **Scanner à nouveau** et **Retour à l’accueil**. Les horaires cités sont les horaires réglés (voir le scénario 6).
 
 **Déjà un exemplaire**
 
-3. **Admin** : remettre **Date et heure simulées** sur le jour même à 9h00, **Appliquer**. L’encadré redevient « Bureau ouvert : … ».
+3. **Accueil** : remettre **Date et heure simulées** sur le jour même à 9h00, **Appliquer**. L’encadré redevient « Bureau ouvert : … ».
 4. **Mobile** : **Scanner à nouveau**, puis refaire l’emprunt comme au scénario 1 (pas 3 à 6) : « MDS-0003 — Multiprise #3 », photo, **Confirmer l’emprunt**.
 5. Toucher **Scanner un autre objet**. La liste commence maintenant par « MDS-0004 — Multiprise #4 » : toucher **Simuler le scan**.
 6. L’écran affiche « Impossible », « Multiprise #4 » et « Vous avez déjà un exemplaire de ce matériel (emprunt ou réservation en cours). » Le refus porte sur la référence : un autre exemplaire du même objet est refusé tant qu’on n’a pas rendu le premier. (Rescanner le **même** code, lui, propose de le rendre.)
@@ -87,14 +87,14 @@ Un retour sans problème (tout sur **OK**) donne « Retour enregistré » et « 
 6. On voit le toast « Réservé — à retirer le JJ/MM/AAAA à 13h00 » et l’écran **Mes emprunts**, onglet **Réservations** : « Filtre variable Hoya », « Retrait … à 13h00 · retour le … », badge **Réservé**, et « Votre code de retrait s’affichera à l’heure prévue. »
 7. **L’objet ne devient PAS indisponible** : dans le **Catalogue**, la carte garde le badge **Disponible**, car une réservation occupe une période et non un objet. Sur la fiche, Camille lit « Vous avez déjà réservé ce matériel (retrait le … à 13h00). » avec **Voir ma réservation**. Mais pour une autre personne (Sophie Marchand, par exemple), la fiche offre toujours **Réserver** : c’est l’écran de réservation qui répond sur la période. En demandant la **même** demi-journée, Sophie lit « Aucun exemplaire n’est libre sur cette période. Premier créneau libre : … » — le Hoya n’existe qu’en un exemplaire — et le bouton **Confirmer** reste éteint. En demandant la demi-journée suivante, elle lit « 1 exemplaire libre sur cette période. »
 8. **Le correctif, en une minute — sans rien valider.** Chercher « Carte SD » : trois exemplaires, dont un déjà réservé par quelqu’un d’autre pour le mois prochain (« Workshop photo du mois prochain » dans le jeu de démonstration). Toucher **Réserver** et garder les dates proposées : la ligne annonce « 3 exemplaires libres sur cette période ». **Avant correction, cette seule réservation lointaine bloquait une carte sans date de fin, et le catalogue affichait « 2 sur 3 disponibles » pour toujours.** Déplacer maintenant le retrait au mois prochain, sur la demi-journée de la réservation du jeu : la ligne passe à « 2 exemplaires libres » — une carte est prise, exactement une, et seulement là. Revenir aux dates proposées : « 3 exemplaires libres ». On peut confirmer pour de bon, mais il faut alors savoir que la ligne dira ensuite « Vous avez déjà un exemplaire de ce matériel » : on ne détient qu’un exemplaire d’une référence à la fois, et cette règle passe avant la disponibilité. Pour voir la période se remplir, il faut changer de compte.
-9. **Admin** : sur le Tableau de bord, régler **Date et heure simulées** sur le jour du retrait à **13h00**, puis **Appliquer**. La carte **À remettre aujourd’hui** affiche la ligne « Filtre variable Hoya », « Camille Dubois · retrait à 13h00 · code XXXXXX », badge **Réservé**, bouton **Remettre**. (Le Tascam DR-70 du jeu de démonstration est aussi à remettre ce jour-là : n’y pas toucher. La carte SD du jeu, elle, est réservée pour le mois prochain et n’apparaît pas ici.)
+9. **Accueil** : régler **Date et heure simulées** sur le jour du retrait à **13h00**, puis **Appliquer**. La carte **À remettre aujourd’hui** affiche la ligne « Filtre variable Hoya », « Camille Dubois · retrait à 13h00 · code XXXXXX », badge **Réservé**, bouton **Remettre**. (Le Tascam DR-70 du jeu de démonstration est aussi à remettre ce jour-là : n’y pas toucher. La carte SD du jeu, elle, est réservée pour le mois prochain et n’apparaît pas ici.)
 10. **Mobile** : **Mes emprunts**, onglet **Réservations** : la carte affiche maintenant le QR de retrait, le code à six caractères, « À retirer avant 17h00 » — la fermeture du bureau, et non une heure après le créneau — et « Montrez ce code à la pédago pour récupérer le matériel. » L’accueil porte aussi l’encadré « Filtre variable Hoya : à retirer avant 17h00 — voir mon code. »
 11. **Admin** : cliquer sur **Remettre** à la ligne du Filtre variable Hoya. La fenêtre **Remettre le matériel** dit « Scannez le QR affiché par l’emprunteur, ou vérifiez son code de retrait. » et le champ **Code de retrait** est déjà rempli (avec une caméra, on peut viser le QR affiché sur le mobile). Cliquer sur **Remettre** : toast « Matériel remis ».
 12. **Mobile** : l’onglet **En cours** de **Mes emprunts** montre le Filtre variable Hoya avec le badge **En cours**.
 
 **Retard et réception**
 
-13. **Admin** : régler **Date et heure simulées** sur le même jour à 18h00, **Appliquer**. Le bureau est fermé ; le Filtre variable Hoya devait rentrer à 17h00.
+13. **Accueil** : régler **Date et heure simulées** sur le même jour à 18h00, **Appliquer**. Le bureau est fermé ; le Filtre variable Hoya devait rentrer à 17h00.
 14. Le **Tableau de bord** liste le Filtre variable Hoya dans la carte **Retards** (« En retard », « 1 jour »). Il n’est pas seul : le saut a aussi mis en retard les emprunts self-service de la veille, qui devaient être rendus à 17h. Sur le mobile, l’accueil de Camille annonce « 1 emprunt en retard — pensez à le rendre. »
 15. **Admin** : cliquer sur **Emprunts**, onglet **En retard**, ligne « Filtre variable Hoya », bouton **Réceptionner**. La fenêtre « Réceptionner — Filtre variable Hoya » liste trois cases cochées : « Verre sans rayure », « Bague tourne » et « Étui ».
 16. Décocher « Verre sans rayure » et écrire « Rayure sur le verre » dans le champ « Problème constaté (optionnel) » de cette ligne. Cliquer sur **Valider le retour** : toast « Retour enregistré — problème signalé ».
@@ -103,7 +103,7 @@ Un retour sans problème (tout sur **OK**) donne « Retour enregistré » et « 
 **Expiration d’une réservation**
 
 18. **Mobile** : **Catalogue**, chercher « Audio-Technica », toucher la carte, **Réserver**, garder les valeurs par défaut — prochain jour ouvré, retrait le matin — et **Confirmer la réservation**. Le toast annonce un retrait à 08h00, début de la demi-journée du matin.
-19. **Admin** : régler **Date et heure simulées** sur ce jour-là à **17h01** — une minute après la fermeture du bureau, donc après la fin de la journée de retrait — puis **Appliquer**.
+19. **Accueil** : régler **Date et heure simulées** sur ce jour-là à **17h01** — une minute après la fermeture du bureau, donc après la fin de la journée de retrait — puis **Appliquer**.
 20. **Mobile** : l’accueil de Camille affiche l’encadré « Audio-Technica kit de streaming : réservation expirée, le matériel est reparti dans le catalogue. » La fiche de l’objet redit **Disponible** avec le bouton **Réserver** ; dans **Mes emprunts**, l’onglet **Historique** le range sous le statut **Non retiré**.
 
 ### Scénario 4 — Salle photo : réserver, états des lieux, sortie manquante
@@ -120,14 +120,14 @@ Un retour sans problème (tout sur **OK**) donne « Retour enregistré » et « 
 
 **État des lieux d’entrée**
 
-6. **Admin** : régler **Date et heure simulées** sur le jour même à 14h05, **Appliquer**.
+6. **Accueil** : régler **Date et heure simulées** sur le jour même à 14h05, **Appliquer**.
 7. **Mobile** (Camille) : dans **Salle**, **Mes réservations** montre « Créneau du jour · 14h-16h » et le bouton **Faire l’état des lieux d’entrée**. Le toucher.
 8. L’écran « État des lieux d’entrée » dit « Vérifiez le matériel avant de commencer : ce que vous signalez maintenant ne vous sera pas reproché. » Il liste le matériel de la salle, par exemple « Newer kit éclairage — 2 pieds, 2 softbox, 2 ampoules OK », jusqu’à « Salle rangée, rien d’anormal », chaque ligne avec **OK** et **Problème**. Laisser tout sur **OK** et toucher **Valider l’état des lieux** : toast « État des lieux enregistré ».
 9. **Mes réservations** affiche maintenant « Créneau en cours · 14h-16h », badge **En cours**, et le bouton **Faire l’état des lieux de sortie**.
 
 **État des lieux de sortie avec un objet signalé**
 
-10. **Admin** : régler l’horloge sur le même jour à 15h30, **Appliquer**.
+10. **Accueil** : régler l’horloge sur le même jour à 15h30, **Appliquer**.
 11. **Mobile** : toucher **Faire l’état des lieux de sortie**. L’écran dit « Vérifiez le matériel avant de partir : la salle doit être rangée. » Sur la ligne « Sac à dos Beschoi — Présent, fermetures OK », toucher **Problème**, écrire « Fermeture cassée » dans « Décrivez le problème (optionnel) », puis **Valider l’état des lieux**.
 12. Toast d’alerte « État des lieux enregistré — problème signalé ». La réservation disparaît de **Mes réservations** : elle est terminée.
 13. **Admin** : dans **Salle photo**, cliquer sur la case « CD ». « Créneau du … » indique le badge **Terminée**, « État des lieux d’entrée · … à 14h05 » avec « Tout était conforme. », et « État des lieux de sortie · … à 15h30 » avec l’alerte « Sac à dos Beschoi — Présent, fermetures OK → Fermeture cassée ». Le **Tableau de bord** liste le Sac à dos Beschoi dans **Signalements à traiter** (badge **Ouvert**), et **Maintenance** le range dans **Matériel immobilisé**.
@@ -158,9 +158,9 @@ Un objet encore emprunté ou réservé ne peut pas passer **Hors service** : l�
 
 *Phase 5. Comptes : Alexis Bengel sur l’admin, Camille Dubois sur le mobile. Jeu neuf, un jour ouvré à 9h.*
 
-1. **Admin** : cliquer sur **Paramètres**. L’écran présente la carte **Horloge de démonstration**, la carte **Règles d’emprunt** (**Ouverture du matin**, **Fermeture du matin**, **Ouverture de l’après-midi**, **Fermeture de l’après-midi**, durée maximale, créneaux de la salle, règle anti-retard) et la carte **Espace occupé**.
+1. **Admin** : cliquer sur **Paramètres**. L’écran présente la carte **Règles d’emprunt** (**Ouverture du matin**, **Fermeture du matin**, **Ouverture de l’après-midi**, **Fermeture de l’après-midi**, durée maximale, créneaux de la salle, règle anti-retard) et la carte **Espace occupé**.
 2. Dans **Fermeture du matin**, remplacer 12 par 11 et cliquer sur **Enregistrer** : toast « Réglages enregistrés ».
-3. Régler **Date et heure simulées** sur le même jour à 11h30, **Appliquer**. L’encadré dit « Bureau fermé : ouvert les jours ouvrés de 8h-11h et 13h-17h. Les emprunts en self-service sont refusés, les retours restent possibles. »
+3. **Accueil** : régler **Date et heure simulées** sur le même jour à 11h30, **Appliquer**. L’encadré y dit « Bureau fermé : ouvert les jours ouvrés de 8h-11h et 13h-17h. Les emprunts en self-service sont refusés, les retours restent possibles. »
 4. **Mobile** (Camille) : **Scanner un QR code**, **Simuler le scan**. L’écran affiche « Impossible » et « Le bureau de la pédagogie est fermé (jours ouvrés, 8h-11h et 13h-17h) : le self-service reprendra à l’ouverture. » Le message cite **11h**, l’horaire réglé, pas l’horaire d’origine.
 5. **Admin** : remettre 12 dans **Fermeture du matin**, **Enregistrer**. Sur le mobile, toucher **Scanner à nouveau** pour quitter l’écran « Impossible », puis **Simuler le scan** : on arrive cette fois à l’étape « Photo de l’objet » (toucher **Annuler** pour ne rien emprunter).
 6. **Montrer la jauge d’espace** : la carte **Espace occupé** affiche un pourcentage, une barre et un texte du type « 203 Ko sur 5,0 Mo — les photos d’emprunt et de retour pèsent l’essentiel. » Les photos des emprunts et des retours remplissent le navigateur ; à partir de 80 %, un avertissement invite à régénérer les données.
@@ -177,5 +177,5 @@ Un objet encore emprunté ou réservé ne peut pas passer **Hors service** : l�
 
 ## 5. Remettre à zéro
 
-- **Paramètres** (ou le Tableau de bord) → **Régénérer les données** → **Régénérer** : jeu neuf calé sur la date affichée dans **Date et heure simulées**. Les photos prises pendant la démonstration sont perdues, les réglages reviennent aux valeurs d’origine.
+- **Accueil du prototype** → **Régénérer les données** → **Régénérer** : jeu neuf calé sur la date affichée dans **Date et heure simulées**. Les photos prises pendant la démonstration sont perdues, les réglages reviennent aux valeurs d’origine.
 - Pour tout effacer, y compris l’horloge : supprimer les données du site dans les réglages du navigateur. Au prochain chargement, un jeu neuf est créé à l’heure réelle.

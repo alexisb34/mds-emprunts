@@ -14,11 +14,14 @@ test('dashboardHtml : KPI, retards, signalements, activités', () => {
   const html = dashboardHtml({
     kpis: computeKpis(db, NOW), late: lateLoans(db, NOW), due: dueTodayReservations(db, NOW),
     reports: openReports(db), activity, users: db.users, date: NOW,
-    horlogeDemo: null, status: officeStatus(NOW, db.settings),
   });
   assert.match(html, /kpi__value">32</);
   assert.match(html, /kpi__value">10</);
-  assert.match(html, /kpi--alert[^>]*>[\s\S]*?kpi__value">2</);
+  // La teinte classe ce que la carte compte, elle ne signale plus une alerte : les retards
+  // portent le ton « retard » même à zéro, et c’est le chiffre qui dit s’il y a un problème.
+  assert.match(html, /kpi--retard[^>]*>[\s\S]*?kpi__value">2</);
+  for (const ton of ['kpi--disponible', 'kpi--emprunte', 'kpi--salle']) assert.match(html, new RegExp(ton));
+  assert.doesNotMatch(html, /kpi--brand|kpi--teal|kpi--alert/, 'les aplats saturés ont disparu');
   assert.match(html, /DJI Ronin RSC2/);
   assert.match(html, /3 jours/);
   assert.match(html, /1 jour</);
@@ -34,14 +37,13 @@ test('dashboardHtml : un bouton Remettre par remise du jour', () => {
   assert.ok(due.length >= 1);
   const html = dashboardHtml({
     kpis: computeKpis(db, NOW), late: [], due, reports: [], activity: [], users: db.users, date: NOW,
-    horlogeDemo: null, status: officeStatus(NOW, db.settings),
   });
   assert.equal((html.match(/data-action="handover"/g) || []).length, due.length);
   assert.doesNotMatch(html, /La remise se fait depuis/);
 });
 
 test('dashboardHtml : états vides', () => {
-  const html = dashboardHtml({ kpis: computeKpis({ items: [], loans: [], bookings: [], maintenance: [] }, NOW), late: [], due: [], reports: [], activity: [], users: [], date: NOW, horlogeDemo: null, status: officeStatus(NOW, db.settings) });
+  const html = dashboardHtml({ kpis: computeKpis({ items: [], loans: [], bookings: [], maintenance: [] }, NOW), late: [], due: [], reports: [], activity: [], users: [], date: NOW });
   assert.match(html, /Aucun retard/);
   assert.match(html, /Aucun signalement à traiter/);
   assert.match(html, /Aucune activité/);
@@ -54,13 +56,13 @@ test('dashboardHtml : widget des sorties non faites', () => {
   const missing = [{ booking: actif, user: db.users.find((u) => u.id === actif.userId) }];
   const html = dashboardHtml({
     kpis: computeKpis(db, tard), late: [], due: [], reports: [], activity: [], users: db.users, date: tard,
-    horlogeDemo: null, status: officeStatus(tard, db.settings), exitMissing: missing,
+    exitMissing: missing,
   });
   assert.match(html, /Sorties non faites/);
   assert.match(html, /href="#\/salle"/);
   const sans = dashboardHtml({
     kpis: computeKpis(db, NOW), late: [], due: [], reports: [], activity: [], users: db.users, date: NOW,
-    horlogeDemo: null, status: officeStatus(NOW, db.settings), exitMissing: [],
+    exitMissing: [],
   });
   assert.doesNotMatch(sans, /Sorties non faites/);
 });
@@ -90,10 +92,19 @@ test('dashboardHtml : le widget et la carte parlent de signalements « à traite
   const data = { ...db, maintenance };
   const html = dashboardHtml({
     kpis: computeKpis(data, NOW), late: [], due: [], reports: openReports(data), activity: [], users: db.users, date: NOW,
-    horlogeDemo: null, status: officeStatus(NOW, db.settings),
   });
   assert.match(html, /3 signalements à traiter/);
   assert.match(html, /Signalements à traiter/);
   assert.doesNotMatch(html, /signalements? ouverts?/i);
   for (const d of ['Premier', 'Deuxième', 'Troisième']) assert.match(html, new RegExp(d));
+});
+
+test('dashboardHtml : l’horloge de démonstration a quitté le tableau de bord', () => {
+  const html = dashboardHtml({
+    kpis: computeKpis(db, NOW), late: [], due: [], reports: [], activity: [], users: db.users, date: NOW,
+  });
+  // Elle se règle sur l’écran d’accueil, avant d’entrer dans une interface.
+  assert.doesNotMatch(html, /Horloge de démonstration/);
+  assert.doesNotMatch(html, /data-action="set-clock"/);
+  assert.doesNotMatch(html, /data-action="reset-demo"/);
 });
