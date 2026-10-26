@@ -41,11 +41,12 @@
 
   /* Les mesures du site. `tokens.css` n'en porte aucune : il décrit un produit, pas une
      vitrine. Elles sont ici, en un seul endroit, dérivées des tokens quand c'est possible. */
-  --ds-page: calc(var(--size-sidebar) * 5);     /* 1300px : la largeur maximale du site */
-  --ds-mesure: calc(var(--size-sidebar) * 3);   /* 780px : une colonne de texte */
+  --ds-page: 1300px;                            /* la largeur maximale du site */
+  --ds-mesure: 780px;                           /* une colonne de texte, à hauteur de lecture */
   --ds-air: calc(var(--space-3xl) * 2);         /* 64px : la respiration entre deux sections */
   --ds-air-large: calc(var(--space-3xl) * 3);   /* 96px : celle qui ouvre une page */
   --ds-taille-accroche: 72px;                   /* l'accroche de l'accueil : la seule fois où la marque parle fort */
+  --ds-taille-accroche-mini: 32px;              /* la même, sur téléphone : le plancher de son clamp */
   --ds-taille-titre: 32px;                      /* un titre de section */
   --ds-taille-chapeau: 19px;                    /* le chapô sous un titre */
 }
@@ -221,7 +222,7 @@ summary:focus-visible,
 .ds-accroche {
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: clamp(var(--ds-taille-titre), 6vw, var(--ds-taille-accroche));
+  font-size: clamp(var(--ds-taille-accroche-mini), 6vw, var(--ds-taille-accroche));
   line-height: 1.05;
   letter-spacing: -.03em;
   overflow-wrap: break-word;
@@ -279,16 +280,21 @@ summary:focus-visible,
   color: var(--ds-texte-inverse);
 }
 
-/* Un filet turquoise sous une étiquette : le seul endroit où la couleur de la marque
-   décore le site sans porter de texte. */
-.ds-etiquette {
-  display: inline-block;
-  /* Dans une grille, un bloc est étiré : sans ça, le filet traverserait toute la colonne. */
-  justify-self: start;
-  padding-bottom: var(--space-xs);
-  border-bottom: calc(var(--stroke-thin) * 2) solid var(--ds-turquoise);
-  color: var(--ds-texte);
-}
+/* ---- Le garde-fou des aplats ----
+   `--ds-texte-secondaire` tombe à 3,9:1 sur un aplat pastel. Plutôt que de compter sur la
+   vigilance des pages à venir, tout texte qui se voudrait secondaire reprend ici la
+   couleur qui tient sur le fond où il est posé. Une nouvelle surface colorée s'ajoute à
+   cette liste ET à `tests/ds-socle.test.mjs`. */
+
+.ds-bande--doux .ds-oeil,
+.ds-bande--doux .text-secondary,
+.ds-bande--frais .ds-oeil,
+.ds-bande--frais .text-secondary,
+.ds-etage .ds-oeil,
+.ds-etage .text-secondary { color: var(--ds-texte); }
+
+.ds-rappel .ds-oeil,
+.ds-rappel .text-secondary { color: var(--ds-texte-inverse); }
 
 /* ---- Étage composants : sommaire à gauche, page à droite ---- */
 
@@ -355,7 +361,8 @@ summary:focus-visible,
      cesse alors d'être collant et se laisse dépasser. */
   .ds-entete { position: static; }
   .ds-entete__barre { flex-wrap: wrap; row-gap: var(--space-sm); }
-  .ds-entete__etage { margin-left: 0; order: 3; }
+  .ds-entete__etage { order: 3; }
+  .ds-entete__titre-suite { display: none; }
   .ds-nav { order: 4; width: 100%; }
 }
 
@@ -373,6 +380,26 @@ summary:focus-visible,
   .ds-hero__section { padding-top: var(--space-3xl); padding-bottom: var(--space-3xl); }
   .ds-etage,
   .ds-rappel { padding: var(--space-2xl); }
-  .ds-entete__titre-suite { display: none; }
+  /* Sur deux rangs, chaque pixel de l'en-tête est pris à l'accroche : on resserre, et le
+     logo seul dit le nom de l'école. */
+  .ds-entete__barre { padding: var(--space-sm) var(--space-lg); gap: var(--space-md); }
+  .ds-entete__titre { display: none; }
+  .ds-entete__logo { height: var(--space-2xl); }
+  .ds-entete__etage { padding: 0 var(--space-md); }
+  .ds-nav__liste { gap: var(--space-xxs); }
+  /* 8 px plutôt que 4 : l'en-tête gagne 11 px et la cible tactile en gagne 8. */
+  .ds-nav__lien { padding: var(--space-sm); }
   .ds-bouton { width: 100%; justify-content: center; }
+}
+
+/* ---- Mouvement réduit ----
+   Le site recommande l'accessibilité : il la tient pour lui-même. Rien ne glisse ni ne se
+   soulève quand le système demande moins de mouvement. */
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-saut,
+  .ds-carte,
+  .ds-carte__fleche { transition: none; }
+  .ds-carte:hover { transform: none; }
+  .ds-carte:hover .ds-carte__fleche { transform: none; }
 }

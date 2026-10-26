@@ -24,6 +24,7 @@ export const PAIRES = [
   { nom: 'Texte courant sur aplat violet clair', texte: '--ds-texte', fond: '--ds-fond-doux', px: 16, gras: false },
   { nom: 'Lien sur aplat violet clair', texte: '--ds-lien', fond: '--ds-fond-doux', px: 16, gras: false },
   { nom: 'Texte courant sur aplat turquoise clair', texte: '--ds-texte', fond: '--ds-fond-frais', px: 16, gras: false },
+  { nom: 'Lien sur aplat turquoise clair', texte: '--ds-lien', fond: '--ds-fond-frais', px: 16, gras: false },
 
   // Le seul aplat saturé du site : le violet plein, sous du blanc. Le survol compte aussi —
   // un bouton qu'on survole se lit encore.

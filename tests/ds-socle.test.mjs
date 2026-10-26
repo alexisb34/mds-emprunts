@@ -53,6 +53,26 @@ test('la palette ne déclare aucune couleur qu’elle n’emploie pas', () => {
   }
 });
 
+test('aucune surface colorée ne laisse passer du texte secondaire', () => {
+  // `--ds-texte-secondaire` tient 4,55:1 sur blanc et 3,9:1 sur un aplat pastel. Un
+  // commentaire d'avertissement ne protège personne : la feuille doit neutraliser les
+  // classes de texte secondaire à l'intérieur de chaque surface colorée. Une nouvelle
+  // surface s'ajoute ici en même temps que dans `site.css`.
+  const css = lire('css/site.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const surfaces = ['.ds-bande--doux', '.ds-bande--frais', '.ds-etage', '.ds-rappel'];
+  for (const surface of surfaces) {
+    for (const secondaire of ['.ds-oeil', '.text-secondary']) {
+      assert.ok(
+        css.includes(`${surface} ${secondaire}`),
+        `${surface} ne neutralise pas ${secondaire} : le texte secondaire y tombe sous 4,5:1`,
+      );
+    }
+  }
+  // Et la neutralisation repose sur une couleur mesurée, pas sur une valeur improvisée.
+  const valeurs = valeursDuSite();
+  for (const nom of ['--ds-texte', '--ds-texte-inverse']) assert.ok(valeurs[nom], `${nom} absent`);
+});
+
 test('le site ne pose aucune valeur de couleur en dur hors de son :root', () => {
   // Hors du `:root`, tout vient de `tokens.css` ou des `--ds-*` : c'est la contrainte
   // globale du plan, et le seul moyen qu'un token changé change le site.
