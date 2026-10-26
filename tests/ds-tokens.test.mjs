@@ -119,6 +119,12 @@ test('une couleur translucide se pose sur un fond clair ET un fond sombre', () =
   assert.doesNotMatch(opaque, /var\(--text-primary\)/, 'une couleur pleine n’a pas besoin de damier');
 });
 
+test('la translucidité se reconnaît sous toutes les écritures de la couleur', () => {
+  const damier = (valeur) => /background: linear-gradient/.test(tableauTokensHtml(lireTokens(`:root { --bg-essai: ${valeur}; }`)));
+  for (const v of ['rgba(0, 0, 0, 0.5)', 'rgb(0 0 0 / 50%)', 'hsla(0, 0%, 0%, .5)', '#ffffff80', '#fff8']) assert.equal(damier(v), true, v);
+  for (const v of ['rgba(0, 0, 0, 1)', 'rgba(0, 0, 0, 100%)', 'rgb(0 0 0 / 1)', 'rgb(0 0 0)', '#fff', '#ffffffff', '#ffff']) assert.equal(damier(v), false, v);
+});
+
 test('chaque famille a l’aperçu qui montre sa valeur', () => {
   const html = tableauTokensHtml(lireTokens(`:root {
     --space-lg: 16px; --radius-md: 8px; --stroke-thin: 1px; --size-sidebar: 260px;
@@ -263,4 +269,9 @@ test('la page Fondations porte déjà l’explication du serveur : un module blo
   // construire elle-même. Le message doit donc être dans le HTML, pas seulement dans le JS.
   const html = lireSite('composants/fondations.html');
   assert.match(html, /id="tokens"[^>]*>[\s\S]*serveur[\s\S]*npm run serve/);
+
+  // Ce texte existe deux fois — ici et dans `lireTokensDepuisDocument` — : il ne doit pas diverger.
+  const { message } = lireTokensDepuisDocument({ styleSheets: [{ get cssRules() { throw new Error('SecurityError'); } }] });
+  const dansLaPage = html.match(/id="tokens"[\s\S]*?<p class="body">([\s\S]*?)<\/p>/)[1].replace(/<\/?code>/g, '`').replace(/&nbsp;/g, ' ');
+  assert.equal(dansLaPage.trim(), message);
 });

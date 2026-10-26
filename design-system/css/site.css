@@ -365,6 +365,8 @@ summary:focus-visible,
   min-width: 0;
 }
 .ds-article__tete { display: grid; gap: var(--space-lg); }
+/* Le sommaire des groupes, puis les groupes : la même respiration entre chacun. */
+.ds-corps { display: grid; gap: var(--ds-air); min-width: 0; }
 
 .ds-groupes__liste { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
 .ds-groupes__lien {
@@ -403,7 +405,6 @@ summary:focus-visible,
 .ds-jeton__nom { font-weight: 700; }
 .ds-jeton__apercu { display: flex; align-items: center; min-width: 0; }
 .ds-mention { color: var(--ds-texte); max-width: var(--ds-mesure); }
-.ds-mention code { font-family: var(--ds-mono); }
 
 .ds-pastille {
   flex: none;
@@ -457,6 +458,8 @@ summary:focus-visible,
 }
 .ds-copier:hover { background: var(--ds-fond-doux); }
 
+.ds-article code { font-family: var(--ds-mono); }
+
 /* Le message qui remplace le tableau quand la page ne peut pas lire les tokens. */
 .ds-message {
   display: grid;
@@ -466,8 +469,6 @@ summary:focus-visible,
   border-radius: var(--radius-lg);
   border: var(--stroke-thin) solid var(--ds-filet);
 }
-.ds-message code,
-.ds-article code { font-family: var(--ds-mono); }
 
 /* ---- Pied ---- */
 

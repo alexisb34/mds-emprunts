@@ -24,14 +24,14 @@
       <header class="ds-article__tete">
         <h1 class="ds-titre">Fondations</h1>
         <p class="ds-chapeau ds-mesure">Les valeurs de base de l’outil d’emprunt&nbsp;: couleurs, espacements, rayons, ombres, polices. Chaque ligne donne le nom du token, sa valeur et un aperçu.</p>
-        <p class="body ds-mesure">Dans votre CSS, écrivez <code>var(--brand-primary)</code>, jamais <code>#662483</code>&nbsp;: la valeur change à un seul endroit, et tout le reste suit. Le bouton «&nbsp;Copier&nbsp;» met <code>var(--nom)</code> dans le presse-papiers.</p>
+        <p class="body ds-mesure">Dans votre CSS, écrivez <code>var(--brand-primary)</code> plutôt que la valeur de la couleur écrite en dur&nbsp;: la valeur change à un seul endroit, et tout le reste suit. Le bouton «&nbsp;Copier&nbsp;» met <code>var(--nom)</code> dans le presse-papiers.</p>
         <p class="body ds-mesure">Cette page lit <code>css/tokens.css</code> au lieu de le recopier. Si un token change ou s’ajoute, elle change avec lui.</p>
       </header>
 
       <!-- Le tableau se construit ici. Le message qui s’y trouve est celui d’une page qui n’a pas pu le faire :
            sur un fichier ouvert directement, le navigateur refuse aussi les modules, et ce HTML est alors
            tout ce qu’on voit. Le module le remplace dès qu’il a lu les tokens. -->
-      <div id="tokens">
+      <div id="tokens" class="ds-corps">
         <div class="ds-message">
           <p class="body">Cette page lit les tokens depuis la feuille de style, ce qu’un navigateur refuse sur un fichier local. Ouvrez le site depuis un serveur&nbsp;: <code>npm run serve</code>.</p>
         </div>
