@@ -49,6 +49,7 @@
   --ds-taille-accroche-mini: 32px;              /* la même, sur téléphone : le plancher de son clamp */
   --ds-taille-titre: 32px;                      /* un titre de section */
   --ds-taille-chapeau: 19px;                    /* le chapô sous un titre */
+  --ds-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;  /* les noms de tokens et le code */
 }
 
 /* ---- Réglages du site ---- */
@@ -301,7 +302,10 @@ summary:focus-visible,
 .ds-nav__lien[aria-current],
 .ds-sommaire__lien:hover,
 .ds-sommaire__lien[aria-current],
-.ds-bouton--clair:hover { --ds-discret: var(--ds-texte); }
+.ds-bouton--clair:hover,
+.ds-groupes__lien:hover,
+.ds-copier:hover,
+.ds-plaque { --ds-discret: var(--ds-texte); }
 
 /* Fonds saturés : les aplats violets. */
 .ds-rappel,
@@ -310,7 +314,8 @@ summary:focus-visible,
 .ds-bouton:hover,
 .ds-entete__etage,
 .ds-entete__etage:hover,
-.ds-entete__etage[aria-current] { --ds-discret: var(--ds-texte-inverse); }
+.ds-entete__etage[aria-current],
+.ds-barre { --ds-discret: var(--ds-texte-inverse); }
 
 .ds-oeil,
 .text-secondary { color: var(--ds-discret, var(--ds-texte-secondaire)); }
@@ -343,6 +348,126 @@ summary:focus-visible,
 }
 .ds-sommaire__lien:hover { background: var(--ds-fond-doux); color: var(--ds-texte); }
 .ds-sommaire__lien[aria-current] { background: var(--ds-fond-doux); color: var(--ds-lien); font-weight: 700; }
+
+/* ---- Fondations : les tokens, montrés ----
+   Une ligne par token : son nom et sa valeur à gauche, l'aperçu au milieu, le bouton qui
+   copie `var(--nom)` à droite. Les aperçus lisent le token (`var(--nom)` posé en ligne par
+   `js/tokens.js`) : changer un token change son aperçu.
+
+   Les pastilles de couleur n'ont pas de fond ici — il est posé en ligne, parce qu'il EST le
+   token. Aucun texte n'est jamais posé dessus : une pastille est un frère du texte, pas son
+   contenant. Les barres et le fond de la plaque d'ombre, eux, ont une couleur du site et la
+   déclarent dans « Le garde-fou des aplats » plus haut. */
+
+.ds-article {
+  display: grid;
+  gap: var(--ds-air);
+  min-width: 0;
+}
+.ds-article__tete { display: grid; gap: var(--space-lg); }
+
+.ds-groupes__liste { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.ds-groupes__lien {
+  display: inline-flex;
+  align-items: center;
+  height: var(--size-control-sm);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-full);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  color: var(--ds-lien);
+}
+.ds-groupes__lien:hover { background: var(--ds-fond-doux); }
+
+.ds-groupe {
+  display: grid;
+  gap: var(--space-md);
+  /* Un lien d'ancre ne doit pas finir sous l'en-tête collant. */
+  scroll-margin-top: calc(var(--size-topbar) + var(--space-lg));
+}
+
+.ds-jetons { display: grid; border-top: var(--stroke-thin) solid var(--ds-filet); }
+.ds-jeton {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto;
+  gap: var(--space-lg);
+  align-items: center;
+  padding: var(--space-lg) 0;
+  border-bottom: var(--stroke-thin) solid var(--ds-filet);
+}
+.ds-jeton__id { display: grid; gap: var(--space-xs); min-width: 0; }
+.ds-jeton__nom,
+.ds-jeton__valeur {
+  font-family: var(--ds-mono);
+  overflow-wrap: anywhere;
+}
+.ds-jeton__nom { font-weight: 700; }
+.ds-jeton__apercu { display: flex; align-items: center; min-width: 0; }
+.ds-mention { color: var(--ds-texte); max-width: var(--ds-mesure); }
+.ds-mention code { font-family: var(--ds-mono); }
+
+.ds-pastille {
+  flex: none;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border-radius: var(--radius-md);
+  border: var(--stroke-thin) solid var(--border-strong);
+}
+.ds-barre {
+  height: var(--space-md);
+  max-width: 100%;
+  border-radius: var(--radius-xs);
+  background: var(--ds-violet);
+}
+.ds-rayon {
+  flex: none;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border: var(--space-xxs) solid var(--ds-violet);
+}
+.ds-trait {
+  width: 100%;
+  border-top-style: solid;
+  border-top-color: var(--ds-texte);
+}
+.ds-plaque {
+  display: inline-flex;
+  padding: var(--space-3xl);
+  border-radius: var(--radius-lg);
+  background: var(--ds-fond-doux);
+}
+.ds-ombre {
+  width: calc(var(--size-control-md) * 2);
+  height: var(--size-control-md);
+  border-radius: var(--radius-md);
+  background: var(--ds-fond);
+}
+.ds-police { overflow-wrap: anywhere; }
+
+.ds-copier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--size-control-md) * 2);
+  height: var(--size-control-sm);
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-full);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  background: var(--ds-fond);
+  color: var(--ds-lien);
+}
+.ds-copier:hover { background: var(--ds-fond-doux); }
+
+/* Le message qui remplace le tableau quand la page ne peut pas lire les tokens. */
+.ds-message {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-2xl);
+  max-width: var(--ds-mesure);
+  border-radius: var(--radius-lg);
+  border: var(--stroke-thin) solid var(--ds-filet);
+}
+.ds-message code,
+.ds-article code { font-family: var(--ds-mono); }
 
 /* ---- Pied ---- */
 
@@ -399,6 +524,10 @@ summary:focus-visible,
   .ds-hero__section { padding-top: var(--space-3xl); padding-bottom: var(--space-3xl); }
   .ds-etage,
   .ds-rappel { padding: var(--space-2xl); }
+  /* Un token par bloc : le nom et le bouton sur une ligne, l'aperçu dessous, pleine largeur. */
+  .ds-jeton { grid-template-columns: minmax(0, 1fr) auto; }
+  .ds-jeton__apercu { grid-column: 1 / -1; grid-row: 2; }
+  .ds-plaque { padding: var(--space-2xl); }
   /* Sur deux rangs, chaque pixel de l'en-tête est pris à l'accroche : on resserre, et le
      logo seul dit le nom de l'école. */
   .ds-entete__barre { padding: var(--space-sm) var(--space-lg); gap: var(--space-md); }
