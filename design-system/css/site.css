@@ -13,8 +13,8 @@
 
    Les classes que les pages suivantes réutilisent :
      `.ds-bande`     une section pleine largeur ; `--doux`, `--frais` pour un aplat pastel
-                     ⚠ sur un aplat pastel, pas de `.ds-oeil` ni de `.text-secondary` :
-                     `--ds-texte-secondaire` y tombe à 3,9:1. Le texte y est `--ds-texte`.
+                     toute surface au fond coloré déclare son `--ds-discret` : voir
+                     « Le garde-fou des aplats » plus bas, qu'un test fait respecter.
      `.ds-section`   le bloc centré à l'intérieur d'une bande
      `.ds-mesure`    une colonne de texte à largeur de lecture
      `.ds-accroche`  le titre d'accueil ; `.ds-titre` un titre de section ; `.ds-chapeau` un chapô
@@ -167,7 +167,6 @@ summary:focus-visible,
   font-size: var(--ds-taille-chapeau);
   line-height: 1.6;
 }
-.ds-oeil { color: var(--ds-texte-secondaire); }
 
 .ds-grille { display: grid; gap: var(--space-2xl); }
 .ds-grille--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -281,20 +280,40 @@ summary:focus-visible,
 }
 
 /* ---- Le garde-fou des aplats ----
-   `--ds-texte-secondaire` tombe à 3,9:1 sur un aplat pastel. Plutôt que de compter sur la
-   vigilance des pages à venir, tout texte qui se voudrait secondaire reprend ici la
-   couleur qui tient sur le fond où il est posé. Une nouvelle surface colorée s'ajoute à
-   cette liste ET à `tests/ds-socle.test.mjs`. */
+   `--ds-texte-secondaire` tient 4,55:1 sur blanc et tombe à 3,9:1 sur un aplat pastel.
 
-.ds-bande--doux .ds-oeil,
-.ds-bande--doux .text-secondary,
-.ds-bande--frais .ds-oeil,
-.ds-bande--frais .text-secondary,
-.ds-etage .ds-oeil,
-.ds-etage .text-secondary { color: var(--ds-texte); }
+   Plutôt qu'une liste de « ne pas faire », chaque surface colorée déclare ici la couleur
+   que prend le texte discret posé dessus. `--ds-discret` s'hérite, donc un `.ds-oeil` ou
+   un `.text-secondary` placé n'importe où à l'intérieur reprend la bonne couleur sans que
+   personne y pense. Hors d'une surface colorée, la variable n'existe pas et le repli rend
+   le gris secondaire, qui tient sur blanc.
 
-.ds-rappel .ds-oeil,
-.ds-rappel .text-secondary { color: var(--ds-texte-inverse); }
+   **Une surface au fond coloré ajoutée sans son `--ds-discret` fait échouer
+   `tests/ds-socle.test.mjs`**, qui dérive la liste des fonds depuis cette feuille. */
+
+/* Fonds clairs : pastels et dégradé du hero. */
+.ds-bande--doux,
+.ds-bande--frais,
+.ds-hero,
+.ds-etage--marque,
+.ds-etage--composants,
+.ds-nav__lien:hover,
+.ds-nav__lien[aria-current],
+.ds-sommaire__lien:hover,
+.ds-sommaire__lien[aria-current],
+.ds-bouton--clair:hover { --ds-discret: var(--ds-texte); }
+
+/* Fonds saturés : les aplats violets. */
+.ds-rappel,
+.ds-saut,
+.ds-bouton,
+.ds-bouton:hover,
+.ds-entete__etage,
+.ds-entete__etage:hover,
+.ds-entete__etage[aria-current] { --ds-discret: var(--ds-texte-inverse); }
+
+.ds-oeil,
+.text-secondary { color: var(--ds-discret, var(--ds-texte-secondaire)); }
 
 /* ---- Étage composants : sommaire à gauche, page à droite ---- */
 

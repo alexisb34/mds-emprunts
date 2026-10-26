@@ -10,6 +10,30 @@ import { CHAPITRES, COMPOSANTS, enteteHtml, piedHtml, sommaireHtml } from '../de
 
 const lire = (chemin) => readFileSync(new URL(`../design-system/${chemin}`, import.meta.url), 'utf8');
 
+// Les règles feuilles d'une feuille de style : `{sélecteurs, corps}`. Le motif ne peut pas
+// traverser une accolade, donc un `@media` ne matche pas et ses règles internes, si.
+function reglesDe(css) {
+  return [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+    selecteurs: m[1].split(',').map((s) => s.trim().replace(/\s+/g, ' ')).filter(Boolean),
+    corps: m[2],
+  }));
+}
+
+// Tout sélecteur qui peint un fond autre que le blanc du site : aplat, dégradé, survol.
+// `--ds-fond` seul ne compte pas — c'est la couleur de la page.
+function surfacesColorees(regles) {
+  const surfaces = new Map();
+  for (const r of regles) {
+    for (const d of r.corps.matchAll(/\bbackground(?:-color|-image)?\s*:\s*([^;]+)/g)) {
+      const valeur = d[1].replace(/\s+/g, ' ').trim();
+      const colore = /gradient\(/.test(valeur)
+        || [...valeur.matchAll(/var\(\s*(--[\w-]+)/g)].some((m) => m[1] !== '--ds-fond');
+      if (colore) for (const s of r.selecteurs) surfaces.set(s, valeur);
+    }
+  }
+  return surfaces;
+}
+
 // Les `--ds-*` du `:root` de site.css, avec leur valeur hexadécimale.
 function valeursDuSite() {
   const css = lire('css/site.css');
@@ -53,24 +77,40 @@ test('la palette ne déclare aucune couleur qu’elle n’emploie pas', () => {
   }
 });
 
-test('aucune surface colorée ne laisse passer du texte secondaire', () => {
-  // `--ds-texte-secondaire` tient 4,55:1 sur blanc et 3,9:1 sur un aplat pastel. Un
-  // commentaire d'avertissement ne protège personne : la feuille doit neutraliser les
-  // classes de texte secondaire à l'intérieur de chaque surface colorée. Une nouvelle
-  // surface s'ajoute ici en même temps que dans `site.css`.
-  const css = lire('css/site.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  const surfaces = ['.ds-bande--doux', '.ds-bande--frais', '.ds-etage', '.ds-rappel'];
-  for (const surface of surfaces) {
-    for (const secondaire of ['.ds-oeil', '.text-secondary']) {
-      assert.ok(
-        css.includes(`${surface} ${secondaire}`),
-        `${surface} ne neutralise pas ${secondaire} : le texte secondaire y tombe sous 4,5:1`,
-      );
-    }
+test('toute surface colorée dit quelle couleur y prend le texte discret', () => {
+  // `--ds-texte-secondaire` tient 4,55:1 sur blanc et tombe à 3,9:1 sur un aplat pastel.
+  //
+  // Ce test ne vérifie PAS une liste de surfaces écrite à la main : il la DÉRIVE des
+  // déclarations `background` de la feuille. Une surface colorée ajoutée par une tâche
+  // future sans son `--ds-discret` fait donc échouer la suite — c'est précisément le
+  // trou par lequel `.ds-hero` était passé.
+  const regles = reglesDe(lire('css/site.css'));
+
+  // 1. Le texte discret lit bien `--ds-discret`, et dans une vraie déclaration `color`.
+  for (const classe of ['.ds-oeil', '.text-secondary']) {
+    const porte = regles.some((r) => r.selecteurs.includes(classe)
+      && /(?:^|;)\s*color\s*:[^;]*var\(\s*--ds-discret/.test(r.corps));
+    assert.ok(porte, `${classe} ne prend pas sa couleur de --ds-discret`);
   }
-  // Et la neutralisation repose sur une couleur mesurée, pas sur une valeur improvisée.
+
+  // 2. Qui déclare `--ds-discret`, et avec quelle couleur.
   const valeurs = valeursDuSite();
-  for (const nom of ['--ds-texte', '--ds-texte-inverse']) assert.ok(valeurs[nom], `${nom} absent`);
+  const declare = new Map();
+  for (const r of regles) {
+    const m = r.corps.match(/--ds-discret\s*:\s*([^;]+)/);
+    if (!m) continue;
+    for (const s of r.selecteurs) declare.set(s, m[1].trim());
+  }
+  for (const [selecteur, valeur] of declare) {
+    const nom = (valeur.match(/var\(\s*(--[\w-]+)/) || [])[1];
+    assert.ok(nom && valeurs[nom], `${selecteur} : --ds-discret vaut « ${valeur} », qui n’est pas une couleur mesurée du :root`);
+  }
+
+  // 3. Chaque fond coloré de la feuille doit s'y trouver.
+  const surfaces = surfacesColorees(regles);
+  assert.ok(surfaces.size >= 10, `le détecteur ne voit plus que ${surfaces.size} fonds colorés : il a cessé de chercher`);
+  const nues = [...surfaces.keys()].filter((s) => !declare.has(s));
+  assert.deepEqual(nues, [], 'ces surfaces colorées ne déclarent pas --ds-discret : le texte discret y tombe sous 4,5:1');
 });
 
 test('le site ne pose aucune valeur de couleur en dur hors de son :root', () => {
