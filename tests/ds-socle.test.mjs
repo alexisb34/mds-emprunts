@@ -110,11 +110,11 @@ test('l’en-tête porte le logo officiel et un lien d’évitement', () => {
 test('le sommaire des composants marque la page courante et une seule', () => {
   const html = sommaireHtml('composants/badge.html');
   assert.equal((html.match(/aria-current="page"/g) || []).length, 1);
-  assert.match(html, /href="badge\.html"[^>]*aria-current="page"/);
-  // Il mène à toutes les pages de l'étage, Démarrer compris.
+  assert.match(html, /href="\.\.\/composants\/badge\.html"[^>]*aria-current="page"/);
+  // Il mène à toutes les pages de l'étage, Démarrer compris, par la même convention
+  // d'adresse que l'en-tête.
   for (const c of COMPOSANTS) {
-    const relatif = c.href.replace(/^composants\//, '');
-    assert.match(html, new RegExp(`href="${relatif}"`), `le sommaire ne mène pas à ${c.href}`);
+    assert.match(html, new RegExp(`href="\\.\\./${c.href}"`), `le sommaire ne mène pas à ${c.href}`);
   }
 });
 

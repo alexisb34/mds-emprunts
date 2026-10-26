@@ -53,9 +53,11 @@ function racineDepuis(courant) {
 }
 
 // Les libellés et les adresses sont des constantes de ce module : rien à échapper.
-function lien(href, texte, { classe = '', courant = '' } = {}) {
-  const marque = courant ? ` aria-current="${courant}"` : '';
-  return `<a${classe ? ` class="${classe}"` : ''} href="${href}"${marque}>${texte}</a>`;
+// `marque` est la valeur de `aria-current`, pas la page courante : « page » pour la page
+// affichée, « true » pour l'étage dans lequel on se trouve, vide pour tout le reste.
+function lien(href, texte, { classe = '', marque = '' } = {}) {
+  const attribut = marque ? ` aria-current="${marque}"` : '';
+  return `<a${classe ? ` class="${classe}"` : ''} href="${href}"${attribut}>${texte}</a>`;
 }
 
 // `courant` : l'adresse de la page affichée, relative à `design-system/`.
@@ -63,34 +65,33 @@ function lien(href, texte, { classe = '', courant = '' } = {}) {
 // courante est marquée par le sommaire latéral ; l'en-tête se contente d'un
 // `aria-current="true"` sur l'entrée de l'étage, qui dit « vous êtes là-dedans » sans
 // prétendre être cette page.
-export function enteteHtml(courant) {
+export function enteteHtml(courant = '') {
   const base = racineDepuis(courant);
   const dansComposants = courant !== ENTREE_COMPOSANTS && String(courant).startsWith('composants/');
 
   const chapitres = CHAPITRES.map((c) => `
-        <li>${lien(base + c.href, c.titre, { classe: 'ds-nav__lien label-md', courant: c.href === courant ? 'page' : '' })}</li>`).join('');
+        <li>${lien(base + c.href, c.titre, { classe: 'ds-nav__lien label-md', marque: c.href === courant ? 'page' : '' })}</li>`).join('');
 
   return `<header class="ds-entete">
   <a class="ds-saut label-md" href="#contenu">Aller au contenu</a>
   <div class="ds-entete__barre">
-    ${lien(`${base}index.html`, `<img class="ds-entete__logo" src="${base}assets/logo.svg" alt="MyDigitalSchool" width="150" height="88"><span class="ds-entete__titre label-sm">Guide de marque<span class="ds-entete__titre-suite"> &amp; design system</span></span>`, { classe: 'ds-entete__marque', courant: courant === 'index.html' ? 'page' : '' })}
+    ${lien(`${base}index.html`, `<img class="ds-entete__logo" src="${base}assets/logo.svg" alt="MyDigitalSchool" width="150" height="88"><span class="ds-entete__titre label-sm">Guide de marque<span class="ds-entete__titre-suite"> &amp; design system</span></span>`, { classe: 'ds-entete__marque', marque: courant === 'index.html' ? 'page' : '' })}
     <nav class="ds-nav" aria-label="Chapitres de la marque">
       <ul class="ds-nav__liste">${chapitres}
       </ul>
     </nav>
-    ${lien(base + ENTREE_COMPOSANTS, 'Composants', { classe: 'ds-entete__etage label-md', courant: courant === ENTREE_COMPOSANTS ? 'page' : (dansComposants ? 'true' : '') })}
+    ${lien(base + ENTREE_COMPOSANTS, 'Composants', { classe: 'ds-entete__etage label-md', marque: courant === ENTREE_COMPOSANTS ? 'page' : (dansComposants ? 'true' : '') })}
   </div>
 </header>`;
 }
 
-// Le sommaire de l'étage composants. Ses adresses sont relatives au dossier `composants/`,
-// où vivent toutes ses pages.
-export function sommaireHtml(courant) {
-  const entrees = COMPOSANTS.map((c) => {
-    const href = c.href.replace(/^composants\//, '');
-    return `
-      <li>${lien(href, c.titre, { classe: 'ds-sommaire__lien body-sm', courant: c.href === courant ? 'page' : '' })}</li>`;
-  }).join('');
+// Le sommaire de l'étage composants, à poser à gauche de ses pages. Même convention
+// d'adresse que l'en-tête : la liste est relative à `design-system/`, le préfixe se déduit
+// de la page courante.
+export function sommaireHtml(courant = '') {
+  const base = racineDepuis(courant);
+  const entrees = COMPOSANTS.map((c) => `
+      <li>${lien(base + c.href, c.titre, { classe: 'ds-sommaire__lien body-sm', marque: c.href === courant ? 'page' : '' })}</li>`).join('');
 
   return `<nav class="ds-sommaire" aria-label="Pages des composants">
   <p class="label-caps ds-sommaire__titre">Composants</p>
