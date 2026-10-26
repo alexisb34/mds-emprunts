@@ -1,6 +1,7 @@
 // Le chrome du site : en-tête de navigation, sommaire de l'étage composants, pied.
-// Module pur, sans DOM — il rend des chaînes HTML, à la manière de `js/demoClock.js`.
-// Chaque page le pose depuis un script en ligne.
+// Il rend des chaînes HTML, à la manière de `js/demoClock.js`, sans toucher au DOM — sauf
+// `brancherSommaire`, qui reçoit le document en argument. Chaque page le pose depuis un
+// script en ligne.
 //
 // ## La convention d'adresse, qui vaut pour tout le site
 //
@@ -93,11 +94,36 @@ export function sommaireHtml(courant = '') {
   const entrees = COMPOSANTS.map((c) => `
       <li>${lien(base + c.href, c.titre, { classe: 'ds-sommaire__lien body-sm', marque: c.href === courant ? 'page' : '' })}</li>`).join('');
 
-  return `<nav class="ds-sommaire" aria-label="Pages des composants">
-  <p class="label-caps ds-sommaire__titre">Composants</p>
-  <ul>${entrees}
-  </ul>
-</nav>`;
+  // Un `<details>` rendu OUVERT. Sur grand écran c'est la colonne de gauche, et son résumé est
+  // masqué par la feuille. Sous `RUPTURE_ETROITE`, `brancherSommaire` le referme : treize liens
+  // feraient sinon un écran entier avant le titre. Il reste à sa place dans le balisage, donc
+  // l'ordre visuel, l'ordre de lecture et l'ordre de tabulation ne se contredisent jamais.
+  return `<details class="ds-sommaire" open>
+  <summary class="ds-sommaire__resume label-md">Pages des composants</summary>
+  <nav class="ds-sommaire__corps" aria-label="Pages des composants">
+    <p class="label-caps ds-sommaire__titre">Composants</p>
+    <ul>${entrees}
+    </ul>
+  </nav>
+</details>`;
+}
+
+// La largeur sous laquelle le sommaire se replie. C'est celle du `@media` de `css/site.css`
+// qui masque la colonne : un test vérifie qu'elles sont les mêmes. Une fenêtre de 900 px ou
+// moins, c'est aussi un écran de bureau zoomé à 200 % — le reflow que WCAG 1.4.10 demande.
+export const RUPTURE_ETROITE = 900;
+
+// À appeler une fois le sommaire posé dans la page. Seule fonction de ce module qui touche au
+// document : elle le reçoit, comme `lireTokensDepuisDocument`, pour qu'un test lui en donne un faux.
+// Elle replie le sommaire sous la rupture, le rouvre au-dessus, et suit la fenêtre quand elle
+// change de taille ou de zoom. Sans elle, le sommaire reste ouvert : c'est un repli correct.
+export function brancherSommaire(doc = document, fenetre = window) {
+  const sommaire = doc.querySelector('.ds-sommaire');
+  if (!sommaire || !fenetre.matchMedia) return;
+  const etroit = fenetre.matchMedia(`(max-width: ${RUPTURE_ETROITE}px)`);
+  const ajuster = () => { sommaire.open = !etroit.matches; };
+  ajuster();
+  etroit.addEventListener('change', ajuster);
 }
 
 // Le pied, identique partout. Il dit d'où vient ce que le site affiche, et ce que ce site

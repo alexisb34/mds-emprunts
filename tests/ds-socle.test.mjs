@@ -3,10 +3,10 @@
 // ses propres contrastes se discrédite en une page (spec §8).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { ratioExact, verdict } from '../design-system/js/contraste.js';
 import { PAIRES } from '../design-system/js/palette-site.js';
-import { CHAPITRES, COMPOSANTS, enteteHtml, piedHtml, sommaireHtml } from '../design-system/js/chrome.js';
+import { CHAPITRES, COMPOSANTS, RUPTURE_ETROITE, brancherSommaire, enteteHtml, piedHtml, sommaireHtml } from '../design-system/js/chrome.js';
 
 const lire = (chemin) => readFileSync(new URL(`../design-system/${chemin}`, import.meta.url), 'utf8');
 
@@ -226,15 +226,114 @@ test('l’accueil a un seul h1, et c’est la signature de l’école', () => {
   assert.match(html, /id="contenu"/);
 });
 
-test('sur téléphone, le sommaire passe après le contenu : le titre arrive en haut de l’écran', () => {
-  // Treize liens avant le premier titre feraient un écran entier de téléphone, sur chacune des
-  // pages de l'étage composants. Sous 900 px le sommaire prend donc `order: 2`, derrière `<main>`.
+// ---- Le sommaire escamotable ----
+// Treize liens avant le premier titre feraient un écran entier de téléphone, et un écran de
+// bureau zoomé à 200 % est dans le même cas (WCAG 1.4.10). Sous 900 px le sommaire se replie en
+// un seul arrêt de tabulation, EN TÊTE de page : il ne change pas de place dans le balisage,
+// donc ce qu'on voit, ce qu'on lit et ce qu'on parcourt au clavier restent dans le même ordre.
+
+test('le sommaire est un <details> rendu ouvert, avec un résumé et sa navigation', () => {
+  const html = sommaireHtml('composants/badge.html');
+  assert.match(html, /^<details class="ds-sommaire" open>/);
+  assert.match(html, /<summary class="ds-sommaire__resume[^"]*">[^<]+<\/summary>/);
+  assert.match(html, /<nav class="ds-sommaire__corps" aria-label="[^"]+">/);
+  assert.ok(html.indexOf('<summary') < html.indexOf('<nav'), 'le résumé précède la navigation');
+});
+
+// Un faux document et une fausse fenêtre : `brancherSommaire` ne doit rien exiger d'autre.
+function decor(etroit) {
+  const sommaire = { open: true };
+  const ecouteurs = [];
+  const requete = { matches: etroit, addEventListener: (type, f) => ecouteurs.push([type, f]) };
+  const requetes = [];
+  return {
+    sommaire, requete, ecouteurs, requetes,
+    doc: { querySelector: (s) => (s === '.ds-sommaire' ? sommaire : null) },
+    fenetre: { matchMedia: (q) => { requetes.push(q); return requete; } },
+  };
+}
+
+test('brancherSommaire replie le sommaire sous la rupture et le laisse ouvert au-dessus', () => {
+  const etroit = decor(true);
+  brancherSommaire(etroit.doc, etroit.fenetre);
+  assert.equal(etroit.sommaire.open, false);
+  const large = decor(false);
+  brancherSommaire(large.doc, large.fenetre);
+  assert.equal(large.sommaire.open, true);
+});
+
+test('brancherSommaire suit la fenêtre quand elle change de taille ou de zoom', () => {
+  const d = decor(false);
+  brancherSommaire(d.doc, d.fenetre);
+  assert.deepEqual(d.ecouteurs.map(([type]) => type), ['change']);
+  d.requete.matches = true;
+  d.ecouteurs[0][1]();
+  assert.equal(d.sommaire.open, false, 'la fenêtre se resserre : il se replie');
+  d.requete.matches = false;
+  d.ecouteurs[0][1]();
+  assert.equal(d.sommaire.open, true, 'elle s’élargit : il se rouvre');
+});
+
+test('brancherSommaire ne casse rien sans sommaire ni matchMedia', () => {
+  brancherSommaire({ querySelector: () => null }, { matchMedia: () => { throw new Error('inutile'); } });
+  const sommaire = { open: true };
+  brancherSommaire({ querySelector: () => sommaire }, {});
+  assert.equal(sommaire.open, true, 'sans matchMedia, il reste ouvert : le repli est correct');
+});
+
+test('la rupture du script est celle de la feuille, et le résumé n’existe que dessous', () => {
   const css = lire('css/site.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  const debut = css.indexOf('@media (max-width: 900px)');
+  assert.equal(RUPTURE_ETROITE, 900);
+  const debut = css.indexOf(`@media (max-width: ${RUPTURE_ETROITE}px)`);
   const fin = css.indexOf('@media (max-width: 600px)');
-  assert.ok(debut >= 0 && fin > debut, 'le bloc 900 px est introuvable');
+  assert.ok(debut >= 0 && fin > debut, `aucun @media (max-width: ${RUPTURE_ETROITE}px) dans site.css`);
   const etroit = css.slice(debut, fin);
-  assert.match(etroit, /\.ds-sommaire\s*\{[^}]*\border:\s*2\b/);
-  // Au-dessus de 900 px il reste à gauche : aucun `order` en dehors du bloc étroit.
-  assert.doesNotMatch(css.replace(etroit, ''), /\.ds-sommaire\s*\{[^}]*\border:/);
+  const large = css.replace(etroit, '');
+  // Au-dessus : colonne ouverte, résumé caché. En dessous : résumé visible.
+  assert.match(large, /\.ds-sommaire__resume\s*\{\s*display:\s*none/);
+  assert.match(etroit, /\.ds-sommaire__resume\s*\{[^}]*display:\s*flex/);
+  // Et le sommaire ne change jamais de place visuelle : pas d'`order` pour le déplacer.
+  assert.doesNotMatch(css, /\.ds-sommaire\s*\{[^}]*\border:/);
+});
+
+// Le CSS suppose que le sommaire et `<main>` sont les deux enfants directs de `.ds-colonnes`.
+// Douze pages vont s'y conformer ; ce test dit laquelle ne le fait pas.
+function enfantsDirects(html, classe) {
+  const source = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<script[\s\S]*?<\/script>/g, '');
+  const ouverture = source.match(new RegExp(`<div class="${classe}"[^>]*>`));
+  if (!ouverture) return null;
+  const VIDES = new Set(['br', 'img', 'input', 'link', 'meta', 'hr', 'source', 'wbr']);
+  let profondeur = 1;
+  const enfants = [];
+  for (const m of source.slice(ouverture.index + ouverture[0].length).matchAll(/<(\/?)([a-z][a-z0-9]*)\b([^>]*)>/gi)) {
+    const [, ferme, nom, attributs] = m;
+    if (VIDES.has(nom.toLowerCase()) || attributs.trimEnd().endsWith('/')) { if (profondeur === 1) enfants.push(nom.toLowerCase()); continue; }
+    if (ferme) { profondeur -= 1; if (profondeur === 0) break; continue; }
+    if (profondeur === 1) enfants.push(`${nom.toLowerCase()}${/id="([^"]+)"/.test(attributs) ? `#${attributs.match(/id="([^"]+)"/)[1]}` : ''}`);
+    profondeur += 1;
+  }
+  return enfants;
+}
+
+test('chaque page de l’étage composants met le sommaire et <main> côte à côte dans .ds-colonnes', () => {
+  const dossier = new URL('../design-system/composants/', import.meta.url);
+  const pages = readdirSync(dossier).filter((f) => f.endsWith('.html'));
+  assert.ok(pages.length > 0, 'aucune page dans composants/ : le test ne voit plus rien');
+  for (const page of pages) {
+    const html = readFileSync(new URL(page, dossier), 'utf8');
+    const enfants = enfantsDirects(html, 'ds-colonnes');
+    assert.ok(enfants, `${page} : pas de <div class="ds-colonnes">`);
+    assert.deepEqual(enfants, ['div#sommaire', 'main#contenu'],
+      `${page} : .ds-colonnes doit contenir exactement <div id="sommaire"> puis <main id="contenu"> comme enfants directs — la feuille replie le sommaire sous 900 px en comptant dessus`);
+    assert.match(html, /sommaireHtml\('composants\/[a-z0-9-]+\.html'\)/, `${page} ne pose pas le sommaire`);
+    assert.match(html, /brancherSommaire\(\)/, `${page} n’appelle pas brancherSommaire() : le sommaire resterait ouvert sur téléphone`);
+  }
+});
+
+test('le détecteur d’enfants directs voit bien un enfant mal placé', () => {
+  // Garde le test précédent honnête : s'il ne savait pas échouer, il ne protégerait rien.
+  const bon = '<div class="ds-colonnes"><div id="sommaire"></div><main id="contenu"><div><p>x</p></div></main></div>';
+  const mauvais = '<div class="ds-colonnes"><div class="cadre"><div id="sommaire"></div><main id="contenu"></main></div></div>';
+  assert.deepEqual(enfantsDirects(bon, 'ds-colonnes'), ['div#sommaire', 'main#contenu']);
+  assert.deepEqual(enfantsDirects(mauvais, 'ds-colonnes'), ['div']);
 });

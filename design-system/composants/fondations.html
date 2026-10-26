@@ -46,13 +46,14 @@
   <div id="pied"></div>
 
   <script type="module">
-    import { enteteHtml, sommaireHtml, piedHtml } from '../js/chrome.js';
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
     import { lireTokensDepuisDocument, tableauTokensHtml, sommaireGroupesHtml, messageHtml } from '../js/tokens.js';
 
     // L’adresse de cette page est toujours relative à design-system/ : le chrome en déduit les `../`.
     document.getElementById('entete').outerHTML = enteteHtml('composants/fondations.html');
     document.getElementById('sommaire').outerHTML = sommaireHtml('composants/fondations.html');
     document.getElementById('pied').outerHTML = piedHtml('composants/fondations.html');
+    brancherSommaire();
 
     // Pas d’attente de la feuille : un script de module est différé et ne s’exécute qu’après les
     // feuilles qui bloquent le rendu. Si `tokens.css` a échoué (404, mauvais chemin), elle est
