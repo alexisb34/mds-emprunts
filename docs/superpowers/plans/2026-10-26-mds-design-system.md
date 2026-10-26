@@ -40,7 +40,11 @@
 
 **Interfaces:**
 - Consumes: rien.
-- Produces: `ratio(hexA: string, hexB: string) -> number` (arrondi à 2 décimales) ; `verdict(ratio: number, px: number, gras: boolean) -> 'AA' | 'AA-large' | 'echec'` ; `GRAND_TEXTE = { px: 18, pxGras: 14 }`.
+- Produces: `ratioExact(hexA: string, hexB: string) -> number` (pleine précision) ; `ratio(hexA, hexB) -> number` (le précédent, arrondi à 2 décimales, **pour l'affichage seulement**) ; `verdict(ratioExact: number, px: number, gras: boolean) -> 'AA' | 'AA-large' | 'echec'` ; `GRAND_TEXTE = { px: 24, pxGras: 18.66 }`.
+
+`verdict` reçoit le ratio **non arrondi** : arrondir avant de juger ferait passer un 4,496 réel pour un 4,50 conforme. L'arrondi ne sert qu'à écrire le nombre à l'écran.
+
+Les seuils de grand texte sont ceux de WCAG, convertis en pixels : 18 pt = 24 px, et 14 pt gras = 18,66 px. Un texte de 18 px non gras n'est **pas** du grand texte et exige 4,5:1.
 
 - [ ] **Step 1: Write the failing test** dans `tests/ds-contraste.test.mjs`
 
@@ -49,17 +53,28 @@ test('ratio : valeurs de référence', () => {
   assert.equal(ratio('#ffffff', '#000000'), 21);
   assert.equal(ratio('#662483', '#f0e9f3'), 8.23);   // badge emprunté
   assert.equal(ratio('#faad14', '#fef3d9'), 1.72);   // badge maintenance
-  assert.equal(ratio('#757678', '#ffffff'), 4.76);   // texte secondaire sur blanc
+  assert.equal(ratio('#757678', '#ffffff'), 4.55);   // texte secondaire sur blanc
   assert.equal(ratio('#AABBCC', '#aabbcc'), 1);      // la casse n'a pas d'effet
+});
+
+test('ratioExact ne perd rien, ratio n’arrondit que pour l’affichage', () => {
+  assert.ok(Math.abs(ratioExact('#757678', '#ffffff') - 4.5465) < 0.001);
+  assert.equal(ratio('#757678', '#ffffff'), 4.55);
 });
 
 test('verdict : les bornes de WCAG sont inclusives', () => {
   assert.equal(verdict(4.5, 16, false), 'AA');
   assert.equal(verdict(4.49, 16, false), 'echec');
-  assert.equal(verdict(3, 18, false), 'AA-large');   // 18px pile est grand texte
-  assert.equal(verdict(3, 17.9, false), 'echec');
-  assert.equal(verdict(3, 14, true), 'AA-large');    // 14px gras est grand texte
-  assert.equal(verdict(3, 14, false), 'echec');
+  assert.equal(verdict(3, 24, false), 'AA-large');    // 18 pt = 24 px
+  assert.equal(verdict(3, 23.9, false), 'echec');
+  assert.equal(verdict(3, 18.66, true), 'AA-large');  // 14 pt gras = 18,66 px
+  assert.equal(verdict(3, 18.65, true), 'echec');
+  assert.equal(verdict(3, 18, false), 'echec');       // 18 px non gras n’est PAS du grand texte
+});
+
+test('verdict juge sur le ratio non arrondi', () => {
+  // 4,496 arrondi donnerait 4,50 et passerait : le piège que cette API évite.
+  assert.equal(verdict(4.496, 16, false), 'echec');
 });
 ```
 
@@ -68,9 +83,9 @@ test('verdict : les bornes de WCAG sont inclusives', () => {
 Run: `node --test tests/ds-contraste.test.mjs`
 Expected: FAIL — module introuvable.
 
-- [ ] **Step 3: Implement `ratio` et `verdict` dans `design-system/js/contraste.js`**
+- [ ] **Step 3: Implement `ratioExact`, `ratio` et `verdict` dans `design-system/js/contraste.js`**
 
-Luminance relative WCAG 2.1 : canal / 255, puis `c <= 0.03928 ? c/12.92 : ((c+0.055)/1.055) ** 2.4`, pondération `0.2126 / 0.7152 / 0.0722`. Ratio `(clair + 0.05) / (sombre + 0.05)`, arrondi à 2 décimales. Accepter `#rgb` et `#rrggbb`.
+Luminance relative WCAG 2.1 : canal / 255, puis `c <= 0.03928 ? c/12.92 : ((c+0.055)/1.055) ** 2.4`, pondération `0.2126 / 0.7152 / 0.0722`. `ratioExact` rend `(clair + 0.05) / (sombre + 0.05)` sans arrondi ; `ratio` l'arrondit à 2 décimales. Accepter `#rgb` et `#rrggbb`, quelle que soit la casse.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -93,7 +108,7 @@ git commit -m "feat(ds): mesure de contraste WCAG"
 - Test: `tests/ds-socle.test.mjs`
 
 **Interfaces:**
-- Consumes: `ratio`, `verdict` (Task 1).
+- Consumes: `ratioExact`, `verdict` (Task 1).
 - Produces: `CHAPITRES: {href, titre, resume}[]` et `COMPOSANTS: {href, titre}[]` ; `enteteHtml(courant: string) -> string` ; `piedHtml() -> string` ; `PAIRES: {nom, texte, fond, px, gras}[]` où `texte` et `fond` sont des noms de variables `--ds-*`.
 
 Le site se pose sur fond blanc, pas sur `--bg-canvas` : `--text-secondary` sur `--bg-canvas` tombe à 4,13:1, sous le seuil que le site s'impose.
@@ -108,7 +123,7 @@ test('la palette du site passe AA sur toutes ses paires', () => {
   for (const p of PAIRES) {
     assert.ok(valeurs[p.texte], `${p.texte} absent de site.css`);
     assert.ok(valeurs[p.fond], `${p.fond} absent de site.css`);
-    assert.notEqual(verdict(ratio(valeurs[p.texte], valeurs[p.fond]), p.px, p.gras), 'echec', `${p.nom} échoue`);
+    assert.notEqual(verdict(ratioExact(valeurs[p.texte], valeurs[p.fond]), p.px, p.gras), 'echec', `${p.nom} échoue`);
   }
 });
 
@@ -449,7 +464,7 @@ git commit -m "feat(ds): chapitre Logo, versions et exports"
 - Test: `tests/ds-dette.test.mjs`
 
 **Interfaces:**
-- Consumes: `ratio`, `verdict` (Task 1), `lireTokens`, `valeursDepuis` (Task 3).
+- Consumes: `ratio` (affichage), `ratioExact`, `verdict` (Task 1), `lireTokens`, `valeursDepuis` (Task 3).
 - Produces: `PAIRES_KIT: {nom, texte, fond, px, gras}[]` — les paires réellement employées par `css/components.css` ; `tableauDetteHtml(paires, valeurs) -> string`.
 
 - [ ] **Step 1: Write the failing test** dans `tests/ds-dette.test.mjs`
