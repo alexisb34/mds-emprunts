@@ -305,7 +305,8 @@ summary:focus-visible,
 .ds-bouton--clair:hover,
 .ds-groupes__lien:hover,
 .ds-copier:hover,
-.ds-plaque { --ds-discret: var(--ds-texte); }
+.ds-plaque,
+.ds-code { --ds-discret: var(--ds-texte); }
 
 /* Fonds saturés : les aplats violets. */
 .ds-rappel,
@@ -382,11 +383,26 @@ summary:focus-visible,
 }
 .ds-groupes__lien:hover { background: var(--ds-fond-doux); }
 
+/* Une section d'une page de l'étage composants : un groupe de tokens sur Fondations, un des
+   six points de la trame sur une page de composant. */
 .ds-groupe {
   display: grid;
   gap: var(--space-md);
   /* Un lien d'ancre ne doit pas finir sous l'en-tête collant. */
   scroll-margin-top: calc(var(--size-topbar) + var(--space-lg));
+}
+/* Un sous-titre respire plus au-dessus qu'en dessous : avec le même écart des deux côtés, il
+   se colle au paragraphe précédent et on ne voit plus où un sujet s'arrête. */
+.ds-groupe > * + .h6 { margin-top: var(--space-lg); }
+
+/* `base.css` retire les puces de toutes les listes, parce que les listes du produit sont des
+   menus et des tableaux. Celles du guide sont de la prose : elles les reprennent. */
+.ds-liste {
+  display: grid;
+  gap: var(--space-sm);
+  padding-left: var(--space-xl);
+  list-style: disc;
+  max-width: var(--ds-mesure);
 }
 
 .ds-jetons { display: grid; border-top: var(--stroke-thin) solid var(--ds-filet); }
@@ -460,7 +476,9 @@ summary:focus-visible,
 }
 .ds-copier:hover { background: var(--ds-fond-doux); }
 
-.ds-article code { font-family: var(--ds-mono); }
+/* Un nom de classe ou un bout de balise dans une phrase ne se coupe pas tout seul : sur un
+   écran de 360 px, `<a class="btn btn--secondary" href="…">` déborderait de la colonne. */
+.ds-article code { font-family: var(--ds-mono); overflow-wrap: anywhere; }
 
 /* Le message qui remplace le tableau quand la page ne peut pas lire les tokens. */
 .ds-message {
@@ -477,6 +495,49 @@ summary:focus-visible,
    JavaScript, ou module bloqué, il apparaît une seconde plus tard et reste. */
 .ds-message--attente { animation: ds-apparait .2s 1s both; }
 @keyframes ds-apparait { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Les cadres d'exemple ----
+   Le dépôt a cinq feuilles de style qui se contredisent, et chacune pose de la mise en page
+   plein écran. Chaque exemple est donc une page autonome de `design-system/exemples/`, rendue
+   dans un `<iframe>` : `design-system/js/cadre.js` le pose, `cadre-enfant.js` lui donne sa
+   hauteur. Le cadre n'habille pas la démonstration — il l'encadre, et le fond gris qu'on voit
+   à l'intérieur est celui de l'application (`--bg-canvas`), pas celui du guide.
+
+   Pas de `background` ici : c'est l'exemple qui peint le sien. Une surface au fond coloré
+   déclarée dans cette feuille devrait aussi déclarer son `--ds-discret` (voir « Le garde-fou
+   des aplats »). */
+
+.ds-cadre {
+  border: var(--stroke-thin) solid var(--ds-filet);
+  border-radius: var(--radius-lg);
+  /* Le document du cadre a ses angles droits : sans ça, il dépasserait aux quatre coins. */
+  overflow: hidden;
+}
+/* Les motifs mobiles se regardent à la largeur d'un téléphone : plus large, le shell mobile
+   ne ressemble plus à rien. */
+.ds-cadre--etroit { max-width: calc(var(--size-sidebar) * 1.5); }
+.ds-cadre__vue {
+  display: block;
+  width: 100%;
+  border: 0;
+  /* Hauteur de départ, le temps que l'exemple annonce la sienne. Si le script ne tourne pas,
+     elle reste : on voit une rangée de composants plutôt qu'un cadre vide. */
+  height: calc(var(--size-control-md) * 3);
+}
+
+/* ---- Le code montré ----
+   La taille du texte vient de `.body-sm`, posée dans le balisage à côté de `.ds-code` : c'est
+   l'échelle du kit, employée pour de vrai plutôt que recopiée ici. */
+
+.ds-code {
+  margin: 0;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--ds-fond-doux);
+  font-family: var(--ds-mono);
+  /* Une ligne de HTML est longue : elle défile ici plutôt que d'élargir la page. */
+  overflow-x: auto;
+}
 
 /* ---- Pied ---- */
 

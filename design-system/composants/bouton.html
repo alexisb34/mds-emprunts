@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bouton — Design system MyDigitalSchool</title>
+  <meta name="description" content="Le bouton de l’outil d’emprunt : ses quatre variantes, ses tailles, ses états, le HTML à copier, et ce qui lui manque aujourd’hui.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : les boutons qu'elle montre sont rendus
+       dans des cadres isolés, chacun avec ses propres feuilles. C'est la seule façon de
+       montrer le vrai composant sans que la mise en page de l'application dévore la page. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Bouton</h1>
+        <p class="ds-chapeau ds-mesure">Le bouton est le composant le plus employé de l’outil d’emprunt. Quatre variantes, deux hauteurs, et une règle&nbsp;: une seule action principale par écran.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">Un bouton déclenche une action&nbsp;: valider un emprunt, imprimer une étiquette, annuler un formulaire. Il fait quelque chose, là, sur cette page.</p>
+        <p class="body ds-mesure">S’il emmène ailleurs, ce n’est pas un bouton&nbsp;: c’est un lien. On peut lui donner l’apparence d’un bouton — <code>&lt;a class="btn btn--primary"&gt;</code> fonctionne — mais il reste un lien, et le navigateur le traite comme tel&nbsp;: ouverture dans un nouvel onglet, copie de l’adresse, retour arrière. Choisir la mauvaise balise retire ces gestes à tout le monde.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <p class="body ds-mesure">Le cadre ci-dessous est une page à part, qui charge <code>css/components.css</code> comme le fait l’application. Ce sont donc les vrais boutons&nbsp;: survolez-les, tabulez dedans. Ils ne font rien d’autre — ce sont des démonstrations, pas l’application.</p>
+        <div id="cadre-variantes"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Les quatre variantes</h3>
+        <ul class="ds-liste body">
+          <li><code>btn--primary</code>, violet plein&nbsp;: l’action que l’écran attend. <strong>Une seule par écran.</strong> Deux boutons violets côte à côte, et plus personne ne sait lequel est le bon.</li>
+          <li><code>btn--secondary</code>, contour violet sur fond blanc&nbsp;: une action utile mais pas attendue — imprimer, exporter, modifier.</li>
+          <li><code>btn--ghost</code>, sans fond ni contour&nbsp;: annuler, fermer, revenir. Tout ce qui ne fait rien avancer.</li>
+          <li><code>btn--danger</code>, rouge plein&nbsp;: une action qu’on ne défait pas. Désactiver un compte, supprimer. Jamais pour autre chose, sinon le rouge cesse d’alerter.</li>
+        </ul>
+
+        <h3 class="h6">Les tailles</h3>
+        <p class="body ds-mesure">La hauteur par défaut est celle d’un contrôle du kit (<code>--size-control-md</code>). <code>btn--sm</code> descend à <code>--size-control-sm</code>&nbsp;: c’est la taille des boutons d’une ligne de tableau ou d’une barre d’outils, là où la hauteur par défaut ferait des rangées trop hautes. <code>btn--icon</code> rend le bouton carré pour n’y mettre qu’une flèche ou une icône.</p>
+        <div id="cadre-tailles"></div>
+        <p class="body ds-mesure"><code>btn--icon</code> existe dans la feuille, mais aucun écran de l’outil ne l’emploie aujourd’hui&nbsp;: les boutons à flèche seule passent par <code>btn--ghost btn--sm</code> et un <code>aria-label</code>. La variante est documentée parce qu’elle existe, pas parce qu’elle est éprouvée.</p>
+
+        <h3 class="h6">Les états</h3>
+        <p class="body ds-mesure">Le repos et l’état désactivé se voient ci-dessous, variante par variante. Le survol et l’appui ne se figent pas dans du HTML&nbsp;: le cadre est vivant, passez la souris dessus pour les voir.</p>
+        <div id="cadre-etats"></div>
+        <p class="body ds-mesure">Un bouton désactivé passe à moitié transparent et refuse le curseur. L’attribut <code>disabled</code> le sort de l’ordre de tabulation mais le laisse dans la page&nbsp;: une personne qui explore l’écran au lecteur d’écran le trouve et l’entend annoncé comme indisponible. Un bouton caché, lui, aurait simplement disparu, sans dire qu’une action existe et qu’elle n’est pas permise ici.</p>
+
+        <h3 class="h6">Pleine largeur</h3>
+        <p class="body ds-mesure"><code>btn--block</code> prend toute la largeur de son conteneur. C’est la forme employée partout dans l’interface mobile, où la colonne fait la largeur du téléphone.</p>
+        <div id="cadre-bloc"></div>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <p class="body ds-mesure">La trame de ce site demande de nommer les manques plutôt que de les inventer. Pour le bouton, il y en a deux&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li><strong>Aucun état de chargement.</strong> Il n’existe ni bouton en attente, ni indicateur dans un bouton. Un formulaire qui met du temps à répondre n’a aujourd’hui rien à montrer. En attendant une décision, désactivez le bouton pendant l’envoi&nbsp;: c’est ce que fait l’outil.</li>
+          <li><strong>Aucun style de focus visible</strong>, détaillé plus bas.</li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+        <p class="body ds-mesure">Un bouton est du HTML&nbsp;: il se copie. <code>class="btn"</code> toujours, suivi d’une variante, puis éventuellement d’une taille.</p>
+        <pre class="ds-code body-sm"><code>&lt;div class="row row--wrap"&gt;
+  &lt;button type="button" class="btn btn--primary"&gt;Valider l’emprunt&lt;/button&gt;
+  &lt;button type="button" class="btn btn--secondary"&gt;Imprimer l’étiquette&lt;/button&gt;
+  &lt;button type="button" class="btn btn--ghost"&gt;Annuler&lt;/button&gt;
+  &lt;button type="button" class="btn btn--danger"&gt;Désactiver le compte&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+        <ul class="ds-liste body">
+          <li><code>type="button"</code> n’est pas décoratif. Sans lui, un <code>&lt;button&gt;</code> dans un formulaire vaut <code>type="submit"</code> et envoie le formulaire au premier clic.</li>
+          <li>Pour une action qui navigue, la même apparence sur un lien&nbsp;: <code>&lt;a class="btn btn--secondary" href="…"&gt;</code>.</li>
+          <li>Pour la pleine largeur&nbsp;: <code>class="btn btn--primary btn--block"</code>.</li>
+          <li>Pour une taille réduite&nbsp;: <code>class="btn btn--ghost btn--sm"</code>.</li>
+          <li>Pour l’état désactivé, l’attribut HTML, pas une classe&nbsp;: <code>&lt;button type="button" class="btn btn--primary" disabled&gt;</code>.</li>
+          <li><code>.row</code> et <code>.row--wrap</code> alignent plusieurs boutons et les font passer à la ligne sur un écran étroit. Ils viennent de <code>css/components.css</code> aussi.</li>
+        </ul>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour aller sur une autre page.</strong> Employez un lien, <code>&lt;a href&gt;</code>, avec <code>class="btn"</code> si l’apparence d’un bouton est voulue.</li>
+          <li><strong>Pour filtrer une liste.</strong> Une série de boutons qui s’allument n’est pas un bouton&nbsp;: c’est <code>.chip</code>, qui a un état actif.</li>
+          <li><strong>Pour plus d’une action principale.</strong> Un deuxième <code>btn--primary</code> sur le même écran annule le premier. Le second passe en <code>btn--secondary</code>.</li>
+          <li><strong>Pour une action réversible, en rouge.</strong> <code>btn--danger</code> ne sert qu’à ce qui ne se défait pas&nbsp;; employé ailleurs, il fait hésiter devant un geste anodin.</li>
+          <li><strong>Pour une icône seule, sans libellé accessible.</strong> Un bouton dont le contenu est une flèche ou un pictogramme est muet pour un lecteur d’écran&nbsp;: il lui faut un <code>aria-label</code>.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Le manque&nbsp;: aucun style de focus visible</h3>
+        <p class="body ds-mesure"><strong><code>.btn</code> n’a aucune règle <code>:focus-visible</code> dans tout le dépôt.</strong> Une personne qui navigue au clavier traverse les boutons d’un écran sans jamais voir où elle se trouve. Ce n’est pas une préférence de style, c’est un échec du critère WCAG 2.4.7&nbsp;: tabulez dans le cadre des états, plus haut, et vous ne verrez rien bouger.</p>
+        <p class="body ds-mesure">Le kit entier est dans ce cas&nbsp;: ni bouton, ni onglet, ni élément de navigation n’a de focus visible. Seuls les champs de formulaire et la carte KPI cliquable en ont un, et c’est de cette dernière qu’il faudrait partir pour corriger. Le manque est en attente dans <code>docs/correctifs-figma.md</code>, où la décision se prend dans Figma et le code suit.</p>
+        <p class="body ds-mesure">Ce site, lui, pose un contour violet sur tout ce qu’on atteint au clavier. Un guide qui recommande l’accessibilité se l’applique d’abord&nbsp;: tabulez dans cette page, puis dans le cadre juste au-dessus. La différence est exactement ce qui manque.</p>
+
+        <h3 class="h6">Taille de cible</h3>
+        <p class="body ds-mesure">WCAG 2.5.5 recommande 44 px pour une cible tactile, et WCAG 2.5.8 en exige 24 au minimum. Les deux hauteurs du bouton, lues dans <code>css/tokens.css</code>&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>hauteur par défaut, <code>--size-control-md</code>&nbsp;: <strong id="mesure-haut-md">à mesurer depuis un serveur</strong></li>
+          <li><code>btn--sm</code>, <code>--size-control-sm</code>&nbsp;: <strong id="mesure-haut-sm">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Réservez <code>btn--sm</code> aux barres d’outils et aux lignes de tableau, là où la hauteur par défaut ferait des rangées trop hautes. Sur un écran tactile, gardez la taille par défaut.</p>
+
+        <h3 class="h6">Libellé</h3>
+        <p class="body ds-mesure">Le libellé dit l’action, pas la mécanique&nbsp;: «&nbsp;Valider l’emprunt&nbsp;», pas «&nbsp;Envoyer&nbsp;». Un bouton qui ne contient qu’une icône porte un <code>aria-label</code> qui dit la même chose qu’un libellé l’aurait dit.</p>
+
+        <h3 class="h6">Contraste, mesuré</h3>
+        <p class="body ds-mesure">Un libellé de bouton fait 14 px en gras, taille pour laquelle WCAG exige 4,5:1. Les paires du bouton, mesurées dans <code>css/tokens.css</code> au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>blanc sur le violet primaire&nbsp;: <strong id="mesure-primary">à mesurer depuis un serveur</strong></li>
+          <li>blanc sur le rouge d’erreur, <code>btn--danger</code>&nbsp;: <strong id="mesure-danger">à mesurer depuis un serveur</strong></li>
+          <li>blanc sur le rouge d’erreur au survol&nbsp;: <strong id="mesure-danger-survol">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Le rouge d’erreur du kit est une dette connue, datée du 26 octobre 2026. Le chapitre <a href="../couleurs.html">Couleurs</a> publie le tableau complet des paires et leur verdict. En attendant qu’elle soit tranchée, ne doublez pas un <code>btn--danger</code> d’une information qui n’existerait que dans sa couleur.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { ratio, ratioExact, verdict } from '../js/contraste.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/bouton.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/bouton.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/bouton.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration. `fichier` et `demo` sont écrits en clair, et pas calculés :
+    // c’est ce qui permet à un test de vérifier que chaque cadre vise une démonstration qui
+    // existe vraiment dans `exemples/bouton.html`.
+    document.getElementById('cadre-variantes').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'variantes', titre: 'Les quatre variantes de bouton, rendues par le CSS de l’outil d’emprunt' });
+    document.getElementById('cadre-tailles').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'tailles', titre: 'Les deux hauteurs de bouton, et le bouton qui ne porte qu’une icône' });
+    document.getElementById('cadre-etats').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'etats', titre: 'Chaque variante de bouton au repos, puis désactivée' });
+    document.getElementById('cadre-bloc').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'bloc', titre: 'Des boutons pleine largeur, à la largeur d’un téléphone' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais
+    // écrits dans la page : le jour où un token change, le chiffre change avec lui. Sur un
+    // fichier local, le navigateur refuse de lire les règles de la feuille et la phrase de
+    // repli reste affichée.
+    const lecture = lireTokensDepuisDocument(document);
+    if (lecture.ok) {
+      const valeurs = Object.fromEntries(lecture.groupes.flatMap((g) => g.tokens.map((t) => [t.nom, t.valeur])));
+      // 14 px en gras : la taille réelle d’un libellé de bouton dans `css/components.css`.
+      const PAIRES = [
+        ['mesure-primary', '--text-on-brand', '--brand-primary'],
+        ['mesure-danger', '--text-inverse', '--feedback-error'],
+        ['mesure-danger-survol', '--text-inverse', '--feedback-error-hover'],
+      ];
+      for (const [id, texte, fond] of PAIRES) {
+        const champ = document.getElementById(id);
+        if (!champ || !valeurs[texte] || !valeurs[fond]) continue;
+        const v = verdict(ratioExact(valeurs[texte], valeurs[fond]), 14, true);
+        // Les nombres s’écrivent à la française, et le verdict en français aussi.
+        champ.textContent = `${String(ratio(valeurs[texte], valeurs[fond])).replace('.', ',')}:1 — ${v === 'echec' ? 'échoue' : v}`;
+      }
+
+      // Les hauteurs de cible viennent des mêmes tokens : la page ne recopie aucun nombre.
+      for (const [id, nom] of [['mesure-haut-md', '--size-control-md'], ['mesure-haut-sm', '--size-control-sm']]) {
+        const champ = document.getElementById(id);
+        if (champ && valeurs[nom]) champ.textContent = valeurs[nom];
+      }
+    }
+  </script>
+</body>
+</html>

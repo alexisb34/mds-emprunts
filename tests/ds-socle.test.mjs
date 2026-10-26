@@ -327,6 +327,15 @@ test('chaque page de l’étage composants met le sommaire et <main> côte à c�
       `${page} : .ds-colonnes doit contenir exactement <div id="sommaire"> puis <main id="contenu"> comme enfants directs — la feuille replie le sommaire sous 900 px en comptant dessus`);
     assert.match(html, /sommaireHtml\('composants\/[a-z0-9-]+\.html'\)/, `${page} ne pose pas le sommaire`);
     assert.match(html, /brancherSommaire\(\)/, `${page} n’appelle pas brancherSommaire() : le sommaire resterait ouvert sur téléphone`);
+
+    // Et l'adresse passée au chrome est celle de CETTE page. Les douze pages de l'étage
+    // naissent par copier-coller : une page recopiée qui garde le nom de l'autre marque la
+    // mauvaise entrée du sommaire et le mauvais `aria-current`, sans qu'aucune erreur
+    // n'apparaisse. Vérifier la forme de l'adresse ne suffit pas, il faut vérifier sa valeur.
+    for (const [, fonction, adresse] of html.matchAll(/\b(enteteHtml|sommaireHtml|piedHtml)\('([^']*)'\)/g)) {
+      assert.equal(adresse, `composants/${page}`,
+        `${page} : ${fonction}('${adresse}') — le chrome reçoit l’adresse d’une AUTRE page, donc le sommaire marquerait la mauvaise entrée comme courante`);
+    }
   }
 });
 

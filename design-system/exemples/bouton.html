@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bouton — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les démonstrations de bouton, rendues par le CSS de l’outil d’emprunt. Chaque section est montrée dans un cadre de la page Bouton.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les trois seules feuilles dont un bouton a besoin, et rien de plus. Les feuilles d’écran du
+       dépôt posent de la mise en page plein écran (une grille de coquille, une barre en position
+       fixe) qui dévorerait la démonstration ; la feuille du guide, elle, habillerait le composant
+       de ce qui n’est pas l’application. Un test de `tests/ds-cadre.test.mjs` tient cette liste —
+       et il lit le fichier entier, commentaires compris, donc il ne faut même pas nommer ici les
+       feuilles qu’on refuse. Le détail des conflits est dans `design-system/js/cadre.js`. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    /* La mise en page des démonstrations, et rien d’autre : les boutons sont ceux du kit.
+       Tout est en tokens, comme partout ailleurs. La classe est portée par la `<section>`,
+       pas par son contenu : ce qui est à l’intérieur est le HTML que la page de
+       documentation montre, et il ne doit contenir que des classes du kit. */
+    body { padding: var(--space-lg); }
+    /* La largeur d’un écran de téléphone : c’est là que `btn--block` sert vraiment. */
+    .ecran-etroit { max-width: calc(var(--size-sidebar) * 1.5); }
+  </style>
+</head>
+<body>
+  <!-- Les quatre variantes, avec les libellés qu’elles portent dans l’outil d’emprunt. -->
+  <section data-demo="variantes">
+    <div class="row row--wrap">
+      <button type="button" class="btn btn--primary">Valider l’emprunt</button>
+      <button type="button" class="btn btn--secondary">Imprimer l’étiquette</button>
+      <button type="button" class="btn btn--ghost">Annuler</button>
+      <button type="button" class="btn btn--danger">Désactiver le compte</button>
+    </div>
+  </section>
+
+  <!-- Les deux hauteurs, et le bouton carré qui ne porte qu’une icône. -->
+  <section data-demo="tailles">
+    <div class="row row--wrap">
+      <button type="button" class="btn btn--primary">Valider l’emprunt</button>
+      <button type="button" class="btn btn--primary btn--sm">Valider l’emprunt</button>
+      <button type="button" class="btn btn--secondary btn--icon" aria-label="Semaine suivante">→</button>
+    </div>
+  </section>
+
+  <!-- Repos à gauche, désactivé à droite, pour chaque variante. Le survol et le focus ne se
+       figent pas dans du HTML : le cadre est vivant, survolez et tabulez pour de vrai. -->
+  <section data-demo="etats">
+    <div class="stack">
+      <div class="row row--wrap">
+        <button type="button" class="btn btn--primary">Valider l’emprunt</button>
+        <button type="button" class="btn btn--primary" disabled>Valider l’emprunt</button>
+      </div>
+      <div class="row row--wrap">
+        <button type="button" class="btn btn--secondary">Imprimer l’étiquette</button>
+        <button type="button" class="btn btn--secondary" disabled>Imprimer l’étiquette</button>
+      </div>
+      <div class="row row--wrap">
+        <button type="button" class="btn btn--ghost">Annuler</button>
+        <button type="button" class="btn btn--ghost" disabled>Annuler</button>
+      </div>
+      <div class="row row--wrap">
+        <button type="button" class="btn btn--danger">Désactiver le compte</button>
+        <button type="button" class="btn btn--danger" disabled>Désactiver le compte</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pleine largeur, empilés : la forme des boutons de l’interface mobile. -->
+  <section data-demo="bloc" class="ecran-etroit">
+    <div class="stack">
+      <button type="button" class="btn btn--primary btn--block">Réserver</button>
+      <a class="btn btn--secondary btn--block" href="#">Voir la fiche</a>
+      <button type="button" class="btn btn--ghost btn--block">Annuler</button>
+    </div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

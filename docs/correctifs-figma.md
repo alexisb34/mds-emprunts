@@ -9,7 +9,17 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
 
 ## À faire
 
-*Rien en attente.*
+- **`.btn` n’a aucun style de focus visible** (26 octobre 2026). Repéré en documentant la page
+  Bouton du design system. Aucune règle `:focus-visible` sur `.btn` dans tout le dépôt — et le kit
+  entier est dans ce cas&nbsp;: ni bouton, ni onglet (`.tab`), ni élément de navigation
+  (`.nav-item`) n’en a. Seuls `.input` / `.select` / `.textarea` et `.kpi--link` sont stylés. Une
+  personne qui navigue au clavier traverse un écran sans voir où elle est&nbsp;: échec du critère
+  WCAG 2.4.7. La forme existe déjà dans le dépôt, sur `.kpi--link` (`outline: 2px solid
+  var(--brand-primary); outline-offset: 2px`) — reste à décider dans Figma la couleur et
+  l’épaisseur de l’anneau, pour les boutons comme pour les onglets et la navigation, puis à le
+  porter dans `css/components.css`. La page `design-system/composants/bouton.html` nomme ce manque
+  en attendant, et un test (`tests/ds-cadre.test.mjs`) échouera le jour où le style sera ajouté,
+  pour que la documentation ne continue pas à annoncer un trou rebouché.
 
 ## Divergences connues, laissées telles quelles
 
