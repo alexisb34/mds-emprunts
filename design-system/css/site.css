@@ -1,0 +1,378 @@
+/* Feuille du site de design system. Elle se charge APRÈS `css/tokens.css` et
+   `css/base.css` du dépôt : elle reprend leurs tokens et leur échelle typographique, et
+   n'ajoute que ce qui appartient au site lui-même.
+
+   Deux règles tiennent cette feuille :
+
+   1. Aucune couleur en dur en dehors du `:root` ci-dessous. Les couleurs du produit
+      viennent de `tokens.css` ; les couleurs propres au site sont déclarées ici en
+      `--ds-*`, et `design-system/js/palette-site.js` liste les paires texte/fond qu'un
+      test mesure. Le site s'impose 4,5:1 partout.
+   2. Le site est blanc, pas `--bg-canvas`. `--ds-texte-secondaire` sur blanc donne
+      4,55:1 ; sur `#f2f4f8` il tomberait à 4,13:1, sous son propre seuil.
+
+   Les classes que les pages suivantes réutilisent :
+     `.ds-bande`     une section pleine largeur ; `--doux`, `--frais` pour un aplat pastel
+                     ⚠ sur un aplat pastel, pas de `.ds-oeil` ni de `.text-secondary` :
+                     `--ds-texte-secondaire` y tombe à 3,9:1. Le texte y est `--ds-texte`.
+     `.ds-section`   le bloc centré à l'intérieur d'une bande
+     `.ds-mesure`    une colonne de texte à largeur de lecture
+     `.ds-accroche`  le titre d'accueil ; `.ds-titre` un titre de section ; `.ds-chapeau` un chapô
+     `.ds-grille`    une grille ; `--2` et `--3` pour le nombre de colonnes
+     `.ds-carte`     une carte cliquable
+     `.ds-colonnes`  la mise en page de l'étage composants : sommaire à gauche, page à droite
+   La typographie passe par les classes de `base.css` (`.h5`, `.h6`, `.body`, `.label-caps`…),
+   posées dans le balisage : c'est l'échelle du kit, employée pour de vrai. */
+
+:root {
+  /* Les couleurs du site. Elles ne décrivent pas le produit — elles habillent le guide.
+     Chacune est mesurée par `tests/ds-socle.test.mjs` dans les paires où elle sert. */
+  --ds-fond: #ffffff;              /* le fond du site, blanc ; voir la règle 2 ci-dessus */
+  --ds-fond-doux: #f4ecf8;         /* aplat violet très clair, et point le plus sombre des dégradés */
+  --ds-fond-frais: #e0f5f7;        /* aplat turquoise très clair */
+  --ds-violet: #662483;            /* le seul aplat saturé du site, sous du texte blanc */
+  --ds-violet-fonce: #521d69;      /* le même au survol */
+  --ds-turquoise: #2db8c5;         /* décoratif seulement : filets, puces, dégradés — jamais sous du texte */
+  --ds-texte: #3c3c3b;             /* l'anthracite du logo */
+  --ds-texte-secondaire: #757678;  /* UNIQUEMENT sur --ds-fond : sur un aplat pastel il tombe à 3,9:1 */
+  --ds-texte-inverse: #ffffff;
+  --ds-lien: #662483;
+  --ds-filet: #e6dfec;             /* le filet d'une carte ; décoratif, jamais du texte */
+
+  /* Les mesures du site. `tokens.css` n'en porte aucune : il décrit un produit, pas une
+     vitrine. Elles sont ici, en un seul endroit, dérivées des tokens quand c'est possible. */
+  --ds-page: calc(var(--size-sidebar) * 5);     /* 1300px : la largeur maximale du site */
+  --ds-mesure: calc(var(--size-sidebar) * 3);   /* 780px : une colonne de texte */
+  --ds-air: calc(var(--space-3xl) * 2);         /* 64px : la respiration entre deux sections */
+  --ds-air-large: calc(var(--space-3xl) * 3);   /* 96px : celle qui ouvre une page */
+  --ds-taille-accroche: 72px;                   /* l'accroche de l'accueil : la seule fois où la marque parle fort */
+  --ds-taille-titre: 32px;                      /* un titre de section */
+  --ds-taille-chapeau: 19px;                    /* le chapô sous un titre */
+}
+
+/* ---- Réglages du site ---- */
+
+body {
+  /* L'override qui compte : le guide est blanc là où l'outil d'emprunt est gris clair. */
+  background: var(--ds-fond);
+  color: var(--ds-texte);
+}
+
+/* Un contour visible partout où on arrive au clavier. Le kit du produit n'en a pas — c'est
+   une dette que ce site documente et ne reproduit pas. */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--space-xxs) solid var(--ds-violet);
+  outline-offset: var(--space-xxs);
+}
+
+/* ---- En-tête ---- */
+
+.ds-saut {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 2;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  background: var(--ds-violet);
+  color: var(--ds-texte-inverse);
+  /* Hors écran tant qu'on ne l'atteint pas au clavier. */
+  transform: translateY(calc(-100% - var(--space-2xl)));
+  transition: transform .15s;
+}
+.ds-saut:focus { transform: none; }
+
+.ds-entete {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ds-fond);
+  border-bottom: var(--stroke-thin) solid var(--ds-filet);
+}
+.ds-entete__barre {
+  max-width: var(--ds-page);
+  margin: 0 auto;
+  padding: var(--space-md) var(--space-2xl);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+.ds-entete__marque {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex: none;
+  color: var(--ds-texte);
+}
+.ds-entete__logo { height: var(--space-3xl); width: auto; }
+.ds-entete__titre { color: var(--ds-texte-secondaire); }
+
+.ds-nav__liste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xxs) var(--space-xs);
+}
+.ds-nav__lien {
+  display: block;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  color: var(--ds-texte-secondaire);
+}
+/* Le survol change le fond ET la couleur : le texte secondaire ne tient pas sur un aplat. */
+.ds-nav__lien:hover { background: var(--ds-fond-doux); color: var(--ds-texte); }
+.ds-nav__lien[aria-current] { background: var(--ds-fond-doux); color: var(--ds-lien); }
+
+.ds-entete__etage {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: var(--size-control-sm);
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-full);
+  background: var(--ds-violet);
+  color: var(--ds-texte-inverse);
+}
+.ds-entete__etage:hover { background: var(--ds-violet-fonce); }
+.ds-entete__etage[aria-current] { background: var(--ds-violet-fonce); }
+
+/* ---- Mise en page ---- */
+
+.ds-bande { background: var(--ds-fond); }
+.ds-bande--doux { background: var(--ds-fond-doux); }
+.ds-bande--frais { background: var(--ds-fond-frais); }
+
+.ds-section {
+  max-width: var(--ds-page);
+  margin: 0 auto;
+  padding: var(--ds-air) var(--space-2xl);
+  display: grid;
+  gap: var(--space-3xl);
+}
+.ds-mesure { max-width: var(--ds-mesure); }
+
+.ds-titre {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--ds-taille-titre);
+  line-height: 1.15;
+  letter-spacing: -.02em;
+}
+.ds-chapeau {
+  font-size: var(--ds-taille-chapeau);
+  line-height: 1.6;
+}
+.ds-oeil { color: var(--ds-texte-secondaire); }
+
+.ds-grille { display: grid; gap: var(--space-2xl); }
+.ds-grille--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ds-grille--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ---- Cartes ---- */
+
+/* Au repos, une carte se détache par son filet et son fond, pas par un halo : c'est la
+   décision prise sur les cartes du produit le 26 octobre, et le site la suit. */
+.ds-carte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-2xl);
+  border-radius: var(--radius-xl);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  background: var(--ds-fond);
+  color: var(--ds-texte);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s;
+}
+.ds-carte:hover {
+  transform: translateY(calc(var(--space-xxs) * -1));
+  box-shadow: var(--shadow-floating);
+  border-color: var(--ds-turquoise);
+}
+.ds-carte__fleche {
+  margin-top: auto;
+  padding-top: var(--space-md);
+  color: var(--ds-lien);
+  transition: transform .12s ease;
+}
+.ds-carte:hover .ds-carte__fleche { transform: translateX(var(--space-xs)); }
+
+/* ---- Accueil ---- */
+
+.ds-hero {
+  /* Deux halos pastel sur blanc. Ils ne descendent jamais plus bas que `--ds-fond-doux`
+     et `--ds-fond-frais`, tous deux mesurés avec `--ds-texte` : le dégradé est donc
+     lisible sur toute sa surface, et aucun texte secondaire n'y est posé. */
+  background:
+    radial-gradient(60% 80% at 10% 0%, var(--ds-fond-doux), transparent 70%),
+    radial-gradient(55% 70% at 92% 8%, var(--ds-fond-frais), transparent 70%),
+    var(--ds-fond);
+}
+.ds-hero__section {
+  max-width: var(--ds-page);
+  margin: 0 auto;
+  padding: var(--ds-air-large) var(--space-2xl) var(--ds-air);
+  display: grid;
+  gap: var(--space-xl);
+}
+.ds-accroche {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(var(--ds-taille-titre), 6vw, var(--ds-taille-accroche));
+  line-height: 1.05;
+  letter-spacing: -.03em;
+  overflow-wrap: break-word;
+}
+.ds-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+}
+.ds-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: var(--size-control-md);
+  padding: 0 var(--space-2xl);
+  border-radius: var(--radius-full);
+  background: var(--ds-violet);
+  color: var(--ds-texte-inverse);
+}
+.ds-bouton:hover { background: var(--ds-violet-fonce); }
+.ds-bouton--clair {
+  background: var(--ds-fond);
+  color: var(--ds-lien);
+  border: var(--stroke-thin) solid var(--ds-filet);
+}
+.ds-bouton--clair:hover { background: var(--ds-fond-doux); color: var(--ds-lien); }
+
+/* Les deux étages, annoncés côte à côte. */
+.ds-etage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-3xl);
+  border-radius: var(--radius-xl);
+  color: var(--ds-texte);
+}
+.ds-etage--marque { background: var(--ds-fond-doux); }
+.ds-etage--composants { background: var(--ds-fond-frais); }
+.ds-etage__liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  margin-top: var(--space-xs);
+}
+.ds-etage__liste a { color: var(--ds-lien); text-decoration: underline; text-underline-offset: var(--space-xxs); }
+
+/* Le seul aplat saturé de l'accueil, et sa seule zone de texte blanc. */
+.ds-rappel {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-3xl);
+  border-radius: var(--radius-xl);
+  background: var(--ds-violet);
+  color: var(--ds-texte-inverse);
+}
+
+/* Un filet turquoise sous une étiquette : le seul endroit où la couleur de la marque
+   décore le site sans porter de texte. */
+.ds-etiquette {
+  display: inline-block;
+  /* Dans une grille, un bloc est étiré : sans ça, le filet traverserait toute la colonne. */
+  justify-self: start;
+  padding-bottom: var(--space-xs);
+  border-bottom: calc(var(--stroke-thin) * 2) solid var(--ds-turquoise);
+  color: var(--ds-texte);
+}
+
+/* ---- Étage composants : sommaire à gauche, page à droite ---- */
+
+.ds-colonnes {
+  max-width: var(--ds-page);
+  margin: 0 auto;
+  padding: var(--ds-air) var(--space-2xl);
+  display: grid;
+  grid-template-columns: var(--size-sidebar) minmax(0, 1fr);
+  gap: var(--ds-air);
+  align-items: start;
+}
+.ds-sommaire {
+  position: sticky;
+  /* Un cran sous l'en-tête collant, qui fait une soixantaine de pixels : `--size-topbar`
+     lui laisse de la marge sans qu'on ait à figer une hauteur mesurée à la main. */
+  top: calc(var(--size-topbar) + var(--space-lg));
+  display: grid;
+  gap: var(--space-sm);
+}
+.ds-sommaire__titre { color: var(--ds-texte-secondaire); }
+.ds-sommaire__lien {
+  display: block;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  color: var(--ds-texte-secondaire);
+}
+.ds-sommaire__lien:hover { background: var(--ds-fond-doux); color: var(--ds-texte); }
+.ds-sommaire__lien[aria-current] { background: var(--ds-fond-doux); color: var(--ds-lien); font-weight: 700; }
+
+/* ---- Pied ---- */
+
+.ds-pied {
+  /* Pas de marge au-dessus : la dernière section du site porte déjà sa respiration. */
+  border-top: var(--stroke-thin) solid var(--ds-filet);
+  background: var(--ds-fond);
+}
+.ds-pied__corps {
+  max-width: var(--ds-page);
+  margin: 0 auto;
+  padding: var(--ds-air) var(--space-2xl);
+  display: grid;
+  gap: var(--space-md);
+}
+.ds-pied__corps p { max-width: var(--ds-mesure); }
+.ds-pied__reserve { color: var(--ds-texte-secondaire); }
+.ds-pied__liens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg) var(--space-2xl);
+  margin-top: var(--space-sm);
+}
+.ds-pied__lien { color: var(--ds-lien); text-decoration: underline; text-underline-offset: var(--space-xxs); }
+
+/* ---- Largeurs étroites ----
+   Les deux seuils sont ceux de `css/components.css` : un seul jeu de ruptures pour tout le
+   dépôt. À 360 px, rien ne doit déborder. */
+
+@media (max-width: 900px) {
+  .ds-grille--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ds-colonnes { grid-template-columns: minmax(0, 1fr); gap: var(--space-3xl); }
+  .ds-sommaire { position: static; }
+  /* Sur deux ou trois rangs, l'en-tête mange un sixième d'un écran de téléphone : il
+     cesse alors d'être collant et se laisse dépasser. */
+  .ds-entete { position: static; }
+  .ds-entete__barre { flex-wrap: wrap; row-gap: var(--space-sm); }
+  .ds-entete__etage { margin-left: 0; order: 3; }
+  .ds-nav { order: 4; width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .ds-grille--2,
+  .ds-grille--3 { grid-template-columns: minmax(0, 1fr); }
+  .ds-entete__barre,
+  .ds-section,
+  .ds-hero__section,
+  .ds-colonnes,
+  .ds-pied__corps { padding-left: var(--space-lg); padding-right: var(--space-lg); }
+  /* 64 px sous le hero plus 64 px au-dessus de la section suivante font un trou de la
+     hauteur d'un demi-écran de téléphone. */
+  .ds-section,
+  .ds-hero__section { padding-top: var(--space-3xl); padding-bottom: var(--space-3xl); }
+  .ds-etage,
+  .ds-rappel { padding: var(--space-2xl); }
+  .ds-entete__titre-suite { display: none; }
+  .ds-bouton { width: 100%; justify-content: center; }
+}

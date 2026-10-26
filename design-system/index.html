@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guide de marque &amp; design system — MyDigitalSchool</title>
+  <meta name="description" content="Le logo, les couleurs, la typographie, le ton et les composants d’interface de MyDigitalSchool.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les feuilles du dépôt d’abord, la feuille du site ensuite : c’est elle qui passe le fond en blanc. -->
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <main id="contenu">
+    <section class="ds-hero">
+      <div class="ds-hero__section">
+        <p class="label-caps ds-etiquette">Guide de marque &amp; design system</p>
+        <h1 class="ds-accroche">Les talents se connectent</h1>
+        <p class="ds-chapeau ds-mesure">Voici ce qui fait MyDigitalSchool&nbsp;: un logo, trois couleurs, deux polices, un ton, et les composants qui fabriquent nos outils. Servez-vous, il n’y a personne à qui demander.</p>
+        <div class="ds-hero__actions">
+          <a class="ds-bouton label-md" href="logo.html">Commencer par le logo</a>
+          <a class="ds-bouton ds-bouton--clair label-md" href="composants/demarrer.html">Je code une interface</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Les deux étages, annoncés avant les chapitres : chacun doit savoir où aller. -->
+    <section class="ds-bande">
+      <div class="ds-section">
+        <div class="ds-grille ds-grille--2">
+          <div class="ds-etage ds-etage--marque">
+            <p class="label-caps">Étage 1</p>
+            <h2 class="ds-titre">Marque</h2>
+            <p class="body">Pour une affiche, un post, une plaquette, un diaporama. Le logo et ses interdits, les couleurs exactes, les polices, la façon d’écrire.</p>
+            <nav class="ds-etage__liste body-sm" aria-label="Chapitres de la marque">
+              <a href="logo.html">Logo</a>
+              <a href="couleurs.html">Couleurs</a>
+              <a href="typographie.html">Typographie</a>
+              <a href="ton.html">Ton</a>
+              <a href="ressources.html">Ressources</a>
+            </nav>
+          </div>
+          <div class="ds-etage ds-etage--composants">
+            <p class="label-caps">Étage 2</p>
+            <h2 class="ds-titre">Composants</h2>
+            <p class="body">Pour ajouter un écran à un outil de l’école. Les feuilles à charger, les classes qui existent déjà, le HTML à copier.</p>
+            <nav class="ds-etage__liste body-sm" aria-label="Pages des composants">
+              <a href="composants/demarrer.html">Démarrer</a>
+              <a href="composants/fondations.html">Fondations</a>
+              <a href="composants/bouton.html">Bouton</a>
+              <a href="composants/modale.html">Modale et retours</a>
+              <a href="composants/mobile.html">Mobile</a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-bande">
+      <div class="ds-section">
+        <div class="ds-mesure">
+          <h2 class="ds-titre">Les chapitres</h2>
+          <p class="body ds-oeil">Chaque page répond à une question. Elles se lisent dans n’importe quel ordre.</p>
+        </div>
+        <!-- Les cartes sont écrites ici, pas générées : l’accueil doit se lire dans le fichier. -->
+        <div class="ds-grille ds-grille--3">
+          <a class="ds-carte" href="logo.html">
+            <h3 class="h6">Logo</h3>
+            <p class="body-sm ds-oeil">Les versions, la zone de protection, les fonds autorisés et les interdits, chacun avec sa raison.</p>
+            <span class="ds-carte__fleche label-md" aria-hidden="true">→</span>
+          </a>
+          <a class="ds-carte" href="couleurs.html">
+            <h3 class="h6">Couleurs</h3>
+            <p class="body-sm ds-oeil">Le turquoise de la marque, le violet du produit, et laquelle sert à quoi. Contrastes mesurés.</p>
+            <span class="ds-carte__fleche label-md" aria-hidden="true">→</span>
+          </a>
+          <a class="ds-carte" href="typographie.html">
+            <h3 class="h6">Typographie</h3>
+            <p class="body-sm ds-oeil">Bricolage Grotesque pour les titres, Inter pour le reste. L’échelle complète.</p>
+            <span class="ds-carte__fleche label-md" aria-hidden="true">→</span>
+          </a>
+          <a class="ds-carte" href="ton.html">
+            <h3 class="h6">Ton</h3>
+            <p class="body-sm ds-oeil">Comment on écrit dans les interfaces de l’école : phrases courtes, pas de jargon, erreurs qui disent quoi faire.</p>
+            <span class="ds-carte__fleche label-md" aria-hidden="true">→</span>
+          </a>
+          <a class="ds-carte" href="ressources.html">
+            <h3 class="h6">Ressources</h3>
+            <p class="body-sm ds-oeil">Le logo dans tous les formats utiles, la palette à coller, les polices.</p>
+            <span class="ds-carte__fleche label-md" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-bande">
+      <div class="ds-section">
+        <div class="ds-rappel">
+          <h2 class="ds-titre">Ce site existe pour deux questions</h2>
+          <p class="body">« J’ai le droit de faire ça ? » — l’étage marque y répond.</p>
+          <p class="body">« Comment je fais ça ? » — l’étage composants y répond.</p>
+          <p class="body">Si vous avez dû poser la question à quelqu’un, ce site a raté quelque chose. Dites-le, ça se corrige.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    // L’en-tête et le pied viennent du module : une seule définition pour tout le site.
+    import { enteteHtml, piedHtml } from './js/chrome.js';
+    document.getElementById('entete').outerHTML = enteteHtml('index.html');
+    document.getElementById('pied').outerHTML = piedHtml();
+  </script>
+</body>
+</html>
