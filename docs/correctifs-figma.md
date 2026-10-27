@@ -64,19 +64,23 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   `kpi` est la carte neutre que le kit définit ; le tableau de bord n’en pose aucune, il passe
   toujours une teinte.
 
-  **Trois corrections à trancher dans Figma.** (1) Six lignes, les cinq cartes KPI et la ligne
-  survolée, tiennent à un seul token : `--text-secondary` (`#757678`). Le foncer jusqu’à `#646567`
-  les fait toutes passer, y compris sur `--bg-muted`, le fond le plus exigeant. C’est une valeur
-  calculée (même teinte, luminosité abaissée), pas une décision, et elle touche tous les textes
-  discrets de l’outil. (2) Pour chaque badge, un texte plus sombre de la même teinte. La
-  maintenance a déjà de quoi le faire : `--status-maintenance-text` (6,21:1 sur son fond),
-  que l’alerte d’avertissement emploie et que le badge n’emploie pas. Les alertes d’erreur et
-  d’information reprennent les couleurs des badges « En retard » et « Réservé » : le même ton les
-  règle deux à deux (`#d0192f` pour `badge--late` et `alert--error`, `#1d7981` pour
-  `badge--reserved` et `alert--info`). (3) Sous un texte blanc, c’est l’aplat qu’il faut foncer.
-  Pour le rouge, le kit a déjà `--feedback-error-hover` (5,55:1 sous du blanc), le fond du bouton
-  de danger au survol : il règle `btn--danger` et `toast--error`. Pour le vert de
-  `toast--success`, un fond de `#37872a` suffit (4,5:1 sous du blanc, calculé).
+  **Trois corrections à trancher dans Figma.** Chaque ton calculé vise 4,8:1, soit 0,3 de marge
+  au-dessus du seuil : un repère, pas une limite. On peut l’éclaircir tant que le ratio reste au
+  moins à 4,5:1 ; le foncer davantage ne fait jamais perdre de contraste. (1) Six lignes, les cinq
+  cartes KPI et la ligne survolée, tiennent à un seul token : `--text-secondary` (`#757678`). Le
+  foncer jusqu’à `#5f6062` les fait toutes passer (4,86:1 sur `--bg-muted`, le fond le plus
+  exigeant) : la page affiche cette même valeur sur les six lignes. C’est une valeur calculée
+  (même teinte, luminosité abaissée), pas une décision, et elle touche tous les textes discrets
+  de l’outil. (2) Pour chaque badge, un texte plus sombre de la même teinte. La maintenance a déjà
+  de quoi le faire : `--status-maintenance-text` (6,21:1 sur son fond), que l’alerte
+  d’avertissement emploie et que le badge n’emploie pas. Les alertes d’erreur et d’information
+  reprennent les couleurs des badges « En retard » et « Réservé » : le même ton les règle deux à
+  deux (`#c7182d` pour `badge--late` et `alert--error`, `#1c747c` pour `badge--reserved` et
+  `alert--info`). (3) Sous un texte blanc, c’est l’aplat qu’il faut foncer. Pour le rouge, le kit a
+  déjà `--feedback-error-hover` (5,55:1 sous du blanc), le fond du bouton de danger au survol : il
+  règle `btn--danger` et `toast--error`. Mais le bouton serait alors identique à son état survolé
+  et n’aurait plus de retour : il faut aussi assombrir l’état survolé. Pour le vert de
+  `toast--success`, un fond de `#348228` (4,81:1 sous du blanc, calculé).
 
   **Repérées dans le CSS, pas vérifiées dans les vues**, donc non publiées : `.text-error`
   (4,28:1 sur blanc), `.text-success` (2,79:1), `--text-disabled` (1,66:1 sur blanc, pour les

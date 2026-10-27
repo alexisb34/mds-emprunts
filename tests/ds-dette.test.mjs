@@ -19,7 +19,7 @@ import { enteteHtml } from '../design-system/js/chrome.js';
 import { COULEURS } from '../design-system/js/logo.js';
 import { LABELS } from '../js/models.js';
 import {
-  PAIRES_KIT, tableauDetteHtml, jugerPaire, tonMinimal, fondMinimal, repereCorrection, syntheseDette, ancrePaire, DATE_CONSTAT,
+  PAIRES_KIT, tableauDetteHtml, jugerPaire, tonConseille, fondConseille, tonCommun, repereCorrection, syntheseDette, ancrePaire, DATE_CONSTAT, CIBLE_CONSEIL, MARGE_CONSEIL,
 } from '../design-system/js/dette.js';
 import { pageHtml, palette, familleDe, FAMILLES, SEMANTIQUES, NON_EMPLOYES } from '../design-system/js/couleurs.js';
 
@@ -58,6 +58,7 @@ const UI = lire('js/ui.js');
 
 const badges = PAIRES_KIT.filter((p) => p.nom.startsWith('badge'));
 const virgule = (n) => n.toFixed(2).replace('.', ',');
+const dec = (n) => String(n).replace('.', ',');
 const r2 = (a, b) => virgule(ratio(a, b));
 const texte = (html) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -313,9 +314,9 @@ test('le tableau a des en-têtes de colonne, un nom, et garde sa sémantique qua
 
 // ---- Ce qu'il faudrait faire ----
 
-test('tonMinimal rend une couleur de la même teinte, plus sombre, qui passe 4,5:1', () => {
+test('tonConseille rend une couleur de la même teinte, plus sombre, qui passe 4,5:1', () => {
   const fond = VALEURS['--status-late-bg'];
-  const ton = tonMinimal(VALEURS['--status-late-fg'], fond);
+  const ton = tonConseille(VALEURS['--status-late-fg'], fond);
   assert.ok(ratioExact(ton, fond) >= 4.5, `${ton} ne passe pas`);
   assert.notEqual(ton, VALEURS['--status-late-fg']);
   const hsl = (hex) => {
@@ -331,11 +332,11 @@ test('tonMinimal rend une couleur de la même teinte, plus sombre, qui passe 4,5
   assert.ok(Math.abs(apres.h - avant.h) < 4, `la teinte a bougé de ${Math.abs(apres.h - avant.h).toFixed(1)}°`);
 });
 
-test('tonMinimal laisse tel quel ce qui passe déjà, et refuse de dire n’importe quoi', () => {
-  assert.equal(tonMinimal('#3c3c3b', '#ffffff'), '#3c3c3b');
+test('tonConseille laisse tel quel ce qui passe déjà, et refuse de dire n’importe quoi', () => {
+  assert.equal(tonConseille('#3c3c3b', '#ffffff'), '#3c3c3b');
   // Un texte clair sur un fond sombre qui échoue : le foncer l'empirerait, la fonction le refuse.
   assert.ok(ratioExact('#6a6a6a', '#3c3c3b') < 4.5);
-  assert.throws(() => tonMinimal('#6a6a6a', '#3c3c3b'), /foncer/);
+  assert.throws(() => tonConseille('#6a6a6a', '#3c3c3b'), /foncer/);
 });
 
 test('le badge de maintenance renvoie à ce que le kit a déjà : --status-maintenance-text', () => {
@@ -392,11 +393,11 @@ test('le repère de correction fonce le texte sur un fond pâle, et le fond sous
   assert.equal(repereCorrection(de('badge--maintenance'), VALEURS), null);
 });
 
-test('fondMinimal ne sait foncer qu’un fond plus sombre que son texte, et laisse tel quel ce qui passe', () => {
-  assert.equal(fondMinimal('#ffffff', '#3c3c3b'), '#3c3c3b');
+test('fondConseille ne sait foncer qu’un fond plus sombre que son texte, et laisse tel quel ce qui passe', () => {
+  assert.equal(fondConseille('#ffffff', '#3c3c3b'), '#3c3c3b');
   // Un texte gris clair sur blanc échoue, et le fond est déjà plus clair que le texte : on ne sait pas le foncer.
   assert.ok(ratioExact('#cccccc', '#ffffff') < 4.5);
-  assert.throws(() => fondMinimal('#cccccc', '#ffffff'), /foncer/);
+  assert.throws(() => fondConseille('#cccccc', '#ffffff'), /foncer/);
 });
 
 test('le rouge d’erreur plus sombre que le kit a déjà passe 4,5:1 sous du blanc, et le bouton de danger l’emploie au survol', () => {
@@ -485,6 +486,137 @@ test('le périmètre restant est honnête : les paires repérées mais non véri
   for (const sel of ['.text-error', '.text-success', '.page-header__meta']) {
     assert.ok(!PAIRES_KIT.some((p) => p.elements.some((e) => e.selecteur === sel)), `${sel} est déjà au tableau : la phrase est périmée`);
   }
+});
+
+// ---- Les conseils de réparation : un conseil faux est pire que pas de conseil ----
+
+// Le ton écrit dans la cellule « Ce qu'il faudrait faire » d'une ligne.
+const tonAffiche = (html, nom) => {
+  const ligne = html.match(new RegExp(`<tr[^>]*data-paire="${nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>[\\s\\S]*?<\\/tr>`))[0];
+  const cellule = ligne.match(/data-etiquette="Ce qu’il faudrait faire">([\s\S]*?)<\/td>/)[1];
+  return (cellule.match(/jusqu’à <code>(#[0-9a-f]{6})<\/code>/) || [])[1];
+};
+
+test('la valeur affichée sur une ligne en --text-secondary règle TOUTES les lignes de ce token', () => {
+  const html = tableauDetteHtml(PAIRES_KIT, VALEURS);
+  const s = syntheseDette(PAIRES_KIT, VALEURS);
+  const lignes = PAIRES_KIT.filter((p) => p.texte === '--text-secondary' && jugerPaire(p, VALEURS).echoue);
+  assert.equal(lignes.length, 6);
+  assert.equal((texte(html).match(/même valeur pour toutes les lignes en --text-secondary/g) || []).length, 6, 'chaque ligne doit dire que la valeur est la même pour les six');
+  const affichees = lignes.map((p) => tonAffiche(html, p.nom));
+  // Une seule valeur pour les six lignes, et c'est celle de la page et de la synthèse.
+  assert.deepEqual([...new Set(affichees)], [s.tonSecondaire], `les lignes affichent ${affichees.join(', ')}`);
+  // Et copier cette valeur règle chaque ligne : elle passe sur CHAQUE fond, y compris le plus exigeant.
+  for (const p of lignes) assert.ok(ratioExact(affichees[0], VALEURS[p.fond]) >= 4.5, `${affichees[0]} ne règle pas ${p.nom}`);
+});
+
+test('un token partagé par plusieurs lignes en échec reçoit un seul ton, quelle que soit la ligne lue', () => {
+  const html = tableauDetteHtml(PAIRES_KIT, VALEURS);
+  const parToken = new Map();
+  for (const p of PAIRES_KIT.filter((x) => jugerPaire(x, VALEURS).echoue && !x.existant && ratioExact(VALEURS[x.texte], '#ffffff') > ratioExact(VALEURS[x.fond], '#ffffff'))) {
+    parToken.set(p.texte, [...(parToken.get(p.texte) || []), p]);
+  }
+  const partages = [...parToken.entries()].filter(([, lignes]) => lignes.length > 1);
+  assert.ok(partages.length >= 2, 'le détecteur ne voit plus de token partagé');
+  for (const [jeton, lignes] of partages) {
+    const tons = new Set(lignes.map((p) => tonAffiche(html, p.nom)));
+    assert.equal(tons.size, 1, `${jeton} : ${lignes.map((p) => `${p.nom} ${tonAffiche(html, p.nom)}`).join(', ')}`);
+    for (const p of lignes) assert.ok(ratioExact([...tons][0], VALEURS[p.fond]) >= 4.5, `${[...tons][0]} ne règle pas ${p.nom}`);
+  }
+  // Les deux alertes reprennent les couleurs de deux badges : le même ton y mène.
+  assert.equal(tonAffiche(html, 'badge--late'), tonAffiche(html, 'alert--error'));
+  assert.equal(tonAffiche(html, 'badge--reserved'), tonAffiche(html, 'alert--info'));
+});
+
+test('un ton proposé a une vraie marge : il vise 4,8:1, pas le premier ton qui passe', () => {
+  assert.equal(MARGE_CONSEIL, 0.3);
+  assert.equal(CIBLE_CONSEIL, 4.5 + MARGE_CONSEIL);
+  let vus = 0;
+  for (const p of PAIRES_KIT) {
+    const repere = repereCorrection(p, VALEURS);
+    if (!repere) continue;
+    vus += 1;
+    const [a, b] = repere.role === 'texte' ? [repere.hex, VALEURS[p.fond]] : [VALEURS[p.texte], repere.hex];
+    assert.ok(ratioExact(a, b) >= CIBLE_CONSEIL, `${p.nom} : ${repere.hex} ne donne que ${ratioExact(a, b).toFixed(3)}`);
+  }
+  assert.ok(vus >= 12, `${vus} repères seulement`);
+  // Sur la ligne la plus exigeante, le ton reste le plus clair qui atteint la cible (il ne fonce pas pour rien).
+  const s = syntheseDette(PAIRES_KIT, VALEURS);
+  const marge = ratioExact(s.tonSecondaire, VALEURS[s.fondExigeant]);
+  assert.ok(marge >= CIBLE_CONSEIL && marge < CIBLE_CONSEIL + 0.1, `${marge.toFixed(3)} sur ${s.fondExigeant}`);
+  // Et la fonction, seule : un échec reçoit la marge, un succès reste tel quel.
+  const ton = tonConseille(VALEURS['--status-late-fg'], VALEURS['--status-late-bg']);
+  assert.ok(ratioExact(ton, VALEURS['--status-late-bg']) >= CIBLE_CONSEIL);
+  assert.equal(tonConseille('#3c3c3b', '#ffffff'), '#3c3c3b');
+});
+
+test('la page dit que les tons sont des repères avec une marge, et dans quel sens on peut les ajuster', () => {
+  const dette = PAGE.match(/<section[^>]*id="dette"[\s\S]*?<\/section>\s*$/)[0];
+  const marge = texte(dette.match(/<p class="body" id="dette-marge">[\s\S]*?<\/p>/)[0]);
+  assert.ok(marge.includes(`vise ${dec(CIBLE_CONSEIL)}:1`), 'la cible n’est pas écrite');
+  assert.ok(marge.includes(`${dec(MARGE_CONSEIL)} de marge`), 'la marge n’est pas écrite');
+  assert.match(marge, /repère, pas une limite/);
+  assert.match(marge, /éclaircir/);
+  assert.match(marge, /au moins à 4,5:1/);
+  assert.match(marge, /foncer davantage ne fait jamais perdre de contraste/);
+});
+
+test('conseiller « employer --feedback-error-hover comme fond » dit aussi qu’il faut assombrir le survol', () => {
+  const html = tableauDetteHtml(PAIRES_KIT.filter((p) => p.nom === 'btn--danger'), VALEURS);
+  assert.match(texte(html), /identique à son état survolé/);
+  assert.match(texte(html), /assombrir l’état survolé/);
+  assert.match(registre().replace(/\s+/g, ' '), /assombrir l’état survolé/);
+  // La raison est vraie : le survol du bouton de danger EST ce token.
+  assert.equal(declarations(KIT, '.btn--danger:hover:not(:disabled)').background, 'var(--feedback-error-hover)');
+  // La notification n'a pas de survol : elle n'a pas cet avertissement.
+  assert.doesNotMatch(texte(tableauDetteHtml(PAIRES_KIT.filter((p) => p.nom === 'toast--error'), VALEURS)), /survolé/);
+});
+
+test('la page dit que le registre est un fichier du dépôt, pas une page de ce site', () => {
+  const brut = texte(PAGE.match(/<section[^>]*id="dette"[\s\S]*?<\/section>\s*$/)[0]);
+  assert.match(brut, /docs\/correctifs-figma\.md ?, un fichier du dépôt du projet, qui n’est pas une page de ce site/);
+  // Et c'est vrai : le fichier est du Markdown à la racine de docs/, pas une page de design-system/.
+  readFileSync(new URL('../docs/correctifs-figma.md', import.meta.url));
+  assert.throws(() => readFileSync(new URL('../design-system/correctifs-figma.md', import.meta.url)));
+});
+
+test('la page dit où se range ce site lui-même, et c’est vrai de sa feuille', () => {
+  const section = PAGE.match(/<section[^>]*id="marque-produit"[\s\S]*?<\/section>/)[0];
+  const phrase = texte(section.match(/<p class="body ds-mesure" id="ce-site">[\s\S]*?<\/p>/)[0]);
+  assert.match(phrase, /Ce site suit le même partage/);
+  assert.match(phrase, /ses boutons et ses liens sont violets/);
+  assert.match(phrase, /turquoise du logo n’y sert qu’en décor/);
+  assert.match(phrase, /jamais sous du texte/);
+  assert.match(phrase, /seule sa version très claire sert de fond/);
+  assert.match(phrase, /logo, lui, y garde ses couleurs/);
+  // Ce que la phrase affirme, lu dans site.css : le violet du site est celui du produit, le turquoise
+  // n'apparaît que dans des bordures, aucun fond ne le porte.
+  const racine = sansCommentaires(lire('design-system/css/site.css')).match(/:root\s*\{([^}]*)\}/)[1];
+  const valeur = (nom) => racine.match(new RegExp(`${nom}\\s*:\\s*(#[0-9a-fA-F]{6})`))[1].toLowerCase();
+  assert.equal(valeur('--ds-violet'), VALEURS['--brand-primary'].toLowerCase());
+  assert.equal(valeur('--ds-turquoise'), COULEURS.turquoise.toLowerCase());
+  // « Seule sa version très claire sert de fond » : le fond frais du site est le turquoise très clair du kit.
+  assert.equal(valeur('--ds-fond-frais'), VALEURS['--brand-secondary-subtle'].toLowerCase());
+  const css = sansCommentaires(lire('design-system/css/site.css')).replace(/:root\s*\{[^}]*\}/, '');
+  const emplois = [...css.matchAll(/([\w-]+)\s*:[^;{}]*var\(--ds-turquoise\)/g)].map((m) => m[1]);
+  assert.ok(emplois.length >= 2, 'le turquoise n’est plus employé du tout : la phrase est périmée');
+  for (const propriete of emplois) assert.match(propriete, /^border/, `--ds-turquoise est employé en « ${propriete} » : ce n’est plus un décor`);
+  const boutons = css.match(/\.ds-bouton\s*\{[^}]*\}/)[0];
+  assert.match(boutons, /background:\s*var\(--ds-violet\)/);
+  assert.match(css.match(/\.ds-nav__lien\[aria-current\]\s*\{[^}]*\}/)[0], /color:\s*var\(--ds-lien\)/);
+  assert.equal(valeur('--ds-lien'), VALEURS['--brand-primary'].toLowerCase());
+});
+
+test('le registre écrit la marge et les tons que la page affiche', () => {
+  const REGISTRE = registre().replace(/\s+/g, ' ');
+  const s = syntheseDette(PAIRES_KIT, VALEURS);
+  assert.ok(REGISTRE.includes(`vise ${dec(CIBLE_CONSEIL)}:1`), 'le registre ne dit pas la cible');
+  assert.ok(REGISTRE.includes(`${dec(MARGE_CONSEIL)} de marge`));
+  assert.ok(REGISTRE.includes(`\`${s.tonSecondaire}\``));
+  assert.ok(REGISTRE.includes(`${virgule(ratio(s.tonSecondaire, VALEURS[s.fondExigeant]))}:1 sur \`${s.fondExigeant}\``), 'le ratio du ton unique sur le fond le plus exigeant');
+  const succes = repereCorrection(PAIRES_KIT.find((p) => p.nom === 'toast--success'), VALEURS);
+  assert.ok(REGISTRE.includes(`\`${succes.hex}\` (${virgule(ratio(VALEURS['--text-inverse'], succes.hex))}:1 sous du blanc`), 'le vert plus sombre et son ratio');
+  assert.doesNotMatch(REGISTRE, /suffit \(4,5:1 sous du blanc/);
 });
 
 // ---- La règle du nom ----

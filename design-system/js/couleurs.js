@@ -19,7 +19,7 @@
 import { echapper } from './texte.js';
 import { ratio, ratioExact, GRAND_TEXTE } from './contraste.js';
 import { COULEURS, fmtRatio } from './logo.js';
-import { PAIRES_KIT, DATE_CONSTAT, tableauDetteHtml, syntheseDette, jugerPaire, enLettres, afficherRatio, ancrePaire } from './dette.js';
+import { PAIRES_KIT, DATE_CONSTAT, tableauDetteHtml, syntheseDette, jugerPaire, enLettres, afficherRatio, ancrePaire, CIBLE_CONSEIL, MARGE_CONSEIL } from './dette.js';
 
 const BLANC = '#ffffff';
 const SEUIL = 4.5;
@@ -239,6 +239,7 @@ function marqueProduitHtml(valeurs) {
     <div class="ds-mesure lg-tete">
       <p class="body">Deux mesures rendent cette séparation raisonnable. Le turquoise du logo fait ${r(COULEURS.turquoise, BLANC)} sur blanc, ce qui ne suffit pas pour du texte ni pour un bouton qu’il faut lire. Le violet fait ${r(BLANC, primaire)} sous du texte blanc. Cela ne dit pas pourquoi l’école a fait ce choix, que ce guide ne connaît pas&nbsp;; cela dit pourquoi il tient.</p>
     </div>
+    <p class="body ds-mesure" id="ce-site">Et ce site lui-même&nbsp;? Ce site suit le même partage&nbsp;: c’est un outil, donc ses boutons et ses liens sont violets. Le turquoise du logo n’y sert qu’en décor, un filet ou une bordure, jamais sous du texte&nbsp;; seule sa version très claire sert de fond. Le logo, lui, y garde ses couleurs.</p>
     <figure class="cl-figure">
       <div class="cl-ensemble" role="group" aria-label="Le logo et une action du produit, côte à côte">
         <img class="lg-logo" src="assets/logo.svg" alt="Logo MyDigitalSchool" style="--l: 200px">
@@ -292,6 +293,7 @@ function detteHtml(valeurs) {
   const bConformes = badges.filter((p) => !jugerPaire(p, valeurs).echoue).map((p) => p.libelle);
   const petit = String(GRAND_TEXTE.pxGras).replace('.', ',');
   const seuil = String(SEUIL).replace('.', ',');
+  const dec = (n) => String(n).replace('.', ',');
 
   const phraseBadges = `${majuscule(enLettres(compte(badges)))} des ${enLettres(badges.length)} badges ne passent pas.${bConformes.length === 1 ? ` Seul le badge «&nbsp;${echapper(bConformes[0])}&nbsp;» passe.` : ''}`;
   const phraseCartes = compte(cartes) === cartes.length
@@ -304,10 +306,11 @@ function detteHtml(valeurs) {
       <h2 class="ds-titre" id="titre-dette">La dette de contraste, au <time datetime="${DATE_CONSTAT.iso}">${DATE_CONSTAT.texte}</time></h2>
       <p class="ds-chapeau">${s.echouent} des ${s.mesurees} paires mesurées sont sous le seuil de lisibilité. Les voici telles quelles, avec ce qu’il faudrait faire&nbsp;: ne les reprenez pas dans un nouvel écran.</p>
       <p class="body">Tous ces textes font moins de ${petit}&nbsp;px, la taille à partir de laquelle WCAG 2.1 tolère un contraste plus faible pour un texte gras. Le seuil est donc ${seuil}:1, niveau AA.</p>
+      <p class="body" id="dette-marge">Chaque ton proposé plus bas vise ${dec(CIBLE_CONSEIL)}:1, soit ${dec(MARGE_CONSEIL)} de marge au-dessus du seuil de ${seuil}:1. C’est un repère, pas une limite&nbsp;: on peut l’éclaircir, pour retrouver la teinte voulue, tant que le ratio reste au moins à ${seuil}:1&nbsp;; le foncer davantage ne fait jamais perdre de contraste.</p>
     </div>
     <aside class="ds-message dt-decision">
       <h3 class="h6">Pourquoi elles sont publiées</h3>
-      <p class="body-sm">Le ${DATE_CONSTAT.texte}, la décision a été prise de publier ces chiffres plutôt que de les taire, ou de changer la palette d’un prototype qui tourne. Corriger la palette revient à l’école&nbsp;: ce guide ne la modifie pas. Les correctifs sont notés dans <code>docs/correctifs-figma.md</code>, où Figma fait foi et le code suit.</p>
+      <p class="body-sm">Le ${DATE_CONSTAT.texte}, la décision a été prise de publier ces chiffres plutôt que de les taire, ou de changer la palette d’un prototype qui tourne. Corriger la palette revient à l’école&nbsp;: ce guide ne la modifie pas. Les correctifs sont notés dans <code>docs/correctifs-figma.md</code>, un fichier du dépôt du projet, qui n’est pas une page de ce site. Figma fait foi, et le code suit.</p>
       <p class="body-sm">Ce tableau n’est pas l’inventaire complet du kit. Il couvre les badges de statut, les cartes KPI, les tableaux, les alertes, le bouton de danger et les notifications. Il reste des paires repérées dans le CSS, pas encore vérifiées dans les vues, donc non publiées&nbsp;: le texte d’erreur et le texte de succès (${code('.text-error')}, ${code('.text-success')}), le texte désactivé, et le texte discret posé directement sur le fond de l’application, hors des tableaux.</p>
     </aside>
     <nav class="ds-groupes" aria-label="Dans cette section">

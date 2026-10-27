@@ -37,6 +37,13 @@ export const DATE_CONSTAT = { iso: '2026-10-26', texte: '26 octobre 2026' };
 const SEUIL_TEXTE = 4.5;
 const SEUIL_GRAND_TEXTE = 3;
 
+// Les tons que ce module propose ne visent pas le seuil : ils visent le seuil plus cette marge. Le
+// premier ton qui passe serait une limite, pas un conseil : quiconque y touche ensuite retomberait
+// sous le seuil. La marge dit aussi dans quel sens on a le droit de bouger : on peut éclaircir
+// un repère tant qu'il reste au-dessus du seuil, jamais en dessous.
+export const MARGE_CONSEIL = 0.3;
+export const CIBLE_CONSEIL = SEUIL_TEXTE + MARGE_CONSEIL;
+
 // ---- Les paires ----
 
 const KPI_ELEMENTS = [
@@ -137,7 +144,7 @@ export const PAIRES_KIT = [
     elements: [{ selecteur: '.btn', px: 14, gras: true }, { selecteur: '.btn--sm', px: 12, gras: true }],
     existant: '--feedback-error-hover',
     existantRole: 'fond',
-    existantNote: 'Le kit l’a déjà : c’est le fond du bouton de danger au survol.',
+    existantNote: 'Le kit l’a déjà : c’est le fond du bouton de danger au survol. Le bouton serait alors identique à son état survolé et n’aurait plus de retour : il faut aussi assombrir l’état survolé.',
     echantillon: { texte: 'Annuler la réservation' },
   },
   {
@@ -235,51 +242,63 @@ function enRgb([h, s, l]) {
   return [r + m, g + m, b + m];
 }
 
-// Le ton le plus clair, de la même teinte et de la même saturation, qui passe `seuil` face à
+// Le ton le plus clair, de la même teinte et de la même saturation, qui atteint `cible` face à
 // `contre` : on garde la teinte et on baisse la luminosité par pas de 0,2 %. `couleur` doit déjà
 // être la plus sombre des deux. C'est un REPÈRE, pas un choix : la couleur retenue se décide
 // dans Figma.
-function foncer(couleur, contre, seuil) {
-  if (ratioExact(couleur, contre) >= seuil) return couleur;
+function foncer(couleur, contre, cible) {
+  if (ratioExact(couleur, contre) >= cible) return couleur;
   if (ratioExact(couleur, '#ffffff') <= ratioExact(contre, '#ffffff')) {
     throw new Error('Il n’y a rien à foncer : la couleur n’est pas la plus sombre des deux');
   }
   const [h, s, l] = enHsl(couleur);
   for (let luminosite = l; luminosite >= 0; luminosite -= 0.002) {
     const ton = hexDepuis(enRgb([h, s, luminosite]));
-    if (ratioExact(ton, contre) >= seuil) return ton;
+    if (ratioExact(ton, contre) >= cible) return ton;
   }
-  throw new Error(`Aucun ton de cette teinte ne passe ${seuil}:1 face à ${contre}`);
+  throw new Error(`Aucun ton de cette teinte n’atteint ${cible}:1 face à ${contre}`);
 }
 
-// Un texte sombre sur un fond clair : le texte à foncer.
-export function tonMinimal(texteHex, fondHex, seuil = SEUIL_TEXTE) {
+// Un texte sombre sur un fond clair : le texte à foncer. Ce qui passe déjà reste tel quel ; ce qui
+// échoue reçoit un ton qui passe AVEC la marge, pas le premier qui passe.
+export function tonConseille(texteHex, fondHex, seuil = SEUIL_TEXTE) {
   if (ratioExact(texteHex, fondHex) >= seuil) return texteHex;
   if (ratioExact(texteHex, '#ffffff') <= ratioExact(fondHex, '#ffffff')) {
-    throw new Error('tonMinimal ne sait que foncer un texte posé sur un fond plus clair que lui');
+    throw new Error('tonConseille ne sait que foncer un texte posé sur un fond plus clair que lui');
   }
-  return foncer(texteHex, fondHex, seuil);
+  return foncer(texteHex, fondHex, seuil + MARGE_CONSEIL);
 }
 
 // Un texte clair sur un aplat : c'est l'aplat qu'il faut foncer, le texte est déjà blanc.
-export function fondMinimal(texteHex, fondHex, seuil = SEUIL_TEXTE) {
+export function fondConseille(texteHex, fondHex, seuil = SEUIL_TEXTE) {
   if (ratioExact(texteHex, fondHex) >= seuil) return fondHex;
   if (ratioExact(fondHex, '#ffffff') <= ratioExact(texteHex, '#ffffff')) {
-    throw new Error('fondMinimal ne sait que foncer un fond sous un texte plus clair que lui');
+    throw new Error('fondConseille ne sait que foncer un fond sous un texte plus clair que lui');
   }
-  return foncer(fondHex, texteHex, seuil);
+  return foncer(fondHex, texteHex, seuil + MARGE_CONSEIL);
 }
 
 // Le texte est-il plus sombre que son fond ? Sinon c'est un texte clair sur un aplat.
 export const texteSurFondClair = (paire, valeurs) => ratioExact(valeurs[paire.texte], '#ffffff') > ratioExact(valeurs[paire.fond], '#ffffff');
+
+// Quand un même token de texte sert plusieurs lignes qui échouent (`--text-secondary` en sert six),
+// le conseiller ligne par ligne donnerait six valeurs, et seule la plus sombre les règlerait toutes.
+// Le ton est donc UN pour le token : celui qui passe, avec la marge, sur le fond le plus exigeant
+// (le moins contrasté) de toutes les lignes en échec qui l'emploient sous un fond plus clair.
+export function tonCommun(paire, valeurs, seuil = SEUIL_TEXTE) {
+  const lignes = [paire, ...PAIRES_KIT.filter((q) => q.nom !== paire.nom && q.texte === paire.texte
+    && jugerPaire(q, valeurs).echoue && texteSurFondClair(q, valeurs))];
+  const pire = lignes.reduce((a, b) => (ratioExact(valeurs[b.texte], valeurs[b.fond]) < ratioExact(valeurs[a.texte], valeurs[a.fond]) ? b : a));
+  return tonConseille(valeurs[paire.texte], valeurs[pire.fond], seuil);
+}
 
 // Le repère de correction d'une paire qui échoue : quelle couleur foncer, et jusqu'où. Rend `null`
 // pour une paire qui passe, ou quand le kit a déjà de quoi la corriger (`existant`).
 export function repereCorrection(paire, valeurs, seuil = SEUIL_TEXTE) {
   if (!jugerPaire(paire, valeurs).echoue || paire.existant) return null;
   return texteSurFondClair(paire, valeurs)
-    ? { role: 'texte', hex: tonMinimal(valeurs[paire.texte], valeurs[paire.fond], seuil) }
-    : { role: 'fond', hex: fondMinimal(valeurs[paire.texte], valeurs[paire.fond], seuil) };
+    ? { role: 'texte', hex: tonCommun(paire, valeurs, seuil) }
+    : { role: 'fond', hex: fondConseille(valeurs[paire.texte], valeurs[paire.fond], seuil) };
 }
 
 // Les chiffres qui se retrouvent dans la page et dans le registre. Tout est calculé ici, pour
@@ -292,7 +311,7 @@ export function syntheseDette(paires, valeurs) {
   // qui passe sur le fond le plus exigeant (le moins contrasté) passe sur les autres.
   const secondaires = echecs.filter(({ p }) => p.texte === '--text-secondary');
   const pire = secondaires.reduce((a, b) => (b.j.exact < a.j.exact ? b : a), secondaires[0]);
-  const tonSecondaire = pire ? tonMinimal(valeurs[pire.p.texte], valeurs[pire.p.fond]) : null;
+  const tonSecondaire = pire ? tonCommun(pire.p, valeurs) : null;
 
   // Sur un fond pâle, le texte principal est une solution de repli : il tient partout. Sur un aplat
   // (texte blanc sur rouge ou vert), il ne tient pas, et ce n'est pas la solution : on fonce l'aplat.
@@ -355,7 +374,7 @@ function correctionHtml(p, valeurs, j) {
   const [tFin, fFin] = repere.role === 'texte' ? [repere.hex, valeurs[p.fond]] : [valeurs[p.texte], repere.hex];
   const obtenu = afficherRatio(ratioExact(tFin, fFin), ratio(tFin, fFin), j.seuil);
   if (p.texte === '--text-secondary') {
-    return `<p class="body-sm">Foncer ${code('--text-secondary')} jusqu’à ${code(repere.hex)} (${obtenu}:1 sur ce fond). Ce token sert aussi à d’autres lignes&nbsp;: <a class="ds-lien-texte" href="#dette-secondaire">un seul changement les règle toutes</a>.</p>`;
+    return `<p class="body-sm">Foncer ${code('--text-secondary')} jusqu’à ${code(repere.hex)} (${obtenu}:1 sur ce fond). C’est la même valeur pour toutes les lignes en ${code('--text-secondary')}&nbsp;: <a class="ds-lien-texte" href="#dette-secondaire">un seul changement les règle toutes</a>.</p>`;
   }
   if (repere.role === 'fond') {
     return `<p class="body-sm">Foncer le fond jusqu’à ${code(repere.hex)} (${obtenu}:1 sous le texte), de la même teinte. Le texte ne bouge pas.</p>`;
