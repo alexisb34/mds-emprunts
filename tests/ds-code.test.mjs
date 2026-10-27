@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { formaterHtml, copier, raccourciCopie, messageCopie, codeHtml, poserCode, brancherCode } from '../design-system/js/code.js';
+import { formaterHtml, copier, raccourciCopie, consigneCopie, messageCopie, codeHtml, poserCode, brancherCode } from '../design-system/js/code.js';
 import { brancherCadres, MARQUE_CADRE } from '../design-system/js/cadre.js';
 
 // ---- Les assertions du brief ----
@@ -117,6 +117,22 @@ test('formaterHtml écrit les attributs booléens comme on les tape, et seulemen
   assert.equal(formaterHtml('<button disabled="disabled">OK</button>'), '<button disabled="disabled">OK</button>');
 });
 
+test('formaterHtml ne touche pas aux espaces insécables de la typographie française', () => {
+  // U+00A0 (insécable) et U+202F (fine insécable, devant « ; : ? ! ») ne sont pas des blancs
+  // de mise en forme : ce sont des caractères du texte. `\s` les avale, et la page française
+  // perdrait en silence ce que la typographie a posé. Écrits en échappements, pour qu'un
+  // éditeur ne les normalise pas.
+  const nbsp = '\u00A0';
+  const fine = '\u202F';
+  const phrase = `<p>Valider l’emprunt${fine}?${nbsp}Oui${nbsp}: «${nbsp}ok${nbsp}»</p>`;
+  assert.equal(formaterHtml(phrase), phrase);
+  // Et au bord d'un texte, là où un `trim()` les mangerait.
+  assert.equal(formaterHtml(`<div><button>${nbsp}OK${fine}</button></div>`), `<div>\n  <button>${nbsp}OK${fine}</button>\n</div>`);
+  assert.equal(formaterHtml(`<div>${nbsp}Seul${nbsp}<p>x</p></div>`), `<div>\n  ${nbsp}Seul${nbsp}\n  <p>x</p>\n</div>`);
+  // Un blanc ASCII, lui, se normalise toujours.
+  assert.equal(formaterHtml('<p>Un   \n  deux</p>'), '<p>Un deux</p>');
+});
+
 test('formaterHtml met un commentaire sur sa ligne', () => {
   assert.equal(formaterHtml('<div><!-- le principal --><button>OK</button></div>'),
     '<div>\n  <!-- le principal -->\n  <button>OK</button>\n</div>');
@@ -140,7 +156,9 @@ test('formaterHtml ne change que les espaces : balises, attributs et texte sorte
   for (const f of readdirSync(dossier).filter((n) => n.endsWith('.html'))) {
     const source = readFileSync(new URL(f, dossier), 'utf8');
     for (const m of source.matchAll(/<section data-demo="([\w-]+)"[^>]*>([\s\S]*?)<\/section>/g)) {
-      const sans = (s) => s.replace(/\s+/g, '');
+      // Seuls les blancs ASCII sont retirés : une espace insécable ou fine insécable (U+00A0,
+      // U+202F) fait partie du texte, et `\s` les aurait effacées des deux côtés à la fois.
+      const sans = (s) => s.replace(/[ \t\n\r\f]+/g, '');
       const sortie = formaterHtml(m[2]);
       assert.equal(sans(sortie), sans(m[2]), `${f}#${m[1]} : la mise en forme a modifié le contenu`);
       assert.doesNotMatch(sortie, /[ \t]+$/m, `${f}#${m[1]} : espace en fin de ligne`);
@@ -184,9 +202,14 @@ test('copier se rabat quand il n’y a pas de navigator du tout', async () => {
 
 // Un élément qui n'est pas un champ de formulaire (un <pre>, un <code>) n'a pas de `select()` :
 // la sélection passe alors par une plage du document.
-function fauxDocument() {
+function fauxDocument({ selectionVide = false } = {}) {
   const traces = { plages: [], vide: 0 };
-  const selection = { removeAllRanges() { traces.vide += 1; }, addRange(p) { traces.plages.push(p); } };
+  const selection = {
+    removeAllRanges() { traces.vide += 1; },
+    addRange(p) { traces.plages.push(p); },
+    // Ce que le navigateur dirait de la sélection : le texte sélectionné, ou rien si elle n'a pas pris.
+    toString() { return selectionVide ? '' : 'texte sélectionné'; },
+  };
   return {
     traces,
     createRange: () => ({ selectNodeContents(n) { this.noeud = n; } }),
@@ -226,18 +249,65 @@ test('copier ne prétend pas avoir sélectionné ce qu’il ne peut pas sélecti
   await assert.rejects(avecNavigator({}, () => copier('texte', null)), /sélectionner/);
 });
 
+test('copier relit la sélection : une plage qui n’a pas pris n’est pas annoncée « sélectionné »', async () => {
+  // `addRange` ne lève pas quand le navigateur ignore la plage (élément masqué, document sans
+  // focus). Supposer le succès, c'est annoncer « Sélectionné » devant un texte qui ne l'est pas.
+  const doc = fauxDocument({ selectionVide: true });
+  await assert.rejects(avecNavigator({}, () => copier('texte', { ownerDocument: doc })), /sélection/);
+});
+
+test('copier relit aussi la sélection d’un champ de formulaire', async () => {
+  const vide = { focus() {}, select() {}, selectionStart: 3, selectionEnd: 3 };
+  await assert.rejects(avecNavigator({}, () => copier('texte', vide)), /sélection/);
+  const pleine = { focus() {}, select() {}, selectionStart: 0, selectionEnd: 5 };
+  assert.equal(await avecNavigator({}, () => copier('texte', pleine)), 'selection');
+  // Un champ qui ne rend pas ces mesures (le faux du brief) n'est pas contredit.
+  assert.equal(await avecNavigator({}, () => copier('texte', { focus() {}, select() {} })), 'selection');
+});
+
+test('copier ne reste pas suspendu à une écriture que le navigateur ne résout jamais', async () => {
+  // Une invite de permission restée sans réponse laisse la promesse en suspens : sans délai de
+  // garde, le bouton resterait muet. Au bout du délai, on se rabat sur la sélection.
+  const champ = { focus() {}, select() { champ.selectionne = true; } };
+  const suspendue = { clipboard: { writeText: () => new Promise(() => {}) } };
+  assert.equal(await avecNavigator(suspendue, () => copier('texte', champ, 20)), 'selection');
+  assert.equal(champ.selectionne, true);
+});
+
+test('le délai de garde ne retarde pas une écriture qui réussit, et ne laisse pas de minuteur', async () => {
+  const champ = { focus() {}, select() {} };
+  const t0 = Date.now();
+  const r = await avecNavigator({ clipboard: { writeText: async () => {} } }, () => copier('texte', champ, 5000));
+  assert.equal(r, 'presse-papiers');
+  assert.ok(Date.now() - t0 < 1000, 'la copie a attendu le délai de garde');
+});
+
 // ---- Le message du bouton ----
 
 test('le raccourci de copie suit le système de la personne', () => {
   // « Faites Cmd+C » à quelqu'un sous Windows, c'est lui demander une touche qu'il n'a pas.
   assert.equal(raccourciCopie({ platform: 'MacIntel' }), 'Cmd+C');
-  assert.equal(raccourciCopie({ platform: 'iPhone' }), 'Cmd+C');
   assert.equal(raccourciCopie({ userAgentData: { platform: 'macOS' }, platform: '' }), 'Cmd+C');
   assert.equal(raccourciCopie({ platform: 'Win32' }), 'Ctrl+C');
   assert.equal(raccourciCopie({ userAgentData: { platform: 'Windows' } }), 'Ctrl+C');
   assert.equal(raccourciCopie({ platform: 'Linux x86_64' }), 'Ctrl+C');
   assert.equal(raccourciCopie({}), 'Ctrl+C');
   assert.equal(raccourciCopie(null), 'Ctrl+C');
+});
+
+test('sur un appareil tactile, il n’y a pas de raccourci à annoncer', () => {
+  // « Faites Cmd+C » n'a aucun sens sur un téléphone : pas de clavier. À 360 px, c'est le
+  // lectorat qu'on a. `null` dit « pas de raccourci » ; la consigne parle alors de la commande
+  // Copier de l'appareil.
+  assert.equal(raccourciCopie({ platform: 'iPhone' }), null);
+  assert.equal(raccourciCopie({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)', platform: 'iPhone' }), null);
+  assert.equal(raccourciCopie({ userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile', platform: 'Linux armv81' }), null);
+  assert.equal(raccourciCopie({ userAgentData: { mobile: true, platform: 'Android' } }), null);
+  // Un iPad récent se fait passer pour un Mac, mais il a un écran tactile.
+  assert.equal(raccourciCopie({ platform: 'MacIntel', maxTouchPoints: 5 }), null);
+  // Un Mac, lui, n'en a pas ; un portable Windows tactile reste un portable.
+  assert.equal(raccourciCopie({ platform: 'MacIntel', maxTouchPoints: 0 }), 'Cmd+C');
+  assert.equal(raccourciCopie({ platform: 'Win32', maxTouchPoints: 10, userAgentData: { mobile: false, platform: 'Windows' } }), 'Ctrl+C');
 });
 
 test('sans argument, le raccourci lit le navigateur courant', async () => {
@@ -250,6 +320,14 @@ test('le message du bouton dit ce qui s’est passé', () => {
   assert.equal(messageCopie('presse-papiers', 'Cmd+C'), 'Copié');
   assert.equal(messageCopie('selection', 'Cmd+C'), 'Sélectionné, faites Cmd+C');
   assert.equal(messageCopie('selection', 'Ctrl+C'), 'Sélectionné, faites Ctrl+C');
+  // Sans raccourci (appareil tactile), la consigne ne nomme aucune touche.
+  assert.equal(messageCopie('selection', null), 'Sélectionné, copiez-le avec la commande Copier de votre appareil');
+  assert.doesNotMatch(messageCopie('selection', null), /Cmd|Ctrl/);
+});
+
+test('la consigne de copie se lit dans une phrase', () => {
+  assert.equal(consigneCopie('Ctrl+C'), 'faites Ctrl+C');
+  assert.equal(consigneCopie(null), 'copiez-le avec la commande Copier de votre appareil');
 });
 
 // ---- Le bloc de code de la page ----
@@ -392,10 +470,10 @@ function fausseFenetre() {
   };
 }
 
-function fauxCadre(fichier, demo) {
+function fauxCadre(fichier, demo, adresse = `http://localhost:8123/design-system/exemples/${fichier}#${demo}`) {
   const vue = {
     style: {}, attributs: {},
-    contentWindow: { location: { href: `http://localhost:8123/design-system/exemples/${fichier}#${demo}` } },
+    contentWindow: { location: { href: adresse } },
     ecouteurs: {},
     addEventListener(type, f) { (this.ecouteurs[type] ||= []).push(f); },
     declencher(type) { for (const f of this.ecouteurs[type] || []) f(); },
@@ -485,6 +563,63 @@ test('un cadre muet dit au bloc de code que son code ne viendra pas', () => {
   assert.equal(bloc.bouton.disabled, true);
 });
 
+test('un cadre déjà chargé et déjà annoncé quand la page branche : le bloc le dit, il ne reste pas muet', () => {
+  // Le chemin le plus vraisemblable pour une page qui recopie le montage : un `await` entre la
+  // pose des cadres et `brancherCadres`. Les cadres, désormais chargés d'emblée, ont le temps
+  // d'annoncer avant qu'on les écoute ; le HTML (envoyé UNE fois) est perdu, `load` est passé
+  // donc le compte à rebours du cadre ne s'arme jamais. Sans garde, le bloc resterait sur
+  // « Le code apparaît quand la démonstration est chargée » pour toujours.
+  const cadre = fauxCadre('bouton.html', 'variantes');           // adresse réelle : déjà chargé
+  const bloc = fauxBloc();
+  const fenetre = fausseFenetre();
+  brancherCadres(fausseRacine([cadre], [bloc]), 1000, fenetre);
+  assert.equal(bloc.dataset.etat, undefined, 'il faut laisser au code le temps d’arriver');
+  fenetre.tic();
+  assert.equal(bloc.dataset.etat, 'absent');
+  assert.match(bloc.texte.textContent, /variantes/);
+  assert.match(bloc.texte.textContent, /avant que la page/i);
+  assert.equal(bloc.bouton.disabled, true);
+  assert.match(bloc.etat.textContent, /pas pu être lu/);
+});
+
+test('le délai de garde du bloc est celui des cadres, et part du branchement d’un cadre déjà chargé', () => {
+  const cadre = fauxCadre('bouton.html', 'variantes');
+  const fenetre = fausseFenetre();
+  brancherCadres(fausseRacine([cadre], [fauxBloc()]), 750, fenetre);
+  assert.deepEqual([...fenetre.minuteurs.values()].map((m) => m.ms), [750]);
+});
+
+test('le code qui arrive avant la fin du délai de garde l’emporte', () => {
+  const cadre = fauxCadre('bouton.html', 'variantes');
+  const bloc = fauxBloc();
+  const fenetre = fausseFenetre();
+  brancherCadres(fausseRacine([cadre], [bloc]), 1000, fenetre);
+  fenetre.envoyer(cadre.vue.contentWindow, { marque: MARQUE_CADRE, demo: 'variantes', hauteur: 100, html: '<p>x</p>' });
+  fenetre.tic();
+  assert.equal(bloc.dataset.etat, 'pret');
+  assert.equal(bloc.texte.textContent, '<p>x</p>');
+});
+
+test('un cadre pas encore chargé n’arme aucun délai de garde : son chargement s’en charge', () => {
+  // Un faux diagnostic est pire que pas de diagnostic : un cadre lent à charger ne doit pas
+  // être déclaré muet avant d'avoir été demandé.
+  const cadre = fauxCadre('bouton.html', 'variantes', 'about:blank');
+  const fenetre = fausseFenetre();
+  brancherCadres(fausseRacine([cadre], [fauxBloc()]), 1000, fenetre);
+  assert.equal(fenetre.minuteurs.size, 0);
+});
+
+test('un document encore en cours de chargement n’arme pas non plus de délai de garde', () => {
+  const cadre = fauxCadre('bouton.html', 'variantes');
+  cadre.vue.contentDocument = { readyState: 'loading' };
+  const fenetre = fausseFenetre();
+  brancherCadres(fausseRacine([cadre], [fauxBloc()]), 1000, fenetre);
+  assert.equal(fenetre.minuteurs.size, 0, 'son annonce arrive encore : l’événement load armera le délai du cadre');
+  cadre.vue.contentDocument.readyState = 'complete';
+  brancherCadres(fausseRacine([cadre], [fauxBloc()]), 1000, fenetre);
+  assert.equal(fenetre.minuteurs.size, 1);
+});
+
 test('un bloc de code sans cadre dans la page se signale tout de suite', () => {
   const cadre = fauxCadre('bouton.html', 'variantes');
   const orphelin = fauxBloc('bouton.html', 'tailles');
@@ -561,12 +696,43 @@ test('tout bloc de code d’une page est adossé à un cadre de la même page, s
   assert.ok(vus >= 1, 'le détecteur ne voit plus aucun bloc de code dans les pages');
 });
 
-test('la page Bouton montre le code de sa démonstration des variantes, extrait du cadre', () => {
+test('la page Bouton montre le code de chacune de ses quatre démonstrations, extrait du cadre', () => {
+  // Un bloc écrit à la main pour une démonstration, c'est la divergence que cette tâche élimine.
   const html = readFileSync(new URL('bouton.html', DOSSIER_COMPOSANTS), 'utf8');
-  assert.match(html, /codeHtml\(\s*\{\s*fichier:\s*'bouton\.html',\s*demo:\s*'variantes'/);
-  // Le bloc est dans la section « Le code ».
   const code = html.slice(html.indexOf('id="code"'), html.indexOf('id="quand-ne-pas"'));
-  assert.match(code, /id="code-variantes"/);
+  for (const demo of ['variantes', 'tailles', 'etats', 'bloc']) {
+    assert.match(html, new RegExp(`codeHtml\\(\\s*\\{\\s*fichier:\\s*'bouton\\.html',\\s*demo:\\s*'${demo}'`), `pas de bloc de code pour « ${demo} »`);
+    assert.match(code, new RegExp(`id="code-${demo}"`), `le bloc de « ${demo} » n’est pas dans la section « Le code »`);
+  }
+});
+
+test('la section « Le code » ne recopie plus à la main le code d’une démonstration', () => {
+  // Les puces qui écrivaient `class="btn btn--primary btn--block"` ou `disabled` doublonnaient
+  // le code extrait : deux endroits qui peuvent dire deux choses.
+  const html = readFileSync(new URL('bouton.html', DOSSIER_COMPOSANTS), 'utf8');
+  const code = sansCommentaires(html.slice(html.indexOf('id="code"'), html.indexOf('id="quand-ne-pas"')));
+  assert.doesNotMatch(code, /btn--(?:block|sm|primary|secondary|ghost|danger|icon)/, 'une classe de variante est écrite à la main dans la section « Le code »');
+  assert.doesNotMatch(code, /&lt;[a-z][^<]*\bdisabled\b/, 'une balise avec disabled est écrite à la main dans la section « Le code »');
+});
+
+test('un script de page pose ses blocs de code avant de brancher, sans rien attendre entre les deux', () => {
+  // `brancherCadres` doit voir les cadres ET les blocs, et arriver avant que les cadres
+  // aient annoncé. Un `await` entre la pose et le branchement laisse aux cadres (chargés
+  // d'emblée) le temps d'annoncer dans le vide : le HTML, envoyé une seule fois, est perdu.
+  let vues = 0;
+  for (const { nom, html } of pages()) {
+    const script = sansCommentaires(html).split('<script type="module">')[1];
+    if (!script || !/brancherCadres\(/.test(script)) continue;
+    const code = script.replace(/\/\/.*$/gm, '');                       // les commentaires de ligne
+    const branche = code.indexOf('brancherCadres(document');
+    assert.ok(branche > 0, `${nom} : appel de brancherCadres introuvable`);
+    const derniereCode = code.lastIndexOf('codeHtml(');
+    const premierCadre = code.indexOf('cadreHtml(');
+    assert.ok(derniereCode < branche, `${nom} : un bloc de code est posé APRÈS brancherCadres, il ne serait jamais alimenté`);
+    assert.doesNotMatch(code.slice(premierCadre, branche), /\bawait\b/, `${nom} : un await entre cadreHtml et brancherCadres laisse les cadres annoncer avant qu'on les écoute`);
+    vues += 1;
+  }
+  assert.ok(vues >= 1, 'le détecteur ne voit plus le script d’aucune page');
 });
 
 test('une page qui invite à tabuler dit aussi ce que fait Safari', () => {
@@ -582,18 +748,23 @@ test('une page qui invite à tabuler dit aussi ce que fait Safari', () => {
     invitations += 1;
     assert.match(texte, /Safari/, `${nom} invite à tabuler sans parler de Safari`);
     assert.match(texte, /Option\+Tab/, `${nom} ne donne pas le geste qui marche sous Safari`);
+    // L'intitulé exact du réglage de Safari n'a été vu par personne ici : on renvoie aux
+    // réglages avancés sans le citer.
+    assert.doesNotMatch(texte, /met en surbrillance/i, `${nom} cite un intitulé de réglage de Safari que personne n’a vérifié`);
   }
   assert.ok(invitations >= 1, 'le détecteur ne voit plus aucune invitation à tabuler : la page Bouton en contient une');
 });
 
-test('les exemples ne contiennent que ce qu’on peut montrer : pas de prose dans une section', () => {
-  // Le contenu d'une section est le code que la page affiche. Un paragraphe d'explication
-  // s'afficherait dans le code que la personne copie.
+test('une section d’exemple ne contient ni script ni feuille de style', () => {
+  // Le contenu d'une section est le code que la page affiche : un script ou un style s'y
+  // retrouverait dans ce que la personne copie. (Ce test ne juge pas la prose : un composant a
+  // droit à ses `<p>` et à ses titres. Que la section ne soit que le composant reste une règle
+  // de relecture.)
   const dossier = new URL('../design-system/exemples/', import.meta.url);
   for (const f of readdirSync(dossier).filter((n) => n.endsWith('.html'))) {
     const source = readFileSync(new URL(f, dossier), 'utf8');
     for (const m of source.matchAll(/<section data-demo="([\w-]+)"[^>]*>([\s\S]*?)<\/section>/g)) {
-      assert.doesNotMatch(m[2], /<script|<style|<h[1-6][\s>]/, `${f}#${m[1]} : du contenu qui n’est pas un composant sera copié avec lui`);
+      assert.doesNotMatch(m[2], /<script|<style/, `${f}#${m[1]} : un script ou un style serait copié avec le composant`);
     }
   }
 });

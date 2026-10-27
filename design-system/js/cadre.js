@@ -31,6 +31,11 @@
 // 5. Si rien n'arrive dans `delaiMs` après le CHARGEMENT du cadre, le cadre est remplacé par
 //    `messageCadreAbsent(fichier)`. Un cadre blanc de zéro pixel ne se voit pas ; un fichier
 //    d'exemple perdu, oui.
+//    **Pas d'`await` entre la pose des cadres (et des blocs de code) et `brancherCadres`** : les
+//    cadres sont chargés d'emblée quand ils ont un bloc de code, et annoncent leur HTML UNE
+//    seule fois. Un cadre qui a annoncé avant qu'on l'écoute ne le dira plus ; `brancherCadres`
+//    le détecte et le bloc le déclare (raison « tard »), mais le code est perdu. Un test de
+//    `tests/ds-code.test.mjs` tient la règle sur toutes les pages.
 // 6. Le code : la page pose `codeHtml({fichier, demo, titre})` (`code.js`) à l'endroit où elle
 //    veut montrer le code d'une démonstration. `brancherCadres` remet à ce bloc le `html` de
 //    la première annonce du cadre qui montre la même démonstration — réindenté, avec un bouton
@@ -109,6 +114,19 @@ function estVierge(vue) {
   }
 }
 
+// Le cadre a-t-il fini de charger, c'est-à-dire : son `load` est-il déjà passé ? Alors une
+// annonce a pu partir avant que la page l'écoute, et personne ne la renverra. Un document encore
+// en cours de chargement, lui, déclenchera `load` plus tard, et le compte à rebours du cadre
+// fera son travail ; un cadre qui n'a que son document vide n'a encore rien dit.
+function dejaCharge(vue) {
+  if (estVierge(vue)) return false;
+  try {
+    return !vue.contentDocument || vue.contentDocument.readyState === 'complete';
+  } catch {
+    return true;
+  }
+}
+
 // À appeler une fois les cadres posés dans la page, DANS LE MÊME SCRIPT : un cadre déjà
 // chargé quand on arrive n'armerait jamais son compte à rebours, et un fichier manquant
 // resterait un rectangle vide. `racine` est l'élément qui contient les cadres (le `<main>` de
@@ -162,6 +180,15 @@ export function brancherCadres(racine, delaiMs = DELAI_CADRE, fenetre = window) 
     // ailleurs — on y saute depuis le sommaire — et resterait vide tant qu'on n'a pas fait
     // défiler jusqu'au cadre. Un cadre dont le code est montré se charge donc d'emblée.
     if (typeof etat.vue.setAttribute === 'function') etat.vue.setAttribute('loading', 'eager');
+    // Garde contre le silence. Si le cadre a déjà fini de charger, il a déjà annoncé — sa
+    // première annonce est la seule à porter le HTML, et elle est perdue : `load` est passé, donc
+    // le compte à rebours du cadre ne s'armera jamais non plus. Sans cette garde, un `await`
+    // glissé entre la pose des cadres et ce branchement laisserait le bloc sur « Le code
+    // apparaît… » pour toujours, sans message et sans état. Le délai laisse au code le temps
+    // d'arriver s'il est encore en route ; passé ce délai, le bloc dit qu'il ne viendra pas.
+    if (dejaCharge(etat.vue)) {
+      fenetre.setTimeout(() => { if (!bloc.dataset.etat) signalerCodeAbsent(bloc, 'tard'); }, delaiMs);
+    }
   }
 
   if (!etats.length) return;

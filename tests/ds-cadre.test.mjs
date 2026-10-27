@@ -722,15 +722,13 @@ test('la page Bouton n’écrit aucune valeur de couleur en dur dans sa prose', 
   assert.deepEqual([...html.matchAll(/#[0-9a-fA-F]{6}\b/g)].map((m) => m[0]), []);
 });
 
-test('le bloc de code de la page montre des classes qui existent vraiment', () => {
-  // Le code du bloc vient du cadre (`tests/ds-code.test.mjs`) ; ce que la section « Le code »
-  // écrit elle-même, ce sont les variantes de la liste. Elles ne doivent pas inventer de classe.
+test('toute classe de variante que la page nomme existe vraiment dans le CSS', () => {
+  // Le code montré vient des cadres (`tests/ds-code.test.mjs`) ; ce que la prose de la page écrit
+  // elle-même, ce sont des noms de classes dans des phrases. Aucune ne doit être inventée.
   const css = readFileSync(new URL('../css/components.css', import.meta.url), 'utf8');
-  const html = pageBouton();
-  const debut = html.indexOf('id="code"');
-  const bloc = html.slice(debut, html.indexOf('id="quand-ne-pas"'));
-  const classes = new Set([...bloc.matchAll(/btn--[\w-]+/g)].map((m) => m[0]));
-  assert.ok(classes.size > 0, 'le bloc de code ne montre aucun bouton');
+  const html = pageBouton().replace(/<!--[\s\S]*?-->/g, '');
+  const classes = new Set([...html.matchAll(/btn--[\w-]+/g)].map((m) => m[0]));
+  assert.ok(classes.size > 0, 'la page ne nomme aucune variante de bouton');
   for (const c of classes) assert.match(css, new RegExp(`\\.${c}\\b`), `${c} n’existe pas dans components.css`);
 });
 

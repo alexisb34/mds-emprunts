@@ -18,6 +18,11 @@
 // bouton « Copier » fonctionne. Un bloc sans cadre, ou dont le cadre ne répond pas, le dit
 // dans le bloc au lieu de rester vide.
 //
+// **Ne rien attendre (`await`) entre la pose des cadres et `brancherCadres`.** Un cadre qui a un
+// bloc de code est chargé d'emblée et annonce son HTML une seule fois : s'il l'annonce avant
+// qu'on l'écoute, le HTML est perdu. `brancherCadres` le détecte et le bloc le déclare (« a
+// répondu avant que la page l'écoute »), mais le code ne s'affiche pas.
+//
 // ## Copier, et ce qu'on fait quand le navigateur refuse
 //
 // `navigator.clipboard` n'existe que sur une origine sécurisée (HTTPS, `localhost`), et même là
@@ -39,8 +44,16 @@ const BRUTS = new Set(['pre', 'textarea', 'script', 'style']);
 const EN_LIGNE = new Set(['a', 'abbr', 'b', 'bdi', 'bdo', 'br', 'cite', 'code', 'dfn', 'em', 'i', 'kbd', 'mark', 'q', 's',
   'samp', 'small', 'span', 'strong', 'sub', 'sup', 'time', 'u', 'var', 'wbr']);
 
+// Les blancs de mise en forme : ceux d'HTML, et eux seuls. `\s` y ajoute l'espace insécable
+// (U+00A0) et la fine insécable (U+202F, celle qui précède « ; : ? ! » en typographie française),
+// qui sont des caractères du texte et qu'il ne faut ni fondre en une espace ni rogner aux bords.
+const BLANCS = /[ \t\n\r\f]+/g;
+const ROGNER = /^[ \t\n\r\f]+|[ \t\n\r\f]+$/g;
+const blancs = (texte) => texte.replace(BLANCS, ' ');
+const rogner = (texte) => texte.replace(ROGNER, '');
+
 // Un commentaire, ou une balise — avec ses attributs, dont une valeur peut contenir un « > ».
-const JETON = /<!--[\s\S]*?-->|<\/?[a-zA-Z][^\s>/]*(?:"[^"]*"|'[^']*'|[^>"'])*>/g;
+const JETON = /<!--[\s\S]*?-->|<\/?[a-zA-Z][^ \t\n\r\f>/]*(?:"[^"]*"|'[^']*'|[^>"'])*>/g;
 
 // Les attributs booléens. Le navigateur les sérialise avec une valeur vide (`disabled=""`), là
 // où on écrit `disabled` : c'est équivalent, mais ce n'est pas ce que la personne tape, et la
@@ -48,7 +61,7 @@ const JETON = /<!--[\s\S]*?-->|<\/?[a-zA-Z][^\s>/]*(?:"[^"]*"|'[^']*'|[^>"'])*>/
 // veulent dire quelque chose, eux.
 const BOOLEENS = 'allowfullscreen|async|autofocus|autoplay|checked|controls|default|defer|disabled|formnovalidate|hidden|inert|ismap|itemscope|loop|multiple|muted|nomodule|novalidate|open|playsinline|readonly|required|reversed|selected';
 // Une valeur entre guillemets est avalée d'abord, telle quelle : `title='un disabled=""'` reste.
-const VALEUR_VIDE = new RegExp(`("[^"]*"|'[^']*')|(\\s(?:${BOOLEENS}))=(?:""|'')(?=[\\s/>])`, 'gi');
+const VALEUR_VIDE = new RegExp(`("[^"]*"|'[^']*')|([ \\t\\n\\r\\f](?:${BOOLEENS}))=(?:""|'')(?=[ \\t\\n\\r\\f/>])`, 'gi');
 const sansValeurVide = (balise) => balise.replace(VALEUR_VIDE, (m, citee, booleen) => citee ?? booleen);
 
 // Le HTML en arbre. Tout est conservé : une balise fermante sans ouvrante devient un nœud
@@ -66,7 +79,7 @@ function lire(brut) {
     const balise = m[0];
     if (balise.startsWith('<!--')) { ajouter({ type: 'commentaire', brut: balise }); continue; }
 
-    const nom = balise.match(/^<\/?([^\s>/]+)/)[1].toLowerCase();
+    const nom = balise.match(/^<\/?([^ \t\n\r\f>/]+)/)[1].toLowerCase();
     if (balise.startsWith('</')) {
       let i = pile.length - 1;
       while (i > 0 && pile[i].nom !== nom) i -= 1;
@@ -97,7 +110,7 @@ function lire(brut) {
   return racine.enfants;
 }
 
-const aDuTexte = (noeud) => (noeud.type === 'texte' ? noeud.texte.trim() !== '' : (noeud.enfants || []).some(aDuTexte));
+const aDuTexte = (noeud) => (noeud.type === 'texte' ? rogner(noeud.texte) !== '' : (noeud.enfants || []).some(aDuTexte));
 
 // Du texte courant : du texte, un saut de ligne, ou un élément de texte courant fermé dont tout
 // le contenu en est aussi.
@@ -114,7 +127,7 @@ function tientSurUneLigne(noeud) {
 }
 
 function enLigne(noeud) {
-  if (noeud.type === 'texte') return noeud.texte.replace(/\s+/g, ' ');
+  if (noeud.type === 'texte') return blancs(noeud.texte);
   if (noeud.vide) return noeud.ouvrante;
   return noeud.ouvrante + noeud.enfants.map(enLigne).join('') + (noeud.fermante || '');
 }
@@ -123,14 +136,14 @@ function ecrire(noeuds, niveau, lignes) {
   const retrait = '  '.repeat(niveau);
   for (const n of noeuds) {
     if (n.type === 'texte') {
-      const texte = n.texte.replace(/\s+/g, ' ').trim();
+      const texte = rogner(blancs(n.texte));
       if (texte) lignes.push(retrait + texte);
     } else if (n.type === 'commentaire' || n.type === 'orphelin' || n.type === 'brut') {
       lignes.push(retrait + n.brut);
     } else if (tientSurUneLigne(n)) {
       // Les blancs aux deux bouts d'un élément ne se voient pas : `<button> OK </button>` vaut
       // `<button>OK</button>`.
-      const dedans = n.vide ? '' : n.enfants.map(enLigne).join('').replace(/\s+/g, ' ').trim();
+      const dedans = n.vide ? '' : rogner(blancs(n.enfants.map(enLigne).join('')));
       lignes.push(retrait + (n.vide ? n.ouvrante : n.ouvrante + dedans + n.fermante));
     } else {
       lignes.push(retrait + n.ouvrante);
@@ -153,14 +166,21 @@ export function formaterHtml(brut) {
 
 // ---- Copier ----
 
-// Sélectionne le contenu de `champ`, pour que Cmd+C / Ctrl+C le copie. Un champ de formulaire
-// se sélectionne lui-même (`select()`, après un `focus()` : Safari l'exige) ; un `<pre>` ou un
-// `<code>` passe par une plage du document, et GARDE le focus ailleurs — la personne au clavier
-// ne perd pas sa place sur le bouton, dont le message est lu là où elle est.
+// Sélectionne le contenu de `champ`, pour que Cmd+C / Ctrl+C le copie, PUIS RELIT ce que le
+// navigateur a retenu : `addRange` ne lève pas quand il ignore la plage (élément masqué,
+// document sans focus). Annoncer « Sélectionné » sur une supposition, c'est le mensonge qu'on
+// veut éviter. Un champ de formulaire se sélectionne lui-même (`select()`, après un `focus()` :
+// Safari l'exige) ; un `<pre>` ou un `<code>` passe par une plage du document, et GARDE le
+// focus ailleurs — la personne au clavier ne perd pas sa place sur le bouton, dont le message
+// est lu là où elle est.
 function selectionner(champ) {
   if (champ && typeof champ.select === 'function') {
     if (typeof champ.focus === 'function') champ.focus({ preventScroll: true });
     champ.select();
+    // Un champ qui ne rend pas ses bornes n'est pas contredit : on ne juge que ce qu'on mesure.
+    if (typeof champ.selectionStart === 'number' && champ.selectionStart === champ.selectionEnd) {
+      throw new Error('copier : la sélection du champ est restée vide');
+    }
     return;
   }
   const doc = champ && champ.ownerDocument;
@@ -173,39 +193,65 @@ function selectionner(champ) {
   plage.selectNodeContents(champ);
   selection.removeAllRanges();
   selection.addRange(plage);
+  if (String(selection) === '') throw new Error('copier : la sélection est restée vide, le navigateur a ignoré la plage');
 }
 
-// Copie `texte` dans le presse-papiers. S'il est absent (origine non sécurisée) ou refuse
-// l'écriture, sélectionne `champ` à la place et le dit par son retour : l'appelant annonce
-// alors à la personne qu'elle doit finir le geste elle-même.
+// Le temps qu'on laisse au presse-papiers pour répondre avant de se rabattre sur la sélection.
+// Une invite de permission restée sans réponse laisse `writeText` en suspens : sans délai, le
+// bouton resterait muet.
+export const DELAI_ECRITURE = 3000;
+
+// Copie `texte` dans le presse-papiers. S'il est absent (origine non sécurisée), refuse
+// l'écriture ou ne répond pas dans `delaiMs`, sélectionne `champ` à la place et le dit par son
+// retour : l'appelant annonce alors à la personne qu'elle doit finir le geste elle-même.
 //
-// Ne lève que si la sélection elle-même est impossible (`champ` n'est pas un élément du
-// document) : ni copie ni sélection, c'est une erreur d'appel, et l'avaler ferait annoncer
-// « sélectionné » à une personne devant un texte qui ne l'est pas.
-export async function copier(texte, champ) {
+// Ne lève que si la sélection elle-même est impossible ou n'a pas pris : ni copie ni
+// sélection, et l'avaler ferait annoncer « sélectionné » à une personne devant un texte qui
+// ne l'est pas. (Une écriture tardive peut encore aboutir après le repli : la personne aura
+// alors le texte deux fois à sa disposition, ce qui est sans conséquence.)
+export async function copier(texte, champ, delaiMs = DELAI_ECRITURE) {
   const presse = globalThis.navigator && globalThis.navigator.clipboard;
   if (presse && typeof presse.writeText === 'function') {
+    let minuteur;
     try {
-      await presse.writeText(texte);
+      const garde = new Promise((_, refus) => { minuteur = setTimeout(() => refus(new Error('délai dépassé')), delaiMs); });
+      // `Promise.resolve().then(…)` : un `writeText` qui lève tout de suite devient un refus.
+      await Promise.race([Promise.resolve().then(() => presse.writeText(texte)), garde]);
       return 'presse-papiers';
     } catch {
-      // Refusé : permission, document sans focus, politique de la page. On se rabat.
+      // Refusé ou sans réponse : permission, document sans focus, politique de la page.
+    } finally {
+      clearTimeout(minuteur);
     }
   }
   selectionner(champ);
   return 'selection';
 }
 
-// Le raccourci que cette personne a sous les doigts. « Faites Cmd+C » dit à quelqu'un sous
-// Windows de chercher une touche qu'il n'a pas.
+// Le raccourci que cette personne a sous les doigts : `Cmd+C` sur Mac, `Ctrl+C` ailleurs, et
+// `null` sur un appareil tactile, où il n'y a pas de clavier à qui demander une touche. À 360 px,
+// c'est le lectorat qu'on a. « Faites Cmd+C » dit à quelqu'un sous Windows de chercher une
+// touche qu'il n'a pas, et à quelqu'un sur un téléphone d'en chercher une qui n'existe pas.
 export function raccourciCopie(nav = globalThis.navigator) {
-  const plateforme = String((nav && nav.userAgentData && nav.userAgentData.platform) || (nav && nav.platform) || '');
-  return /mac|iphone|ipad|ipod/i.test(plateforme) ? 'Cmd+C' : 'Ctrl+C';
+  if (!nav) return 'Ctrl+C';
+  const plateforme = String((nav.userAgentData && nav.userAgentData.platform) || nav.platform || '');
+  const tactile = (nav.userAgentData && nav.userAgentData.mobile === true)
+    || /iphone|ipad|ipod/i.test(plateforme)
+    || /android|iphone|ipad|ipod|mobile/i.test(String(nav.userAgent || ''))
+    // Un iPad récent se présente comme un Mac : seul son écran tactile le trahit.
+    || (/mac/i.test(plateforme) && Number(nav.maxTouchPoints) > 1);
+  if (tactile) return null;
+  return /mac/i.test(plateforme) ? 'Cmd+C' : 'Ctrl+C';
+}
+
+// La consigne qui suit « Sélectionné », selon le raccourci.
+export function consigneCopie(raccourci) {
+  return raccourci ? `faites ${raccourci}` : 'copiez-le avec la commande Copier de votre appareil';
 }
 
 // Ce que le bouton affiche selon ce qui s'est passé.
 export function messageCopie(resultat, raccourci) {
-  return resultat === 'presse-papiers' ? 'Copié' : `Sélectionné, faites ${raccourci}`;
+  return resultat === 'presse-papiers' ? 'Copié' : `Sélectionné, ${consigneCopie(raccourci)}`;
 }
 
 const MESSAGE_ECHEC = 'Copie impossible, sélectionnez le code à la main';
@@ -248,7 +294,9 @@ export function codeHtml({ fichier, demo, titre } = {}) {
 // Dit dans le bloc que son code ne viendra pas, et pourquoi. `raison` :
 //   'muet'       le cadre ne répond pas ;
 //   'vide'       le cadre répond, mais n'a pas cette démonstration ;
-//   'sans-cadre' aucun cadre de la page ne montre cette démonstration.
+//   'sans-cadre' aucun cadre de la page ne montre cette démonstration ;
+//   'tard'       le cadre a annoncé avant que la page l'écoute : son HTML, envoyé une seule fois,
+//                est perdu.
 export function signalerCodeAbsent(bloc, raison = 'vide') {
   const texte = bloc.querySelector(SELECTEUR_TEXTE);
   const bouton = bloc.querySelector(SELECTEUR_BOUTON);
@@ -256,6 +304,7 @@ export function signalerCodeAbsent(bloc, raison = 'vide') {
   const { fichier, demo } = bloc.dataset;
   const cause = {
     muet: `la démonstration « ${demo} » ne s’est pas affichée`,
+    tard: `la démonstration « ${demo} » a répondu avant que la page l’écoute. Rechargez la page`,
     'sans-cadre': `aucun cadre de cette page ne montre la démonstration « ${demo} » de exemples/${fichier}`,
   }[raison] || `la démonstration « ${demo} » est introuvable dans exemples/${fichier}`;
   const message = `Le code n’a pas pu être lu : ${cause}.`;

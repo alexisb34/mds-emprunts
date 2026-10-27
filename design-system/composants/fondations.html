@@ -48,7 +48,7 @@
   <script type="module">
     import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
     import { lireTokensDepuisDocument, tableauTokensHtml, sommaireGroupesHtml, messageHtml } from '../js/tokens.js';
-    import { copier, raccourciCopie } from '../js/code.js';
+    import { copier, raccourciCopie, consigneCopie } from '../js/code.js';
 
     // L’adresse de cette page est toujours relative à design-system/ : le chrome en déduit les `../`.
     document.getElementById('entete').outerHTML = enteteHtml('composants/fondations.html');
@@ -87,7 +87,7 @@
         aide.className = 'body-sm ds-mention';
         aide.setAttribute('role', 'status');
         aide.textContent = resultat === 'selection'
-          ? `Le navigateur refuse la copie ici. Le nom est sélectionné : faites ${raccourciCopie()}, puis écrivez-le dans var( ).`
+          ? `Le navigateur refuse la copie ici. Le nom est sélectionné : ${consigneCopie(raccourciCopie())}, puis écrivez-le dans var( ).`
           : 'La copie a échoué. Recopiez le nom à la main, dans var( ).';
         ligne.querySelector('.ds-jeton__id').append(aide);
       }
