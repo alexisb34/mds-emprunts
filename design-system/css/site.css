@@ -21,6 +21,7 @@
      `.ds-grille`    une grille ; `--2` et `--3` pour le nombre de colonnes
      `.ds-carte`     une carte cliquable
      `.ds-colonnes`  la mise en page de l'étage composants : sommaire à gauche, page à droite
+     `.lg-*`         le chapitre Logo : démonstrations, cartes, interdits (voir « Le chapitre Logo »)
    La typographie passe par les classes de `base.css` (`.h5`, `.h6`, `.body`, `.label-caps`…),
    posées dans le balisage : c'est l'échelle du kit, employée pour de vrai. */
 
@@ -48,6 +49,7 @@
   --ds-taille-accroche: 72px;                   /* l'accroche de l'accueil : la seule fois où la marque parle fort */
   --ds-taille-accroche-mini: 32px;              /* la même, sur téléphone : le plancher de son clamp */
   --ds-taille-titre: 32px;                      /* un titre de section */
+  --ds-taille-page: 48px;                       /* le titre d'une page de chapitre : en dessous de l'accroche d'accueil, au-dessus d'un titre de section */
   --ds-taille-chapeau: 19px;                    /* le chapô sous un titre */
   --ds-cadre-telephone: 390px;                  /* la largeur d'un cadre d'exemple qui montre un écran de téléphone */
   --ds-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;  /* les noms de tokens et le code */
@@ -307,7 +309,10 @@ summary:focus-visible,
 .ds-groupes__lien:hover,
 .ds-copier:hover,
 .ds-plaque,
-.ds-code { --ds-discret: var(--ds-texte); }
+.ds-code,
+.lg-telecharger:hover,
+.lg-zone,
+.lg-num { --ds-discret: var(--ds-texte); }
 
 /* Fonds saturés : les aplats violets. */
 .ds-rappel,
@@ -559,6 +564,157 @@ summary:focus-visible,
 .ds-copier:disabled { color: var(--ds-texte-secondaire); cursor: default; }
 .ds-copier:disabled:hover { background: var(--ds-fond); }
 
+/* ---- Le chapitre Logo ----
+   `design-system/js/logo.js` rend la page ; ces règles la mettent en forme. Une démonstration est
+   un cadre (`.lg-scene`) qui porte son fond en ligne — c'est une donnée que le module mesure —
+   et un logo (`.lg-logo`) posé dedans. Le cadre est un conteneur : le logo prend sa largeur en
+   `cqw`, une part de celle du cadre, pour que la fautive et la bonne d'un même interdit aient
+   toujours la même taille, à toute largeur de page.
+
+   `.lg-logo` recadre le fichier sur le DESSIN. Le SVG fait 150 × 88, mais le dessin n'occupe que
+   150 × 54,38 : il laisse du vide en haut et en bas. `object-fit: cover` dans une boîte de
+   150 / 54,38 coupe ce vide, et `object-position` règle la coupe sur la part du vide qui est
+   au-dessus (17 sur 33,62, soit 50,57 %). Un test vérifie que ces deux nombres sont ceux de
+   `DESSIN` dans `logo.js`. */
+
+.ds-titre-page {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(var(--ds-taille-accroche-mini), 6vw, var(--ds-taille-page));
+  line-height: 1.08;
+  letter-spacing: -.03em;
+  overflow-wrap: break-word;
+}
+.ds-lien-texte { color: var(--ds-lien); text-decoration: underline; text-underline-offset: var(--space-xxs); }
+
+.lg-logo {
+  display: block;
+  width: var(--l, 60cqw);
+  max-width: none;
+  height: auto;
+  aspect-ratio: 150 / 54.38;
+  object-fit: cover;
+  object-position: 50% 50.57%;
+  position: relative;
+}
+
+.lg-hero { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: var(--ds-air); }
+.lg-hero__texte { display: grid; gap: var(--space-lg); }
+.lg-hero__logo { justify-self: center; }
+/* La réserve vient juste sous le hero : elle ne garde de la respiration d'une section que celle du haut. */
+.lg-reserve { padding-bottom: 0; }
+.lg-notes { display: grid; gap: var(--space-sm); }
+/* Une ligne de lecture ne dépasse pas une soixantaine de caractères : `--ds-mesure` (780 px) en laisse passer une centaine. */
+.lg-lecture,
+.lg-tete > p,
+.lg-notes > p,
+.lg-reserve p,
+.lg-zone-texte p { max-width: 58ch; }
+/* Le titre d'une section et son chapô : l'un sous l'autre, avec un écart qui dit qu'ils vont ensemble. */
+.lg-tete { display: grid; gap: var(--space-md); }
+
+/* Le cadre d'une démonstration. */
+.lg-scene {
+  position: relative;
+  container-type: inline-size;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: var(--stroke-thin) solid var(--ds-filet);
+  border-radius: var(--radius-lg);
+}
+.lg-voile { position: absolute; inset: 0; }
+/* La démonstration de la zone a besoin de hauteur pour sa bande ; celle des tailles n'en a pas. */
+.lg-scene--zone { aspect-ratio: 4 / 3; }
+.lg-scene--taille { aspect-ratio: 16 / 7; }
+.lg-cas--zone { align-self: center; }
+
+/* Une comparaison : le défaut à gauche, la correction à droite. Le bord du cadre porte aussi le
+   verdict, mais jamais seul : la légende le dit en toutes lettres, avec un signe. */
+.lg-cas { margin: 0; display: grid; gap: var(--space-sm); align-content: start; min-width: 0; }
+.lg-cas--faux .lg-scene,
+.lg-cas--juste .lg-scene { border-width: var(--space-xxs); }
+.lg-cas--faux .lg-scene { border-color: var(--feedback-error); }
+.lg-cas--juste .lg-scene { border-color: var(--feedback-success); }
+.lg-cas__legende { display: flex; gap: var(--space-sm); align-items: baseline; color: var(--ds-texte); }
+.lg-cas__marque { flex: none; width: 1.25em; text-align: center; font-weight: 700; }
+.lg-fond { display: grid; gap: var(--space-xs); }
+
+/* Les cartes. */
+.lg-version,
+.lg-interdit {
+  display: grid;
+  gap: var(--space-md);
+  align-content: start;
+  padding: var(--space-2xl);
+  border-radius: var(--radius-xl);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  background: var(--ds-fond);
+  min-width: 0;
+}
+.lg-export { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.lg-telecharger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-control-sm);
+  padding: var(--space-xs) var(--space-lg);
+  border-radius: var(--radius-full);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  background: var(--ds-fond);
+  color: var(--ds-lien);
+  text-align: center;
+}
+.lg-telecharger:hover { background: var(--ds-fond-doux); }
+
+/* Les interdits : une liste de neuf cartes qui se tiennent à la même hauteur. */
+.lg-interdits { list-style: none; margin: 0; padding: 0; align-items: stretch; }
+.lg-interdits > li { display: grid; min-width: 0; }
+.lg-interdit { gap: var(--space-lg); }
+.lg-interdit h3 { display: flex; gap: var(--space-md); align-items: center; }
+.lg-num {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  border-radius: var(--radius-full);
+  background: var(--ds-fond-doux);
+  color: var(--ds-lien);
+}
+.lg-paire { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); }
+.lg-paire .lg-scene { aspect-ratio: 5 / 4; }
+.lg-raison { color: var(--ds-texte); }
+.lg-raison code { font-family: var(--ds-mono); overflow-wrap: anywhere; }
+.lg-mesures {
+  display: grid;
+  gap: var(--space-xs);
+  padding-top: var(--space-md);
+  border-top: var(--stroke-thin) solid var(--ds-filet);
+}
+
+/* La zone de protection : le logo, et autour de lui une bande de ZONE × sa largeur. */
+.lg-zone-grille { align-items: center; }
+.lg-zone-texte { display: grid; gap: var(--space-lg); align-content: start; }
+.lg-zone {
+  padding: calc(var(--l) * var(--z));
+  background: var(--ds-fond-frais);
+  border: var(--stroke-thin) dashed var(--ds-turquoise);
+}
+.lg-zone__dessin { background: var(--ds-fond); }
+
+/* « Réarranger » : le logo coupé en trois morceaux — l'hémisphère gauche, le nom, l'hémisphère
+   droit — recomposés autrement. `--de` et `--a` sont les bornes de chaque morceau, en parts de
+   la largeur du dessin. */
+.lg-recompose { display: grid; justify-items: center; gap: calc(var(--l) * .08); }
+.lg-recompose__ligne { display: flex; gap: calc(var(--l) * .3); }
+.lg-piece { display: block; overflow: hidden; width: calc(var(--l) * (var(--a) - var(--de))); }
+.lg-piece .lg-logo { width: var(--l); margin-left: calc(var(--l) * var(--de) * -1); }
+
+/* « Enfermer » : le logo, au contact du bord d'un rond. */
+.lg-forme { flex: none; width: var(--d); aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; }
+
 /* ---- Pied ---- */
 
 .ds-pied {
@@ -623,6 +779,7 @@ summary:focus-visible,
   .ds-entete__etage { order: 3; }
   .ds-entete__titre-suite { display: none; }
   .ds-nav { order: 4; width: 100%; }
+  .lg-hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-3xl); }
 }
 
 @media (max-width: 600px) {
@@ -653,6 +810,10 @@ summary:focus-visible,
   /* 8 px plutôt que 4 : l'en-tête gagne 11 px et la cible tactile en gagne 8. */
   .ds-nav__lien { padding: var(--space-sm); }
   .ds-bouton { width: 100%; justify-content: center; }
+  /* Deux démonstrations côte à côte tiennent sur un téléphone, mais pas avec le coussin d'une carte. */
+  .lg-version,
+  .lg-interdit { padding: var(--space-lg); }
+  .lg-paire { gap: var(--space-sm); }
 }
 
 /* ---- Mouvement réduit ----
