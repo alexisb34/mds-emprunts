@@ -271,7 +271,10 @@ const SELECTEUR_ETAT = '.ds-code-bloc__etat';
 //
 // `titre` nomme le bloc pour un lecteur d'écran — le `<pre>` défile, il est donc focalisable
 // (`tabindex="0"`), et une région focalisable sans nom est annoncée « groupe » sans plus.
-// Le bouton est inactif tant qu'il n'y a rien à copier.
+// Le bouton est inactif tant qu'il n'y a rien à copier. Son nom accessible est FIXE
+// (« Copier le code : titre ») : une page porte plusieurs blocs, donc plusieurs boutons, et un
+// lecteur d'écran qui les liste doit pouvoir les distinguer. Le résultat (« Copié »…) est annoncé
+// par la zone de statut, pas par le texte du bouton : le nom ne change donc jamais.
 export function codeHtml({ fichier, demo, titre } = {}) {
   if (!estNom(fichier, FICHIER_VALIDE)) {
     throw new Error(`codeHtml : fichier « ${fichier} » — attendu le nom d’un fichier de design-system/exemples/, par exemple « bouton.html »`);
@@ -285,7 +288,7 @@ export function codeHtml({ fichier, demo, titre } = {}) {
   return `<div class="ds-code-bloc" data-fichier="${echapper(fichier)}" data-demo="${echapper(demo)}">
   <pre class="ds-code body-sm" tabindex="0" role="region" aria-label="Code HTML : ${echapper(titre)}"><code class="ds-code-bloc__texte">Le code apparaît quand la démonstration est chargée.</code></pre>
   <div class="ds-code-bloc__barre">
-    <button type="button" class="ds-copier label-md" disabled>Copier</button>
+    <button type="button" class="ds-copier label-md" aria-label="Copier le code : ${echapper(titre)}" disabled>Copier</button>
     <span class="ds-code-bloc__etat visually-hidden" role="status"></span>
   </div>
 </div>`;
@@ -296,7 +299,8 @@ export function codeHtml({ fichier, demo, titre } = {}) {
 //   'vide'       le cadre répond, mais n'a pas cette démonstration ;
 //   'sans-cadre' aucun cadre de la page ne montre cette démonstration ;
 //   'tard'       le cadre a annoncé avant que la page l'écoute : son HTML, envoyé une seule fois,
-//                est perdu.
+//                est perdu. C'est un défaut de la page (un `await` mal placé), que recharger ne
+//                répare pas : le message le dit.
 export function signalerCodeAbsent(bloc, raison = 'vide') {
   const texte = bloc.querySelector(SELECTEUR_TEXTE);
   const bouton = bloc.querySelector(SELECTEUR_BOUTON);
@@ -304,7 +308,7 @@ export function signalerCodeAbsent(bloc, raison = 'vide') {
   const { fichier, demo } = bloc.dataset;
   const cause = {
     muet: `la démonstration « ${demo} » ne s’est pas affichée`,
-    tard: `la démonstration « ${demo} » a répondu avant que la page l’écoute. Rechargez la page`,
+    tard: `la démonstration « ${demo} » a annoncé son code avant que la page l’écoute. C’est à corriger dans la page : elle doit brancher ses cadres sans rien attendre après les avoir posés`,
     'sans-cadre': `aucun cadre de cette page ne montre la démonstration « ${demo} » de exemples/${fichier}`,
   }[raison] || `la démonstration « ${demo} » est introuvable dans exemples/${fichier}`;
   const message = `Le code n’a pas pu être lu : ${cause}.`;

@@ -466,6 +466,21 @@ test('installer choisit la démonstration et annonce sa hauteur au parent', () =
   assert.equal(cible, 'http://localhost:8123');
 });
 
+test('installer ne rogne que les blancs d’HTML aux bords du code envoyé, jamais une insécable', () => {
+  // `trim()` retire aussi U+00A0 et U+202F, l'espace fine insécable de la typographie française.
+  // Une section qui commencerait ou finirait par l'une d'elles la perdrait AVANT d'arriver au
+  // formateur de la page. Latent aujourd'hui (les sections commencent par une balise), mais c'est
+  // la même classe de bug que `formaterHtml`, fermée des deux côtés.
+  const fenetre = fausseFenetreExemple(['variantes']);
+  fenetre.doc.sections[0].innerHTML = '\n  \u202F<p>x</p>\u00A0\n  ';
+  installer(fenetre);
+  assert.equal(fenetre.envoyes[0].message.html, '\u202F<p>x</p>\u00A0');
+  const autre = fausseFenetreExemple(['variantes']);
+  autre.doc.sections[0].innerHTML = '\n   <p>x</p>\n  ';
+  installer(autre);
+  assert.equal(autre.envoyes[0].message.html, '<p>x</p>', 'les blancs ordinaires doivent toujours être rognés');
+});
+
 test('installer n’annonce rien de plus tant que la hauteur ne change pas', () => {
   const fenetre = fausseFenetreExemple(['variantes']);
   installer(fenetre);

@@ -274,12 +274,42 @@ test('copier ne reste pas suspendu à une écriture que le navigateur ne résout
   assert.equal(champ.selectionne, true);
 });
 
-test('le délai de garde ne retarde pas une écriture qui réussit, et ne laisse pas de minuteur', async () => {
+test('le délai de garde ne retarde pas une écriture qui réussit', async () => {
+  // Ce test ne vérifie QUE la durée : le nettoyage du minuteur est dans le test suivant.
   const champ = { focus() {}, select() {} };
   const t0 = Date.now();
   const r = await avecNavigator({ clipboard: { writeText: async () => {} } }, () => copier('texte', champ, 5000));
   assert.equal(r, 'presse-papiers');
   assert.ok(Date.now() - t0 < 1000, 'la copie a attendu le délai de garde');
+});
+
+test('copier ne laisse aucun minuteur en route : copie réussie, refus, ou délai dépassé', async () => {
+  // Un minuteur oublié garderait un processus en vie (ici) ou déclencherait un refus tardif
+  // sur une promesse que personne n'écoute. On compte les minuteurs posés et non nettoyés.
+  const vrai = { poser: globalThis.setTimeout, retirer: globalThis.clearTimeout };
+  const actifs = new Set();
+  globalThis.setTimeout = (f, ms, ...a) => { const id = vrai.poser(f, ms, ...a); actifs.add(id); return id; };
+  globalThis.clearTimeout = (id) => { actifs.delete(id); vrai.retirer(id); };
+  try {
+    const champ = { focus() {}, select() {} };
+    const cas = {
+      'copie réussie': { clipboard: { writeText: async () => {} } },
+      'refus': { clipboard: { writeText: () => Promise.reject(new Error('refus')) } },
+      'refus synchrone': { clipboard: { writeText() { throw new Error('refus'); } } },
+      'délai dépassé': { clipboard: { writeText: () => new Promise(() => {}) } },
+    };
+    for (const [nom, faux] of Object.entries(cas)) {
+      await avecNavigator(faux, () => copier('texte', champ, nom === 'délai dépassé' ? 10 : 5000));
+      assert.equal(actifs.size, 0, `${nom} : un minuteur est resté en route`);
+    }
+    // Sans presse-papiers, aucun minuteur n'est même posé.
+    await avecNavigator({}, () => copier('texte', champ, 5000));
+    assert.equal(actifs.size, 0);
+  } finally {
+    globalThis.setTimeout = vrai.poser;
+    globalThis.clearTimeout = vrai.retirer;
+    for (const id of actifs) vrai.retirer(id);
+  }
 });
 
 // ---- Le message du bouton ----
@@ -339,7 +369,10 @@ test('codeHtml rend un bloc repérable, lisible au clavier et nommé', () => {
   assert.match(html, /<pre class="ds-code body-sm" tabindex="0" role="region" aria-label="Code HTML : Les quatre variantes">/);
   assert.match(html, /<code class="ds-code-bloc__texte">/);
   // Le bouton existe d'emblée, mais ne sert à rien tant qu'il n'y a pas de code à copier.
-  assert.match(html, /<button type="button" class="ds-copier label-md" disabled>Copier<\/button>/);
+  // Le bouton porte un nom FIXE qui dit quoi il copie : quatre boutons « Copier » sur une page,
+  // un lecteur d'écran qui les liste n'a sinon aucun moyen de les distinguer. Le retour (« Copié »…)
+  // passe par la zone de statut, donc le texte visible qui change n'a pas à être lu.
+  assert.match(html, /<button type="button" class="ds-copier label-md" aria-label="Copier le code : Les quatre variantes" disabled>Copier<\/button>/);
   assert.match(html, /role="status"/);
 });
 
@@ -354,6 +387,24 @@ test('codeHtml refuse tout de suite une adresse qu’aucun test ne pourrait suiv
 test('codeHtml échappe le titre', () => {
   const html = codeHtml({ fichier: 'bouton.html', demo: 'variantes', titre: 'Un "titre" <b>' });
   assert.match(html, /aria-label="Code HTML : Un &quot;titre&quot; &lt;b&gt;"/);
+  assert.match(html, /aria-label="Copier le code : Un &quot;titre&quot; &lt;b&gt;"/);
+});
+
+test('deux blocs de titres différents ont des boutons de noms différents, et le nom contient le mot visible', () => {
+  const nom = (titre) => codeHtml({ fichier: 'bouton.html', demo: 'variantes', titre }).match(/<button[^>]*aria-label="([^"]*)"/)[1];
+  assert.notEqual(nom('Les variantes'), nom('Les tailles'));
+  // WCAG 2.5.3 : le nom accessible contient le texte visible du bouton, que la commande vocale vise.
+  assert.match(nom('Les variantes'), /^Copier\b/);
+});
+
+test('les blocs d’une même page ont des titres distincts : sinon leurs boutons ne se distinguent pas', () => {
+  let vus = 0;
+  for (const { nom, html } of pages()) {
+    const titres = [...html.matchAll(/codeHtml\(\s*\{[^}]*titre:\s*'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]);
+    assert.equal(new Set(titres).size, titres.length, `${nom} : deux blocs de code portent le même titre, donc le même nom de bouton`);
+    vus += titres.length;
+  }
+  assert.ok(vus >= 4, `${vus} titre(s) lu(s) : le détecteur ne voit plus les blocs`);
 });
 
 // Un bloc factice : seuls les éléments que le code touche, avec leurs propriétés.
@@ -578,6 +629,10 @@ test('un cadre déjà chargé et déjà annoncé quand la page branche : le bloc
   assert.equal(bloc.dataset.etat, 'absent');
   assert.match(bloc.texte.textContent, /variantes/);
   assert.match(bloc.texte.textContent, /avant que la page/i);
+  // Recharger ne répare rien : c'est un `await` mal placé dans la page. Le message dit ce qui est
+  // vrai, et que c'est à la page de le corriger.
+  assert.doesNotMatch(bloc.texte.textContent, /recharg/i);
+  assert.match(bloc.texte.textContent, /à corriger dans la page/i);
   assert.equal(bloc.bouton.disabled, true);
   assert.match(bloc.etat.textContent, /pas pu être lu/);
 });

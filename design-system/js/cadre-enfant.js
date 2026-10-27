@@ -27,6 +27,11 @@
 // l'autre ferait charger le module du parent dans chaque cadre, ou l'inverse.
 export const MARQUE_CADRE = 'ds-cadre';
 
+// Rogne les blancs d'HTML aux bords, et eux seuls. `String.prototype.trim` retire aussi l'espace
+// insécable (U+00A0) et la fine insécable (U+202F) : une section qui commencerait ou finirait
+// par l'une d'elles la perdrait avant d'arriver au formateur de la page (`code.js`), qui les garde.
+const rogner = (texte) => texte.replace(/^[ \t\n\r\f]+|[ \t\n\r\f]+$/g, '');
+
 // L'identifiant du message « cette démonstration n'existe pas dans ce fichier », posé dans
 // la page de l'exemple pour pouvoir être retiré ensuite.
 const ID_MANQUE = 'ds-demo-absente';
@@ -110,7 +115,7 @@ export function installer(fenetre) {
     const message = { marque: MARQUE_CADRE, demo: demoAffichee, hauteur };
     if (premiere) {
       const section = sectionsDe(doc).find((s) => s.dataset.demo === demoAffichee);
-      message.html = section ? String(section.innerHTML).trim() : '';
+      message.html = section ? rogner(String(section.innerHTML)) : '';
     }
     fenetre.parent.postMessage(message, origineCible(fenetre));
   };
