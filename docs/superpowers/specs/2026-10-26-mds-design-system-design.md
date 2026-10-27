@@ -173,7 +173,7 @@ Les couleurs de statut du kit ne passent pas le niveau AA. Les mesures, sur le t
 | en retard `#e63247` sur `#fce4e7` | 3,54:1 | échoue |
 | emprunté `#662483` sur `#f0e9f3` | 8,23:1 | conforme |
 
-Et au-delà des badges : `--text-secondary` sur `--bg-canvas` tombe à 4,13:1, le turquoise de marque sur blanc à 2,39:1, le rose d'accent à 4,36:1, le blanc sur le rouge d'erreur à 4,28:1. S'y ajoutent deux manques de comportement : les modales n'ont ni échappement au clavier ni piège de focus, et aucun bouton, onglet ou élément de navigation n'a de style de focus visible.
+Et au-delà des badges : `--text-secondary` sur `--bg-canvas` tombe à 4,13:1, le turquoise de marque sur blanc à 2,39:1, le rose d'accent à 4,36:1, le blanc sur le rouge d'erreur à 4,28:1. S'y ajoutent deux manques de comportement : les modales n'ont ni échappement au clavier ni piège de focus, et le kit ne dessine aucun anneau de focus pour ses boutons, ses onglets et ses éléments de navigation. Il ne les supprime pas non plus — le navigateur pose le sien, et c'est ce qu'on voit aujourd'hui. Le manque est donc un manque de maîtrise, pas d'affichage : la couleur et l'épaisseur de cet anneau varient d'un navigateur à l'autre, et son contraste n'est garanti ni sur le violet de marque ni sur le rouge d'erreur. Deux règles seulement dessinent un anneau choisi : `.input:focus` et `.kpi--link:focus-visible`.
 
 **Le site publie ces chiffres.** Chaque paire est affichée avec son ratio réel et son verdict. Les paires qui échouent sont présentées comme une dette connue, datée, avec ce qu'il faudrait faire — pas comme un modèle à suivre. Les correctifs partent dans `docs/correctifs-figma.md`, où le Figma fait foi et le code suit.
 

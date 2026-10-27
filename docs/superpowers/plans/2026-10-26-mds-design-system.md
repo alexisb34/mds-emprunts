@@ -300,7 +300,7 @@ Expected: FAIL
 
 - [ ] **Step 3: Implement le mécanisme et les deux pages Bouton**
 
-`exemples/bouton.html` : sections `variantes`, `tailles`, `etats`, `bloc`. `composants/bouton.html` suit la trame des six points de la spec §5, **chacun dans une section portant son ancre** — `id="a-quoi"`, `id="exemple"`, `id="variantes"`, `id="code"`, `id="quand-ne-pas"`, `id="accessibilite"` — car le test de la Task 10 balaie tout le dossier et vaut pour cette page aussi. Y écrire que `.btn` n'a aucun style de focus visible aujourd'hui : manque nommé, reporté dans `docs/correctifs-figma.md`.
+`exemples/bouton.html` : sections `variantes`, `tailles`, `etats`, `bloc`. `composants/bouton.html` suit la trame des six points de la spec §5, **chacun dans une section portant son ancre** — `id="a-quoi"`, `id="exemple"`, `id="variantes"`, `id="code"`, `id="quand-ne-pas"`, `id="accessibilite"` — car le test de la Task 10 balaie tout le dossier et vaut pour cette page aussi. Y écrire ce qui manque vraiment au focus de `.btn` : le kit ne dessine aucun anneau et laisse celui du navigateur, dont la couleur et le contraste ne sont maîtrisés ni sur le violet ni sur le rouge. Ne pas écrire que rien ne s'affiche — c'est faux, et vérifiable en trois secondes par le lecteur. Manque nommé, reporté dans `docs/correctifs-figma.md`.
 
 - [ ] **Step 4: Rendre visible un cadre qui ne répond pas**
 
@@ -672,7 +672,7 @@ Expected: FAIL
 
 - [ ] **Step 3: Implement les quatre paires de pages**
 
-Chaque page suit la trame. Points obligatoires relevés dans le CSS : Badge couvre `.badge` **et** `.chip` — le « Tag » du Figma, qui est cliquable alors que le badge ne l'est pas, et c'est la différence qui décide lequel employer — et documente `badge(kind, value)` de `js/ui.js` comme la vraie façon d'en produire un, avec la table des familles (`item`, `loan`, `booking`, `maint`, `circuit`, `role`, `derived`) ; Avatar documente `avatar(user, size)` et les deux tailles `sm` / `md` ; Formulaires montre `.input:focus` (le seul focus stylé du dépôt) et nomme l'absence d'état de chargement ; Cartes couvre `.card`, `.card--flat`, `.card--item`.
+Chaque page suit la trame. Points obligatoires relevés dans le CSS : Badge couvre `.badge` **et** `.chip` — le « Tag » du Figma, qui est cliquable alors que le badge ne l'est pas, et c'est la différence qui décide lequel employer — et documente `badge(kind, value)` de `js/ui.js` comme la vraie façon d'en produire un, avec la table des familles (`item`, `loan`, `booking`, `maint`, `circuit`, `role`, `derived`) ; Avatar documente `avatar(user, size)` et les deux tailles `sm` / `md` ; Formulaires montre `.input:focus` — l'une des deux seules règles de focus dessinées par le dépôt, avec `.kpi--link:focus-visible` — et nomme l'absence d'état de chargement ; Cartes couvre `.card`, `.card--flat`, `.card--item`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -723,7 +723,7 @@ Expected: FAIL
 
 - [ ] **Step 3: Implement les quatre paires de pages**
 
-Tableau : tri par `th[data-sortable]`, lignes cliquables `tr[data-href]`, et le manque de focus visible sur la ligne cliquable, nommé. KPI : les quatre teintes, `.kpi--link` et son `:focus-visible` — le seul correct du dépôt, cité en exemple. Navigation : `.nav-item`, son compteur, et les deux versions d'onglets. Icônes : l'inventaire des icônes réellement employées, et d'où elles viennent.
+Tableau : tri par `th[data-sortable]`, lignes cliquables `tr[data-href]`, et l'absence d'anneau de focus **dessiné** sur la ligne cliquable — celui du navigateur reste, mais rien ne le maîtrise. KPI : les quatre teintes, et `.kpi--link:focus-visible`, l'une des deux seules règles de focus que le dépôt dessine vraiment, citée en exemple de ce qu'il faudrait partout. Navigation : `.nav-item`, son compteur, et les deux versions d'onglets. Icônes : l'inventaire des icônes réellement employées, et d'où elles viennent.
 
 - [ ] **Step 4: Run test to verify it passes**
 
