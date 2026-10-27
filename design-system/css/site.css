@@ -49,6 +49,7 @@
   --ds-taille-accroche-mini: 32px;              /* la même, sur téléphone : le plancher de son clamp */
   --ds-taille-titre: 32px;                      /* un titre de section */
   --ds-taille-chapeau: 19px;                    /* le chapô sous un titre */
+  --ds-cadre-telephone: 390px;                  /* la largeur d'un cadre d'exemple qui montre un écran de téléphone */
   --ds-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;  /* les noms de tokens et le code */
 }
 
@@ -513,9 +514,13 @@ summary:focus-visible,
   /* Le document du cadre a ses angles droits : sans ça, il dépasserait aux quatre coins. */
   overflow: hidden;
 }
-/* Les motifs mobiles se regardent à la largeur d'un téléphone : plus large, le shell mobile
-   ne ressemble plus à rien. */
-.ds-cadre--etroit { max-width: calc(var(--size-sidebar) * 1.5); }
+/* Les motifs mobiles se regardent à la largeur d'un téléphone : plus large, le shell mobile ne
+   ressemble plus à rien. C'est le CADRE qui porte cette largeur, pas l'exemple : un exemple
+   qui se la donnerait aussi ferait deux mécanismes pour un seul besoin, et deux occasions de
+   dériver. Un test tient cette règle. */
+.ds-cadre--etroit { max-width: var(--ds-cadre-telephone); }
+/* Un cadre remplacé par son message d'absence rend sa bordure au message, qui a la sienne. */
+.ds-cadre--muet { border: 0; }
 .ds-cadre__vue {
   display: block;
   width: 100%;

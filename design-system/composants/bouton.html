@@ -56,7 +56,7 @@
         <p class="body ds-mesure"><code>btn--icon</code> existe dans la feuille, mais aucun écran de l’outil ne l’emploie aujourd’hui&nbsp;: les boutons à flèche seule passent par <code>btn--ghost btn--sm</code> et un <code>aria-label</code>. La variante est documentée parce qu’elle existe, pas parce qu’elle est éprouvée.</p>
 
         <h3 class="h6">Les états</h3>
-        <p class="body ds-mesure">Le repos et l’état désactivé se voient ci-dessous, variante par variante. Le survol et l’appui ne se figent pas dans du HTML&nbsp;: le cadre est vivant, passez la souris dessus pour les voir.</p>
+        <p class="body ds-mesure">Le repos et l’état désactivé se voient ci-dessous, variante par variante. Le survol, l’appui et le focus ne se figent pas dans du HTML&nbsp;: le cadre est vivant, passez la souris dessus et tabulez dedans pour les voir.</p>
         <div id="cadre-etats"></div>
         <p class="body ds-mesure">Un bouton désactivé passe à moitié transparent et refuse le curseur. L’attribut <code>disabled</code> le sort de l’ordre de tabulation mais le laisse dans la page&nbsp;: une personne qui explore l’écran au lecteur d’écran le trouve et l’entend annoncé comme indisponible. Un bouton caché, lui, aurait simplement disparu, sans dire qu’une action existe et qu’elle n’est pas permise ici.</p>
 
@@ -68,7 +68,7 @@
         <p class="body ds-mesure">La trame de ce site demande de nommer les manques plutôt que de les inventer. Pour le bouton, il y en a deux&nbsp;:</p>
         <ul class="ds-liste body">
           <li><strong>Aucun état de chargement.</strong> Il n’existe ni bouton en attente, ni indicateur dans un bouton. Un formulaire qui met du temps à répondre n’a aujourd’hui rien à montrer. En attendant une décision, désactivez le bouton pendant l’envoi&nbsp;: c’est ce que fait l’outil.</li>
-          <li><strong>Aucun style de focus visible</strong>, détaillé plus bas.</li>
+          <li><strong>Aucun anneau de focus dessiné.</strong> Celui du navigateur reste affiché — le kit ne le supprime pas — mais rien ne le maîtrise. Détaillé plus bas.</li>
         </ul>
       </section>
 
@@ -105,10 +105,11 @@
       <section id="accessibilite" class="ds-groupe">
         <h2 class="h5">Accessibilité</h2>
 
-        <h3 class="h6">Le manque&nbsp;: aucun style de focus visible</h3>
-        <p class="body ds-mesure"><strong><code>.btn</code> n’a aucune règle <code>:focus-visible</code> dans tout le dépôt.</strong> Une personne qui navigue au clavier traverse les boutons d’un écran sans jamais voir où elle se trouve. Ce n’est pas une préférence de style, c’est un échec du critère WCAG 2.4.7&nbsp;: tabulez dans le cadre des états, plus haut, et vous ne verrez rien bouger.</p>
-        <p class="body ds-mesure">Le kit entier est dans ce cas&nbsp;: ni bouton, ni onglet, ni élément de navigation n’a de focus visible. Seuls les champs de formulaire et la carte KPI cliquable en ont un, et c’est de cette dernière qu’il faudrait partir pour corriger. Le manque est en attente dans <code>docs/correctifs-figma.md</code>, où la décision se prend dans Figma et le code suit.</p>
-        <p class="body ds-mesure">Ce site, lui, pose un contour violet sur tout ce qu’on atteint au clavier. Un guide qui recommande l’accessibilité se l’applique d’abord&nbsp;: tabulez dans cette page, puis dans le cadre juste au-dessus. La différence est exactement ce qui manque.</p>
+        <h3 class="h6">Le manque&nbsp;: un anneau de focus que personne n’a choisi</h3>
+        <p class="body ds-mesure">Tabulez dans un des cadres de cette page&nbsp;: un anneau apparaît autour du bouton. Il est là, et c’est important de le dire — <strong>le kit ne supprime jamais l’anneau de focus</strong>, aucune feuille du dépôt ne pose <code>outline: none</code>. Le piège classique est évité.</p>
+        <p class="body ds-mesure"><strong>Mais cet anneau est celui du navigateur, pas celui du kit.</strong> <code>.btn</code> n’a aucune règle <code>:focus-visible</code>, donc sa couleur, son épaisseur et sa forme changent d’un navigateur à l’autre, et personne n’a vérifié qu’il se voit sur le violet de <code>btn--primary</code> ni sur le rouge de <code>btn--danger</code>. Un anneau dont on ne connaît pas le contraste sur les fonds qu’on dessine est un anneau dont on ne sait pas s’il se voit.</p>
+        <p class="body ds-mesure">Le kit entier est dans ce cas&nbsp;: ni bouton, ni onglet, ni élément de navigation ne dessine le sien. Deux règles seulement le font — <code>.input:focus</code> et <code>.kpi--link:focus-visible</code> — et c’est de la seconde qu’il faudrait partir pour corriger. Le manque est en attente dans <code>docs/correctifs-figma.md</code>, où la décision se prend dans Figma et le code suit.</p>
+        <p class="body ds-mesure">Ce site, lui, dessine le sien&nbsp;: un contour violet de 2 px, avec 2 px de retrait, sur tout ce qu’on atteint au clavier. Un guide qui recommande l’accessibilité commence par se l’appliquer.</p>
 
         <h3 class="h6">Taille de cible</h3>
         <p class="body ds-mesure">WCAG 2.5.5 recommande 44 px pour une cible tactile, et WCAG 2.5.8 en exige 24 au minimum. Les deux hauteurs du bouton, lues dans <code>css/tokens.css</code>&nbsp;:</p>
@@ -153,7 +154,7 @@
     document.getElementById('cadre-variantes').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'variantes', titre: 'Les quatre variantes de bouton, rendues par le CSS de l’outil d’emprunt' });
     document.getElementById('cadre-tailles').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'tailles', titre: 'Les deux hauteurs de bouton, et le bouton qui ne porte qu’une icône' });
     document.getElementById('cadre-etats').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'etats', titre: 'Chaque variante de bouton au repos, puis désactivée' });
-    document.getElementById('cadre-bloc').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'bloc', titre: 'Des boutons pleine largeur, à la largeur d’un téléphone' });
+    document.getElementById('cadre-bloc').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'bloc', titre: 'Des boutons pleine largeur, à la largeur d’un téléphone', etroit: true });
     brancherCadres(document.getElementById('contenu'));
 
     // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais

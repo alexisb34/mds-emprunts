@@ -94,30 +94,47 @@ export function installer(fenetre) {
   // chaque mesure, et la boucle où le parent change la taille du cadre, ce qui refait mesurer.
   let derniere = -1;
   let demoEnvoyee = null;
+  // Ce qui est AFFICHÉ, qui n'est pas forcément ce que dit l'adresse : un lien de
+  // démonstration peut changer le fragment sans changer la démonstration. L'annonce suit
+  // l'affichage, jamais l'adresse — sinon un fragment étranger ferait repartir un message
+  // avec une démonstration vide, et le code montré par la page se viderait avec elle.
+  let demoAffichee = '';
 
   const annoncer = () => {
-    const demo = demoDe(fenetre.location && fenetre.location.hash);
     const hauteur = hauteurDe(doc);
-    if (hauteur === derniere && demo === demoEnvoyee) return;
-    const premiere = demo !== demoEnvoyee;
+    if (hauteur === derniere && demoAffichee === demoEnvoyee) return;
+    const premiere = demoAffichee !== demoEnvoyee;
     derniere = hauteur;
-    demoEnvoyee = demo;
+    demoEnvoyee = demoAffichee;
     if (!fenetre.parent || fenetre.parent === fenetre) return;   // ouvert tout seul : personne à qui parler
-    const message = { marque: MARQUE_CADRE, demo, hauteur };
+    const message = { marque: MARQUE_CADRE, demo: demoAffichee, hauteur };
     if (premiere) {
-      const section = sectionsDe(doc).find((s) => s.dataset.demo === demo);
+      const section = sectionsDe(doc).find((s) => s.dataset.demo === demoAffichee);
       message.html = section ? String(section.innerHTML).trim() : '';
     }
     fenetre.parent.postMessage(message, origineCible(fenetre));
   };
 
-  const choisir = () => {
-    montrerDemo(doc, demoDe(fenetre.location && fenetre.location.hash));
+  const choisir = (cle) => {
+    montrerDemo(doc, cle);
+    demoAffichee = cle;
     annoncer();
   };
 
-  choisir();
-  fenetre.addEventListener('hashchange', choisir);
+  // Au chargement, le fragment commande : c'est le parent qui l'a écrit dans l'adresse du
+  // cadre. Sans fragment, l'exemple est ouvert directement et montre tout.
+  choisir(demoDe(fenetre.location && fenetre.location.hash));
+
+  // Ensuite, non. Une démonstration contient des liens — un bouton-lien, un onglet, un fil
+  // d'Ariane, une ligne de tableau cliquable — et les cliquer change le fragment de l'adresse
+  // du cadre sans rien dire d'une démonstration. Un `href="#/emprunts"`, celui que l'outil
+  // d'emprunt écrit vraiment, ferait sinon réapparaître les quatre démonstrations du fichier
+  // d'un coup. Le cadre ne suit donc un changement de fragment que s'il nomme une
+  // démonstration de ce fichier.
+  fenetre.addEventListener('hashchange', () => {
+    const cle = demoDe(fenetre.location && fenetre.location.hash);
+    if (cle && sectionsDe(doc).some((s) => s.dataset.demo === cle)) choisir(cle);
+  });
 
   // Les polices changent la hauteur du texte en arrivant : Bricolage Grotesque et Inter sont
   // chargées en `display: swap`, donc le premier rendu se fait dans une police de repli.

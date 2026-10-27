@@ -9,17 +9,27 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
 
 ## À faire
 
-- **`.btn` n’a aucun style de focus visible** (26 octobre 2026). Repéré en documentant la page
-  Bouton du design system. Aucune règle `:focus-visible` sur `.btn` dans tout le dépôt — et le kit
-  entier est dans ce cas&nbsp;: ni bouton, ni onglet (`.tab`), ni élément de navigation
-  (`.nav-item`) n’en a. Seuls `.input` / `.select` / `.textarea` et `.kpi--link` sont stylés. Une
-  personne qui navigue au clavier traverse un écran sans voir où elle est&nbsp;: échec du critère
-  WCAG 2.4.7. La forme existe déjà dans le dépôt, sur `.kpi--link` (`outline: 2px solid
+- **Le kit ne dessine aucun anneau de focus pour ses contrôles** (26 octobre 2026, reformulé le
+  27). Repéré en documentant la page Bouton du design system. Aucune règle `:focus-visible` sur
+  `.btn`, et le kit entier est dans ce cas : ni bouton, ni onglet (`.tab`), ni élément de
+  navigation (`.nav-item`) n’en a. Deux règles seulement dessinent un anneau choisi :
+  `.input` / `.select` / `.textarea` et `.kpi--link`.
+
+  **Ce n’est pas un anneau absent, c’est un anneau non maîtrisé.** Le dépôt ne pose `outline: none`
+  nulle part, donc le navigateur affiche le sien et on le voit bien en tabulant — vérifié. Le
+  défaut est que sa couleur et son épaisseur changent d’un navigateur à l’autre, et que son
+  contraste n’est garanti ni sur le violet de `--brand-primary` ni sur le rouge de
+  `--feedback-error`, les deux fonds pleins du kit.
+
+  La forme à reprendre existe déjà dans le dépôt, sur `.kpi--link` (`outline: 2px solid
   var(--brand-primary); outline-offset: 2px`) — reste à décider dans Figma la couleur et
-  l’épaisseur de l’anneau, pour les boutons comme pour les onglets et la navigation, puis à le
+  l’épaisseur, pour les boutons comme pour les onglets et la navigation, et notamment ce que
+  devient l’anneau posé sur un aplat violet, où `--brand-primary` ne se verrait pas. Puis à le
   porter dans `css/components.css`. La page `design-system/composants/bouton.html` nomme ce manque
-  en attendant, et un test (`tests/ds-cadre.test.mjs`) échouera le jour où le style sera ajouté,
-  pour que la documentation ne continue pas à annoncer un trou rebouché.
+  en attendant, et un test (`tests/ds-cadre.test.mjs`) tombe le jour où une feuille du dépôt
+  dessine ou supprime un anneau, pour que la documentation ne reste pas sur une description
+  périmée. Elle l’est déjà restée une fois : la première version de cette ligne disait « aucun
+  style de focus visible », ce qu’un lecteur réfutait en tabulant trois secondes.
 
 ## Divergences connues, laissées telles quelles
 

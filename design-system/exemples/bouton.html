@@ -19,12 +19,11 @@
   <link rel="stylesheet" href="../../css/components.css">
   <style>
     /* La mise en page des démonstrations, et rien d’autre : les boutons sont ceux du kit.
-       Tout est en tokens, comme partout ailleurs. La classe est portée par la `<section>`,
-       pas par son contenu : ce qui est à l’intérieur est le HTML que la page de
-       documentation montre, et il ne doit contenir que des classes du kit. */
+       Un exemple ne se donne PAS de largeur : c’est le cadre qui la porte, par
+       `cadreHtml({ etroit: true })`. Deux mécanismes pour un seul besoin, ce serait deux
+       occasions de dériver. Et pas de hauteur prise sur la fenêtre non plus : le cadre donne
+       à l’exemple la hauteur que l’exemple annonce, les deux se poursuivraient sans fin. */
     body { padding: var(--space-lg); }
-    /* La largeur d’un écran de téléphone : c’est là que `btn--block` sert vraiment. */
-    .ecran-etroit { max-width: calc(var(--size-sidebar) * 1.5); }
   </style>
 </head>
 <body>
@@ -70,11 +69,17 @@
     </div>
   </section>
 
-  <!-- Pleine largeur, empilés : la forme des boutons de l’interface mobile. -->
-  <section data-demo="bloc" class="ecran-etroit">
+  <!-- Pleine largeur, empilés : la forme des boutons de l’interface mobile. Le cadre de la
+       page est étroit (`etroit: true`), à la largeur d’un téléphone.
+
+       Le lien porte l’adresse que l’outil d’emprunt écrit vraiment (`js/mobile/views/fiche.js`),
+       et non un dièse bouche-trou : celui-ci viderait le fragment du cadre à chaque clic, et
+       serait recopié tel quel dans le code que la page montre. (Le test lit le fichier entier,
+       commentaires compris : ne l’écrivez même pas ici.) -->
+  <section data-demo="bloc">
     <div class="stack">
       <button type="button" class="btn btn--primary btn--block">Réserver</button>
-      <a class="btn btn--secondary btn--block" href="#">Voir la fiche</a>
+      <a class="btn btn--secondary btn--block" href="#/emprunts">Voir ma réservation</a>
       <button type="button" class="btn btn--ghost btn--block">Annuler</button>
     </div>
   </section>

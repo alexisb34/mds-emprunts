@@ -145,20 +145,37 @@ test('cadreHtml refuse tout de suite une adresse qu’aucun test ne pourrait sui
   assert.throws(() => cadreHtml({ fichier: 'bouton.html', demo: 'deux mots', titre: 'x' }), /demo/);
 });
 
-test('messageCadreAbsent dit où chercher et dans quel dossier', () => {
+test('messageCadreAbsent dit où chercher, dans quel dossier, et se signale', () => {
   const html = messageCadreAbsent('mobile-shell.html');
   assert.match(html, /class="ds-message"/);
   assert.match(html, /exemples\/mobile-shell\.html/);
   assert.match(html, /design-system\/exemples/);
+  // Le message remplace un cadre APRÈS le chargement de la page : une région de statut le
+  // fait annoncer à qui ne regarde pas l'écran.
+  assert.match(html, /role="status"/);
   assert.doesNotMatch(messageCadreAbsent('<script>x</script>'), /<script>/);
+});
+
+test('un cadre remplacé par son message n’a plus sa propre bordure', () => {
+  // Sinon le message encadré se retrouve dans le cadre encadré : deux traits pour un seul objet.
+  const cadre = fauxCadre('bouton.html', 'variantes');
+  const classes = [];
+  cadre.classList = { add: (c) => classes.push(c) };
+  const fenetre = fausseFenetre();
+  brancherCadres(fausseRacine([cadre]), 1000, fenetre);
+  cadre.vue.declencher('load');
+  fenetre.tic();
+  assert.deepEqual(classes, ['ds-cadre--muet']);
+  const css = readFileSync(new URL('../design-system/css/site.css', import.meta.url), 'utf8');
+  assert.match(css, /\.ds-cadre--muet\s*\{[^}]*border:\s*0/);
 });
 
 // ---- brancherCadres : la hauteur, et le cadre qui ne répond pas ----
 
-function fauxCadre(fichier, demo) {
+function fauxCadre(fichier, demo, adresse = `http://localhost:8123/design-system/exemples/${fichier}#${demo}`) {
   const vue = {
     style: {},
-    contentWindow: { nom: `${fichier}#${demo}` },
+    contentWindow: { location: { href: adresse } },
     ecouteurs: {},
     addEventListener(type, f) { (this.ecouteurs[type] ||= []).push(f); },
     declencher(type) { for (const f of this.ecouteurs[type] || []) f(); },
@@ -252,6 +269,33 @@ test('une réponse arrivée avant le chargement empêche quand même le message'
   cadre.vue.declencher('load');
   fenetre.tic();
   assert.equal(cadre.innerHTML, '');
+});
+
+test('un « load » sur l’about:blank initial n’arme pas le compte à rebours', () => {
+  // Firefox émet un `load` sur le document vide d'un cadre, avant même que l'adresse demandée
+  // commence à charger. Armer dessus déclarerait introuvable un cadre qu'on n'a pas encore
+  // cherché — le faux diagnostic, encore.
+  const cadre = fauxCadre('bouton.html', 'variantes', 'about:blank');
+  const fenetre = fausseFenetre();
+  brancherCadres(fausseRacine([cadre]), 1000, fenetre);
+  cadre.vue.declencher('load');
+  assert.equal(fenetre.minuteurs.size, 0, 'un délai court sur le document vide du cadre');
+  fenetre.tic();
+  assert.equal(cadre.innerHTML, '');
+  // Le vrai chargement arrive ensuite, et là le délai part.
+  cadre.vue.contentWindow.location.href = 'http://localhost:8123/design-system/exemples/bouton.html#variantes';
+  cadre.vue.declencher('load');
+  assert.deepEqual(fenetre.delais(), [1000]);
+});
+
+test('une erreur de chargement arme le compte à rebours même sans adresse lisible', () => {
+  // `error` ne ment pas : le cadre a vraiment échoué. On n'y applique pas la garde d'about:blank.
+  const cadre = fauxCadre('bouton.html', 'variantes', 'about:blank');
+  const fenetre = fausseFenetre();
+  brancherCadres(fausseRacine([cadre]), 1000, fenetre);
+  cadre.vue.declencher('error');
+  fenetre.tic();
+  assert.match(cadre.innerHTML, /introuvable/i);
 });
 
 test('un cadre en erreur réseau part aussi au compte à rebours', () => {
@@ -451,6 +495,39 @@ test('installer change de démonstration quand le fragment change', () => {
   assert.equal(dernier.html, '<p>tailles</p>');
 });
 
+test('un lien dans une démonstration ne fait pas apparaître les autres', () => {
+  // Le défaut trouvé en relecture : un clic sur un `<a href="#…">` d'une démonstration vide
+  // ou change le fragment, `hashchange` part, et le cadre se remettait à tout montrer — il
+  // passait de 196 à 1004 px sous les yeux du lecteur. Les liens de démonstration sont le cas
+  // courant de ce qui reste à documenter : onglets, fil d'Ariane, lignes cliquables.
+  const fenetre = fausseFenetreExemple(['variantes', 'bloc'], '#bloc');
+  installer(fenetre);
+  assert.deepEqual(fenetre.doc.sections.map((s) => s.style.display), ['none', '']);
+
+  for (const hash of ['', '#', '#/emprunts', '#haut', '#inexistante']) {
+    fenetre.location.hash = hash;
+    fenetre.declencher('hashchange');
+    assert.deepEqual(fenetre.doc.sections.map((s) => s.style.display), ['none', ''],
+      `le fragment « ${hash} » ne désigne aucune démonstration : le cadre doit garder la sienne`);
+  }
+});
+
+test('un fragment étranger ne corrompt pas la démonstration annoncée', () => {
+  // L'annonce suit ce qui est AFFICHÉ, pas l'adresse : sinon un fragment étranger ferait
+  // repartir un message avec `demo: ''` et un `html` vide, que la Task 5 poserait dans le
+  // bloc de code de la page.
+  const fenetre = fausseFenetreExemple(['variantes', 'bloc'], '#bloc');
+  installer(fenetre);
+  fenetre.location.hash = '#/emprunts';
+  fenetre.declencher('hashchange');
+  fenetre.doc.body.getBoundingClientRect = () => ({ height: 300 });
+  fenetre.declencher('resize');
+  const dernier = fenetre.envoyes.at(-1).message;
+  assert.equal(dernier.demo, 'bloc');
+  assert.equal(dernier.hauteur, 300);
+  assert.equal(dernier.html, undefined, 'le HTML ne doit repartir que lorsque la démonstration change');
+});
+
 test('installer ne parle pas au parent quand l’exemple est ouvert tout seul', () => {
   const fenetre = fausseFenetreExemple(['variantes']);
   fenetre.parent = fenetre;
@@ -550,35 +627,82 @@ test('la page Bouton pose le chrome, un seul h1, et branche ses cadres', () => {
   assert.match(html, /brancherCadres\(/);
 });
 
-test('la page Bouton nomme le manque de focus visible, et le dit dans la bonne section', () => {
-  // `.btn` n'a aucun `:focus-visible` dans tout le dépôt. Un trou nommé est une information ;
-  // un trou masqué est un piège (spec §5).
+test('la page Bouton nomme le manque de focus, et ne promet rien d’invérifiable', () => {
+  // Le kit ne DESSINE aucun anneau pour `.btn` ; il ne le supprime pas non plus, donc celui du
+  // navigateur s'affiche. Un trou nommé est une information ; un trou mal nommé est pire qu'un
+  // trou masqué, parce que le lecteur le vérifie en trois secondes et n'y revient pas.
   const html = pageBouton();
   const debut = html.indexOf('id="accessibilite"');
   assert.ok(debut > 0);
   const section = html.slice(debut);
   assert.match(section, /focus/i);
+  assert.match(section, /navigateur/i, 'la page doit dire que l’anneau affiché est celui du navigateur');
   assert.match(section, /correctifs-figma\.md/, 'le manque doit renvoyer au registre des correctifs');
+  // Aucune invitation à constater une absence qui ne se produit pas.
+  assert.doesNotMatch(section, /rien ne bouge|rien ne s’affiche|vous ne verrez rien|aucun focus visible/i,
+    'la page affirme que rien ne s’affiche au clavier : c’est faux, l’anneau du navigateur est là');
 });
 
-test('le manque de focus est reporté dans le registre des correctifs', () => {
+test('le manque de focus est reporté dans le registre des correctifs, et bien décrit', () => {
   const registre = readFileSync(new URL('../docs/correctifs-figma.md', import.meta.url), 'utf8');
   const aFaire = registre.slice(registre.indexOf('## À faire'), registre.indexOf('## Divergences'));
-  assert.match(aFaire, /focus/i, 'le manque de focus visible n’est pas en attente dans le registre');
+  assert.match(aFaire, /focus/i, 'le manque de focus n’est pas en attente dans le registre');
   assert.match(aFaire, /\.btn/, 'le registre ne dit pas quelle classe est concernée');
+  assert.match(aFaire, /navigateur/i, 'le registre doit dire que l’anneau du navigateur reste affiché');
+  assert.doesNotMatch(aFaire, /aucun style de focus visible/i,
+    'le registre répète l’affirmation fausse : le kit ne dessine pas d’anneau, il n’en supprime pas');
 });
 
-test('aucun manque de focus n’est inventé : le dépôt n’en a vraiment pas', () => {
-  // Si quelqu'un ajoute le style de focus au kit, ce test tombe et la page doit être corrigée —
-  // la documentation ne doit pas continuer à annoncer un manque réparé.
-  const css = readFileSync(new URL('../css/components.css', import.meta.url), 'utf8');
-  for (const classe of ['btn', 'tab', 'nav-item']) {
-    assert.doesNotMatch(css, new RegExp(`\\.${classe}[\\w-]*[^{,]*:focus`),
-      `.${classe} a désormais un style de focus : la page Bouton et docs/correctifs-figma.md doivent être mis à jour`);
+test('une démonstration n’emploie pas de lien bouche-trou', () => {
+  // `href="#"` vide le fragment du cadre, et c'est aussi ce que la Task 5 recopierait dans le
+  // code montré. Les liens d'une démonstration portent une adresse de la vraie application.
+  for (const f of fichiersExemples()) {
+    assert.doesNotMatch(lireExemple(f), /href="#"/,
+      `${f} contient un href="#" : employez l’adresse que l’application écrit vraiment`);
   }
-  // Et la page dit vrai sur ce qui EST stylé : le champ de formulaire et la carte KPI cliquable.
-  assert.match(css, /\.input:focus/);
-  assert.match(css, /\.kpi--link:focus-visible/);
+});
+
+test('la largeur de téléphone est nommée une fois, et sert au cadre', () => {
+  // Deux mécanismes « étroit » et la même valeur calculée dans deux fichiers, c'était deux
+  // occasions de dériver. Un seul : le cadre, qui porte la largeur.
+  const css = readFileSync(new URL('../design-system/css/site.css', import.meta.url), 'utf8');
+  assert.match(css, /--ds-cadre-telephone:\s*\d+px/, 'la largeur de téléphone n’est pas nommée dans le :root');
+  assert.match(css, /\.ds-cadre--etroit\s*\{[^}]*var\(--ds-cadre-telephone\)/);
+  for (const f of fichiersExemples()) {
+    const style = [...lireExemple(f).matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
+    assert.doesNotMatch(style, /max-width/,
+      `${f} se donne sa propre largeur : c’est le cadre qui la porte, par cadreHtml({ etroit: true })`);
+  }
+  // Et la page s'en sert pour la démonstration qui en a besoin.
+  assert.match(pageBouton(), /demo: 'bloc'[^}]*etroit: true|etroit: true[^}]*demo: 'bloc'/);
+});
+
+test('le manque de focus est décrit tel qu’il est : non dessiné, et non supprimé', () => {
+  // La page parle du kit entier, donc le test lit TOUTES les feuilles du dépôt, pas la seule
+  // `components.css`. Deux affirmations à tenir, et elles sont différentes :
+  //
+  //   1. le dépôt ne dessine d'anneau que pour le champ de formulaire et la carte cliquable ;
+  //   2. il n'en SUPPRIME aucun — pas un `outline: none`. L'anneau du navigateur est donc là.
+  //
+  // La première version de cette page confondait les deux et invitait le lecteur à tabuler
+  // pour constater une absence qui ne se produit pas. Ce test empêche de l'écrire à nouveau.
+  const feuilles = readdirSync(new URL('../css/', import.meta.url))
+    .filter((f) => f.endsWith('.css'))
+    .map((f) => ({ nom: f, css: readFileSync(new URL(f, new URL('../css/', import.meta.url)), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '') }));
+  assert.ok(feuilles.length >= 4, `${feuilles.length} feuilles lues : le détecteur ne voit plus le dépôt`);
+
+  const dessinees = [];
+  for (const { nom, css } of feuilles) {
+    for (const regle of css.matchAll(/([^{}]*:focus[^{}]*)\{([^}]*)\}/g)) {
+      dessinees.push(regle[1].trim());
+      assert.doesNotMatch(regle[2], /outline\s*:\s*(?:none|0)\b/,
+        `${nom} supprime l’anneau de focus sur « ${regle[1].trim()} » : la page Bouton doit être réécrite, le manque n’est plus le même`);
+    }
+    assert.doesNotMatch(css, /outline\s*:\s*(?:none|0)\b/,
+      `${nom} pose un outline: none : l’anneau du navigateur disparaît, et la page Bouton ne dit plus vrai`);
+  }
+  assert.deepEqual(dessinees.sort(), ['.input:focus, .select:focus, .textarea:focus', '.kpi--link:focus-visible'],
+    'les règles de focus du dépôt ont changé : la page Bouton et docs/correctifs-figma.md doivent suivre');
 });
 
 test('la page Bouton charge les polices avant ses feuilles et reste relative', () => {

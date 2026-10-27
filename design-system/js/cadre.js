@@ -86,8 +86,10 @@ export function cadreHtml({ fichier, demo, titre, etroit = false } = {}) {
 
 // Ce qui remplace un cadre qui ne répond pas. Il nomme le fichier : c'est la seule
 // information qui permette de corriger sans chercher.
+// `role="status"` : le message remplace un cadre APRÈS le chargement de la page, donc il
+// apparaît sans que rien ne l'annonce. Une région de statut le fait lire à qui ne regarde pas.
 export function messageCadreAbsent(fichier) {
-  return `<div class="ds-message">
+  return `<div class="ds-message" role="status">
     <p class="body">Cette démonstration ne s’affiche pas&nbsp;: <code>exemples/${echapper(fichier)}</code> est introuvable, ou n’a pas répondu.</p>
     <p class="body">Le fichier devrait se trouver dans <code>design-system/exemples/</code>. Rechargez la page&nbsp;; si le message revient, le site a perdu un fichier et c’est à corriger.</p>
   </div>`;
@@ -101,6 +103,18 @@ function fichierDe(cadre, vue) {
   if (pose) return pose;
   const src = (vue.getAttribute && vue.getAttribute('src')) || '';
   return (src.match(/([\w-]+\.html)/) || [])[1] || '';
+}
+
+// Le cadre n'a-t-il encore chargé que son document vide ? Firefox émet un `load` sur
+// l'`about:blank` initial d'un `<iframe>`, avant même que l'adresse demandée commence à
+// charger : armer le compte à rebours dessus déclarerait introuvable un cadre qu'on n'a pas
+// encore cherché. Une adresse illisible n'est pas `about:blank` — c'est une vraie page.
+function estVierge(vue) {
+  try {
+    return !vue.contentWindow || vue.contentWindow.location.href === 'about:blank';
+  } catch {
+    return false;
+  }
 }
 
 // À appeler une fois les cadres posés dans la page, DANS LE MÊME SCRIPT : un cadre déjà
@@ -130,10 +144,15 @@ export function brancherCadres(racine, delaiMs = DELAI_CADRE, fenetre = window) 
       etat.minuteur = fenetre.setTimeout(() => {
         etat.minuteur = 0;
         if (etat.repondu) return;
+        // Le cadre porte déjà une bordure : il la rend au message, qui a la sienne, pour
+        // qu'un seul trait entoure un seul objet.
+        if (cadre.classList) cadre.classList.add('ds-cadre--muet');
         cadre.innerHTML = messageCadreAbsent(fichier);
       }, delaiMs);
     };
-    vue.addEventListener('load', armer);
+    // `load` sur le document vide ne compte pas (voir `estVierge`) ; `error`, si : il ne ment
+    // pas, le cadre a vraiment échoué.
+    vue.addEventListener('load', () => { if (!estVierge(vue)) armer(); });
     vue.addEventListener('error', armer);
   }
 
