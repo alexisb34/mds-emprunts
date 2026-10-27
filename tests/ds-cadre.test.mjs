@@ -723,7 +723,8 @@ test('la page Bouton n’écrit aucune valeur de couleur en dur dans sa prose', 
 });
 
 test('le bloc de code de la page montre des classes qui existent vraiment', () => {
-  // Le code montré est, pour l'instant, écrit dans la page. Il ne doit pas inventer de classe.
+  // Le code du bloc vient du cadre (`tests/ds-code.test.mjs`) ; ce que la section « Le code »
+  // écrit elle-même, ce sont les variantes de la liste. Elles ne doivent pas inventer de classe.
   const css = readFileSync(new URL('../css/components.css', import.meta.url), 'utf8');
   const html = pageBouton();
   const debut = html.indexOf('id="code"');

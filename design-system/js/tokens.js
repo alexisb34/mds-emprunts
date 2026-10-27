@@ -8,6 +8,8 @@
 // Module pur, sans DOM : il reçoit du texte ou un `document`, et rend des données ou des
 // chaînes HTML, à la manière de `chrome.js`.
 
+import { echapper } from './texte.js';
+
 // ---- Les groupes ----
 //
 // Ils suivent les sections de `css/tokens.css`. Un token va dans le premier groupe dont un
@@ -118,10 +120,6 @@ export function lireTokensDepuisDocument(doc) {
 }
 
 // ---- Montrer ----
-
-function echapper(texte) {
-  return String(texte).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 // Un texte à deux gestes de mise en forme : `…` devient du code, **…** devient du gras.
 // Sert aux messages, écrits en texte simple dans ce module et montrés tels quels.

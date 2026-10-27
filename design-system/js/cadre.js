@@ -31,9 +31,17 @@
 // 5. Si rien n'arrive dans `delaiMs` après le CHARGEMENT du cadre, le cadre est remplacé par
 //    `messageCadreAbsent(fichier)`. Un cadre blanc de zéro pixel ne se voit pas ; un fichier
 //    d'exemple perdu, oui.
+// 6. Le code : la page pose `codeHtml({fichier, demo, titre})` (`code.js`) à l'endroit où elle
+//    veut montrer le code d'une démonstration. `brancherCadres` remet à ce bloc le `html` de
+//    la première annonce du cadre qui montre la même démonstration — réindenté, avec un bouton
+//    « Copier ». Le cadre ne l'envoie qu'une fois : c'est le bloc de la page qui le garde, et
+//    la page n'a donc rien à mémoriser d'autre.
 //
 // Ce module rend des chaînes HTML, comme `chrome.js` et `tokens.js`. Seule `brancherCadres`
 // touche au document, et elle le reçoit en argument.
+
+import { estNom, echapper, FICHIER_VALIDE, DEMO_VALIDE } from './texte.js';
+import { poserCode, brancherCode, signalerCodeAbsent } from './code.js';
 
 // La signature des messages du cadre. `cadre-enfant.js` en a sa propre copie — deux fichiers,
 // une convention — et un test vérifie que les deux disent la même chose.
@@ -44,22 +52,6 @@ export const DELAI_CADRE = 1000;
 
 // Les exemples vivent à côté des pages de composants, dans le dossier frère.
 const DOSSIER_EXEMPLES = '../exemples/';
-
-// Le jumeau de `echapper` de `tokens.js`. Deux copies d'une ligne, plutôt qu'un module de
-// plus ; au troisième emploi, il faudra un `js/texte.js`.
-function echapper(texte) {
-  return String(texte).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// Un nom de fichier d'exemple, et un nom de démonstration : les deux formes que les tests
-// savent lire dans une page. Les tenir ici évite qu'une page invente une adresse qu'aucun
-// test ne pourrait suivre.
-const FICHIER_VALIDE = /^[\w-]+\.html$/;
-const DEMO_VALIDE = /^[\w-]+$/;
-
-// On exige une chaîne, et pas seulement une valeur qui ressemble à une chaîne : `String(undefined)`
-// vaut « undefined », qui passe le motif et produirait un cadre pointant vers `#undefined`.
-const estNom = (valeur, motif) => typeof valeur === 'string' && motif.test(valeur);
 
 // `fichier` : le nom du fichier dans `design-system/exemples/`, sans chemin.
 // `demo` : la valeur du `data-demo` de la section à montrer, dans ce fichier.
@@ -131,7 +123,8 @@ export function brancherCadres(racine, delaiMs = DELAI_CADRE, fenetre = window) 
     const vue = cadre.querySelector('.ds-cadre__vue');
     if (!vue) continue;
     const fichier = fichierDe(cadre, vue);
-    const etat = { cadre, vue, repondu: false, minuteur: 0 };
+    // `blocs` : les blocs de code de la page qui montrent le code de CETTE démonstration.
+    const etat = { cadre, vue, fichier, demo: cadre.dataset && cadre.dataset.demo, repondu: false, minuteur: 0, blocs: [] };
     etats.push(etat);
 
     // Le compte à rebours part au CHARGEMENT du cadre, pas au branchement : avec
@@ -148,12 +141,27 @@ export function brancherCadres(racine, delaiMs = DELAI_CADRE, fenetre = window) 
         // qu'un seul trait entoure un seul objet.
         if (cadre.classList) cadre.classList.add('ds-cadre--muet');
         cadre.innerHTML = messageCadreAbsent(fichier);
+        // Le code de cette démonstration ne viendra pas non plus : le bloc le dit.
+        for (const bloc of etat.blocs) signalerCodeAbsent(bloc, 'muet');
       }, delaiMs);
     };
     // `load` sur le document vide ne compte pas (voir `estVierge`) ; `error`, si : il ne ment
     // pas, le cadre a vraiment échoué.
     vue.addEventListener('load', () => { if (!estVierge(vue)) armer(); });
     vue.addEventListener('error', armer);
+  }
+
+  // Les blocs de code : chacun s'adosse au cadre qui montre la même démonstration du même
+  // fichier. Un bloc que rien n'alimente le dit tout de suite, il ne reste pas à attendre.
+  for (const bloc of [...racine.querySelectorAll('.ds-code-bloc')]) {
+    brancherCode(bloc, fenetre);
+    const etat = etats.find((e) => e.fichier === bloc.dataset.fichier && e.demo === bloc.dataset.demo);
+    if (!etat) { signalerCodeAbsent(bloc, 'sans-cadre'); continue; }
+    etat.blocs.push(bloc);
+    // `loading="lazy"` ne charge un cadre que s'il approche de l'écran. Le code, lui, peut être
+    // ailleurs — on y saute depuis le sommaire — et resterait vide tant qu'on n'a pas fait
+    // défiler jusqu'au cadre. Un cadre dont le code est montré se charge donc d'emblée.
+    if (typeof etat.vue.setAttribute === 'function') etat.vue.setAttribute('loading', 'eager');
   }
 
   if (!etats.length) return;
@@ -174,6 +182,14 @@ export function brancherCadres(racine, delaiMs = DELAI_CADRE, fenetre = window) 
     // barre de défilement dans le cadre.
     if (typeof donnees.hauteur === 'number' && Number.isFinite(donnees.hauteur) && donnees.hauteur > 0) {
       etat.vue.style.height = `${Math.ceil(donnees.hauteur)}px`;
+    }
+
+    // Le HTML n'accompagne que la première annonce d'une démonstration, et c'est ici qu'on le
+    // pose : il n'est pas renvoyé. Seule compte la démonstration que CE cadre doit montrer —
+    // un lien dans l'exemple peut faire passer le cadre à une autre section du même fichier,
+    // dont le code n'est pas celui que ces blocs montrent.
+    if (typeof donnees.html === 'string' && donnees.demo === etat.demo) {
+      for (const bloc of etat.blocs) poserCode(bloc, donnees.html);
     }
   });
 }

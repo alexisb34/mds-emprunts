@@ -35,7 +35,7 @@
 
       <section id="exemple" class="ds-groupe">
         <h2 class="h5">L’exemple</h2>
-        <p class="body ds-mesure">Le cadre ci-dessous est une page à part, qui charge <code>css/components.css</code> comme le fait l’application. Ce sont donc les vrais boutons&nbsp;: survolez-les, tabulez dedans. Ils ne font rien d’autre — ce sont des démonstrations, pas l’application.</p>
+        <p class="body ds-mesure">Le cadre ci-dessous est une page à part, qui charge <code>css/components.css</code> comme le fait l’application. Ce sont donc les vrais boutons&nbsp;: survolez-les à la souris. Ils ne font rien d’autre — ce sont des démonstrations, pas l’application. Au clavier, le focus se voit aussi&nbsp;; <a href="#accessibilite">Accessibilité</a> dit comment l’atteindre.</p>
         <div id="cadre-variantes"></div>
       </section>
 
@@ -56,7 +56,7 @@
         <p class="body ds-mesure"><code>btn--icon</code> existe dans la feuille, mais aucun écran de l’outil ne l’emploie aujourd’hui&nbsp;: les boutons à flèche seule passent par <code>btn--ghost btn--sm</code> et un <code>aria-label</code>. La variante est documentée parce qu’elle existe, pas parce qu’elle est éprouvée.</p>
 
         <h3 class="h6">Les états</h3>
-        <p class="body ds-mesure">Le repos et l’état désactivé se voient ci-dessous, variante par variante. Le survol, l’appui et le focus ne se figent pas dans du HTML&nbsp;: le cadre est vivant, passez la souris dessus et tabulez dedans pour les voir.</p>
+        <p class="body ds-mesure">Le repos et l’état désactivé se voient ci-dessous, variante par variante. Le survol, l’appui et le focus ne se figent pas dans du HTML&nbsp;: le cadre est vivant, passez la souris dessus pour le survol et l’appui. Le focus se voit au clavier&nbsp;; <a href="#accessibilite">Accessibilité</a> dit comment l’atteindre.</p>
         <div id="cadre-etats"></div>
         <p class="body ds-mesure">Un bouton désactivé passe à moitié transparent et refuse le curseur. L’attribut <code>disabled</code> le sort de l’ordre de tabulation mais le laisse dans la page&nbsp;: une personne qui explore l’écran au lecteur d’écran le trouve et l’entend annoncé comme indisponible. Un bouton caché, lui, aurait simplement disparu, sans dire qu’une action existe et qu’elle n’est pas permise ici.</p>
 
@@ -74,13 +74,8 @@
 
       <section id="code" class="ds-groupe">
         <h2 class="h5">Le code</h2>
-        <p class="body ds-mesure">Un bouton est du HTML&nbsp;: il se copie. <code>class="btn"</code> toujours, suivi d’une variante, puis éventuellement d’une taille.</p>
-        <pre class="ds-code body-sm"><code>&lt;div class="row row--wrap"&gt;
-  &lt;button type="button" class="btn btn--primary"&gt;Valider l’emprunt&lt;/button&gt;
-  &lt;button type="button" class="btn btn--secondary"&gt;Imprimer l’étiquette&lt;/button&gt;
-  &lt;button type="button" class="btn btn--ghost"&gt;Annuler&lt;/button&gt;
-  &lt;button type="button" class="btn btn--danger"&gt;Désactiver le compte&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+        <p class="body ds-mesure">Un bouton est du HTML&nbsp;: il se copie. <code>class="btn"</code> toujours, suivi d’une variante, puis éventuellement d’une taille. Le code ci-dessous n’est écrit nulle part&nbsp;: il est lu dans le cadre de l’exemple, c’est donc exactement ce qu’il affiche.</p>
+        <div id="code-variantes"></div>
         <ul class="ds-liste body">
           <li><code>type="button"</code> n’est pas décoratif. Sans lui, un <code>&lt;button&gt;</code> dans un formulaire vaut <code>type="submit"</code> et envoie le formulaire au premier clic.</li>
           <li>Pour une action qui navigue, la même apparence sur un lien&nbsp;: <code>&lt;a class="btn btn--secondary" href="…"&gt;</code>.</li>
@@ -106,7 +101,7 @@
         <h2 class="h5">Accessibilité</h2>
 
         <h3 class="h6">Le manque&nbsp;: un anneau de focus que personne n’a choisi</h3>
-        <p class="body ds-mesure">Tabulez dans un des cadres de cette page&nbsp;: un anneau apparaît autour du bouton. Il est là, et c’est important de le dire — <strong>le kit ne supprime jamais l’anneau de focus</strong>, aucune feuille du dépôt ne pose <code>outline: none</code>. Le piège classique est évité.</p>
+        <p class="body ds-mesure">Au clavier, un anneau apparaît autour du bouton qui a le focus. Pour le voir dans un cadre de cette page, appuyez sur Tab jusqu’à y entrer. <strong>Safari saute les boutons avec Tab par défaut</strong>&nbsp;: utilisez Option+Tab, ou cochez «&nbsp;Appuyer sur Tab met en surbrillance chaque élément de la page&nbsp;» dans les réglages avancés de Safari. L’anneau est là, et c’est important de le dire — <strong>le kit ne supprime jamais l’anneau de focus</strong>, aucune feuille du dépôt ne pose <code>outline: none</code>. Le piège classique est évité.</p>
         <p class="body ds-mesure"><strong>Mais cet anneau est celui du navigateur, pas celui du kit.</strong> <code>.btn</code> n’a aucune règle <code>:focus-visible</code>, donc sa couleur, son épaisseur et sa forme changent d’un navigateur à l’autre, et personne n’a vérifié qu’il se voit sur le violet de <code>btn--primary</code> ni sur le rouge de <code>btn--danger</code>. Un anneau dont on ne connaît pas le contraste sur les fonds qu’on dessine est un anneau dont on ne sait pas s’il se voit.</p>
         <p class="body ds-mesure">Le kit entier est dans ce cas&nbsp;: ni bouton, ni onglet, ni élément de navigation ne dessine le sien. Deux règles seulement le font — <code>.input:focus</code> et <code>.kpi--link:focus-visible</code> — et c’est de la seconde qu’il faudrait partir pour corriger. Le manque est en attente dans <code>docs/correctifs-figma.md</code>, où la décision se prend dans Figma et le code suit.</p>
         <p class="body ds-mesure">Ce site, lui, dessine le sien&nbsp;: un contour violet de 2 px, avec 2 px de retrait, sur tout ce qu’on atteint au clavier. Un guide qui recommande l’accessibilité commence par se l’appliquer.</p>
@@ -139,6 +134,7 @@
   <script type="module">
     import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
     import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
     import { lireTokensDepuisDocument } from '../js/tokens.js';
     import { ratio, ratioExact, verdict } from '../js/contraste.js';
 
@@ -155,6 +151,10 @@
     document.getElementById('cadre-tailles').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'tailles', titre: 'Les deux hauteurs de bouton, et le bouton qui ne porte qu’une icône' });
     document.getElementById('cadre-etats').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'etats', titre: 'Chaque variante de bouton au repos, puis désactivée' });
     document.getElementById('cadre-bloc').outerHTML = cadreHtml({ fichier: 'bouton.html', demo: 'bloc', titre: 'Des boutons pleine largeur, à la largeur d’un téléphone', etroit: true });
+    // Le code montré n’est pas écrit ici : le bloc est adossé à la démonstration `variantes`, et
+    // `brancherCadres` y pose le HTML que ce cadre rend. Il faut donc un cadre sur la même
+    // démonstration (juste au-dessus), et poser le bloc AVANT de brancher.
+    document.getElementById('code-variantes').outerHTML = codeHtml({ fichier: 'bouton.html', demo: 'variantes', titre: 'Les quatre variantes de bouton' });
     brancherCadres(document.getElementById('contenu'));
 
     // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais

@@ -48,6 +48,7 @@
   <script type="module">
     import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
     import { lireTokensDepuisDocument, tableauTokensHtml, sommaireGroupesHtml, messageHtml } from '../js/tokens.js';
+    import { copier, raccourciCopie } from '../js/code.js';
 
     // L’adresse de cette page est toujours relative à design-system/ : le chrome en déduit les `../`.
     document.getElementById('entete').outerHTML = enteteHtml('composants/fondations.html');
@@ -66,24 +67,28 @@
       cible.innerHTML = `<div class="ds-message"><p class="body">${messageHtml(lecture.message)}</p></div>`;
     }
 
-    // Le bouton « Copier ». Si le presse-papiers est refusé (origine non sécurisée), on le dit
-    // et on sélectionne le nom du token : la personne finit le travail avec Ctrl+C.
-    // À remplacer par `copier` de `js/code.js` quand la Task 5 l’aura écrit.
+    // Le bouton « Copier » de chaque token. `copier` écrit dans le presse-papiers, ou, quand le
+    // navigateur le refuse (origine non sécurisée, permission), sélectionne le nom du token : la
+    // personne finit le geste avec le raccourci de son système, et le bouton le lui dit.
     cible.addEventListener('click', async (evenement) => {
       const bouton = evenement.target.closest('.ds-copier');
       if (!bouton) return;
       const ligne = bouton.closest('.ds-jeton');
       ligne.querySelector('[role="status"]')?.remove();
+      let resultat;
       try {
-        await navigator.clipboard.writeText(bouton.dataset.copie);
-        bouton.textContent = 'Copié';
+        resultat = await copier(bouton.dataset.copie, ligne.querySelector('.ds-jeton__nom'));
       } catch {
-        getSelection().selectAllChildren(ligne.querySelector('.ds-jeton__nom'));
-        bouton.textContent = 'Sélectionné';
+        resultat = 'echec';
+      }
+      bouton.textContent = { 'presse-papiers': 'Copié', selection: 'Sélectionné' }[resultat] || 'Copie impossible';
+      if (resultat !== 'presse-papiers') {
         const aide = document.createElement('p');
         aide.className = 'body-sm ds-mention';
         aide.setAttribute('role', 'status');
-        aide.textContent = 'Le navigateur refuse la copie ici. Le nom est sélectionné : faites Ctrl+C (Cmd+C sur Mac), puis écrivez-le dans var( ).';
+        aide.textContent = resultat === 'selection'
+          ? `Le navigateur refuse la copie ici. Le nom est sélectionné : faites ${raccourciCopie()}, puis écrivez-le dans var( ).`
+          : 'La copie a échoué. Recopiez le nom à la main, dans var( ).';
         ligne.querySelector('.ds-jeton__id').append(aide);
       }
       setTimeout(() => { bouton.textContent = 'Copier'; }, 2000);

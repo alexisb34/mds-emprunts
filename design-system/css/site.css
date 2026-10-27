@@ -544,6 +544,21 @@ summary:focus-visible,
   overflow-x: auto;
 }
 
+/* Le bloc que `codeHtml` pose (`design-system/js/code.js`) : le code, puis sa barre. */
+.ds-code-bloc { display: grid; gap: var(--space-sm); min-width: 0; }
+.ds-code-bloc__barre { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-md); }
+/* Le bouton change de libellé après le clic, et le plus long (« Copie impossible, sélectionnez
+   le code à la main ») ne tient pas sur une ligne à 360 px : il grandit plutôt que de déborder. */
+.ds-code-bloc .ds-copier {
+  height: auto;
+  min-height: var(--size-control-sm);
+  padding-block: var(--space-xs);
+  text-align: center;
+}
+/* Tant qu'il n'y a rien à copier, le bouton le montre : texte secondaire sur blanc, 4,55:1. */
+.ds-copier:disabled { color: var(--ds-texte-secondaire); cursor: default; }
+.ds-copier:disabled:hover { background: var(--ds-fond); }
+
 /* ---- Pied ---- */
 
 .ds-pied {
