@@ -14,7 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  COULEURS, RATIO, TAILLES_PNG, DESSIN, ZONE, TAILLE_MINI, SEUILS, VERSIONS, FONDS, INTERDITS,
+  COULEURS, RATIO, TAILLES_PNG, DESSIN, ZONE, TAILLE_MINI, CAPITALE_INTER, SEUILS, VERSIONS, FONDS, INTERDITS,
   versionMono, remplacerCouleurs, tailleExport, zoneProtection, largeurMaxDansRond, melange, mesureFond,
   versionsAdmises, preparerSources, fabriquerPng, brancherExports, pageHtml, fmtRatio,
 } from '../design-system/js/logo.js';
@@ -160,16 +160,27 @@ test('ZONE est la hauteur d’une lettre de SCHOOL rapportée à la largeur du l
   assert.ok(Math.abs(ZONE - attendu) < 0.002, `ZONE vaut ${ZONE}, une lettre de SCHOOL vaut ${attendu}`);
 });
 
-test('TAILLE_MINI laisse aux petites lettres de MY et de DIGITAL une hauteur lisible', () => {
+test('TAILLE_MINI laisse aux capitales de MY et de DIGITAL plus de hauteur que le plus petit texte de lecture', () => {
   // Les petites lettres : tout ce qui est entre les deux hémisphères et dans la première ligne.
   const petites = traces().filter((p) => p.y0 < 40 && p.x0 > 30 && p.x1 < 120);
   assert.equal(petites.length, 11, 'MY, DIGITAL et les points des i');
   const hauteur = Math.max(...petites.map((p) => p.y1 - p.y0));
   const enPx = (hauteur / DESSIN.largeur) * TAILLE_MINI.ecranPx;
-  // 11 px est la taille de `.body-tiny`, le plus petit texte de lecture du kit.
-  assert.match(lire('css/base.css'), /\.body-tiny\s*\{\s*font-size:\s*11px/);
-  assert.ok(enPx >= 11, `à ${TAILLE_MINI.ecranPx} px de large, les petites lettres font ${enPx.toFixed(1)} px`);
+  // `.body-tiny` est un CORPS de 11 px, pas une hauteur de lettre : sa capitale est plus basse.
+  // On compare donc une capitale à une capitale.
+  const corps = Number(lire('css/base.css').match(/\.body-tiny\s*\{\s*font-size:\s*(\d+)px/)[1]);
+  assert.equal(corps, 11);
+  const capitaleTiny = corps * CAPITALE_INTER;
+  assert.ok(enPx > capitaleTiny, `à ${TAILLE_MINI.ecranPx} px, les capitales du logo font ${enPx.toFixed(1)} px, une capitale de .body-tiny ${capitaleTiny.toFixed(1)} px`);
+  // Le seuil choisi : une capitale de 11 px au moins, soit près d'une fois et demie celle de .body-tiny.
+  assert.ok(enPx >= 11, `${TAILLE_MINI.ecranPx} px ne donne que ${enPx.toFixed(1)} px de haut aux capitales`);
+  // Et 80 px reste le nombre rond qui le donne : pas plus large que nécessaire.
   assert.ok(enPx < 12, `${TAILLE_MINI.ecranPx} px est plus large que nécessaire : ${enPx.toFixed(1)} px de haut`);
+  // 3,6 mm de capitale, c'est un corps d'environ 14 pt (1 pt = 0,3528 mm), pas 10.
+  const enMm = (hauteur / DESSIN.largeur) * TAILLE_MINI.impressionMm;
+  const corpsPt = enMm / 0.3528 / CAPITALE_INTER;
+  assert.ok(corpsPt > 13 && corpsPt < 15, `${enMm.toFixed(2)} mm de capitale font un corps de ${corpsPt.toFixed(1)} pt`);
+  assert.doesNotMatch(readFileSync(new URL('../design-system/js/logo.js', import.meta.url), 'utf8'), /corps d'environ 10 pt/);
 });
 
 test('zoneProtection est proportionnelle à la largeur du logo', () => {
@@ -479,7 +490,10 @@ test('les tailles minimales sont celles de TAILLE_MINI, avec ce qu’elles laiss
   assert.match(t, new RegExp(`${TAILLE_MINI.ecranPx} px de large`));
   assert.match(t, new RegExp(`${TAILLE_MINI.impressionMm} mm`));
   const petites = (21.4 / DESSIN.largeur);
-  assert.match(t, new RegExp(`${Math.round(petites * TAILLE_MINI.ecranPx)} px de haut`));
+  assert.match(t, new RegExp(`capitales de MY et de DIGITAL font ${Math.round(petites * TAILLE_MINI.ecranPx)} px de haut`));
+  // La comparaison de la page est une capitale contre une capitale : environ 8 px, pas 11.
+  assert.match(t, new RegExp(`corps de 11 px et ne fait qu’environ ${Math.round(11 * CAPITALE_INTER)} px de haut`));
+  assert.doesNotMatch(t, /C’est la taille de \.body-tiny/);
   // La démonstration est posée à la largeur annoncée : une image à 80 px, pas à 79.
   assert.match(section, new RegExp(`width:\\s*${TAILLE_MINI.ecranPx}px`));
   assert.match(section, new RegExp(`width:\\s*${TAILLE_MINI.impressionMm}mm`));
@@ -625,6 +639,42 @@ test('les interdits sont référencés par leur numéro quand un fond les cite',
   // La photo chargée est refusée dans les fonds et renvoie à l'interdit qui l'explique.
   assert.match(PAGE, /href="#interdit-photo"/);
   assert.ok(interdit('photo'), 'la cible du renvoi existe');
+});
+
+test('l’index des interdits : neuf liens, dans l’ordre, en tête de la section, chacun vers un interdit qui existe', () => {
+  const section = blocs(PAGE, /<section\b[^>]*id="interdits"/g)[0];
+  const nav = blocs(section, /<nav\b/g)[0];
+  assert.ok(nav, 'un <nav> dans la section des interdits');
+  assert.match(nav, /aria-label="Les neuf interdits"/);
+  const liens = [...nav.matchAll(/<a [^>]*href="#([^"]+)"[^>]*>([^<]*)<\/a>/g)];
+  assert.equal(liens.length, 9);
+  assert.deepEqual(liens.map((m) => m[1]), IDS.map((id) => `interdit-${id}`));
+  INTERDITS.forEach((i, n) => {
+    assert.equal(texte(liens[n][2]), `${n + 1}. ${i.titre}`, `le libellé du lien ${n + 1}`);
+    assert.ok(PAGE.includes(`id="interdit-${i.id}"`), `la cible de ${i.id}`);
+  });
+  // En tête : avant le premier interdit, rien d'autre que des liens dans l'index.
+  assert.ok(section.indexOf('<nav') < section.indexOf('<article'), 'l’index précède les interdits');
+  assert.equal(texte(nav.replace(/<a [^>]*>[^<]*<\/a>/g, '')), '', 'l’index ne contient que ses neuf liens');
+  // Les liens ne se cachent pas sous l'en-tête collant.
+  const css = lire('design-system/css/site.css');
+  assert.match(css, /\.lg-interdit\s*\{[^}]*scroll-margin-top/);
+});
+
+test('la raison de « recolorer » lève la tension avec les versions d’une seule couleur', () => {
+  const raison = texte(INTERDITS.find((i) => i.id === 'recolorer').raison);
+  assert.match(raison, /replis neutres/);
+  assert.match(raison, /aucune autre couleur à la place du turquoise/);
+});
+
+test('la démonstration d’étirement déforme franchement : au moins 1,5 fois', () => {
+  // Rapport de la boîte `aspect-ratio: n / d` rapporté à celui du fichier (150 / 88) : 1 si le
+  // logo est intact. L'œil doit voir le défaut sans lire la légende.
+  const style = cas(interdit('etirer'), 'faux').match(/aspect-ratio:\s*(\d+)\s*\/\s*(\d+)/);
+  assert.ok(style, 'la démonstration fautive fixe une aspect-ratio');
+  const deformation = (Number(style[1]) / Number(style[2])) / RATIO;
+  assert.ok(deformation >= 1.5, `déformation de ×${deformation.toFixed(2)}`);
+  assert.ok(!/aspect-ratio/.test(cas(interdit('etirer'), 'juste').replace(/class="lg-logo"/, '')), 'la bonne garde ses proportions');
 });
 
 // ---- La page logo.html ----

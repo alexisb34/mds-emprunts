@@ -671,7 +671,8 @@ summary:focus-visible,
 /* Les interdits : une liste de neuf cartes qui se tiennent à la même hauteur. */
 .lg-interdits { list-style: none; margin: 0; padding: 0; align-items: stretch; }
 .lg-interdits > li { display: grid; min-width: 0; }
-.lg-interdit { gap: var(--space-lg); }
+/* Un lien de l'index ne doit pas finir sous l'en-tête collant. */
+.lg-interdit { gap: var(--space-lg); scroll-margin-top: calc(var(--size-topbar) + var(--space-lg)); }
 .lg-interdit h3 { display: flex; gap: var(--space-md); align-items: center; }
 .lg-num {
   flex: none;

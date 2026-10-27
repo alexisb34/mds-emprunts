@@ -49,8 +49,19 @@ export const ZONE = 0.19;
 // qui limitent la taille minimale.
 const PETITES_LETTRES = 21.4;
 
-// 80 px de large donnent aux petites lettres 11 px de haut, la taille de `.body-tiny`, le plus
-// petit texte de lecture du kit. 25 mm donnent 3,6 mm, un corps d'environ 10 pt.
+// Le corps de `.body-tiny` dans `css/base.css` : un test vérifie que c'est bien lui.
+const CORPS_TINY = 11;
+
+// Les petites lettres du logo (MY, DIGITAL) sont des CAPITALES de 21,4 sur 150 de large : 80 px de
+// large leur donnent 11 px de haut, 25 mm leur donnent 3,6 mm. Ce n'est pas la taille de
+// `.body-tiny` : ce style est un CORPS de 11 px, dont la capitale ne fait qu'environ 8 px
+// (`CAPITALE_INTER` de son corps). Le logo reste donc plus grand que le plus petit texte de
+// lecture du kit : on compare une capitale à une capitale, pas un corps à une hauteur de lettre.
+// Pour l'impression, 3,6 mm de capitale correspondent à un corps d'environ 14 pt, pas 10.
+// La hauteur de capitale d'Inter, en part de son corps (1490 sur 2048 dans la police ; mesurée à
+// 0,7275 dans un navigateur).
+export const CAPITALE_INTER = 0.7275;
+
 export const TAILLE_MINI = { ecranPx: 80, impressionMm: 25 };
 
 // Les seuils de contraste. Le logo officiel est publié sur blanc, où son turquoise fait 2,39:1 :
@@ -312,14 +323,14 @@ export const INTERDITS = [
     titre: 'Ne l’étirez pas',
     raison: 'Les lettres du logo sont dessinées hautes et étroites. Étirées ou écrasées, elles deviennent un autre alphabet, et les deux hémisphères cessent d’être ronds. Pour changer sa taille, fixez la largeur et laissez la hauteur se calculer : <code>height: auto</code>.',
     demo: (s) => ({
-      faux: cas('faux', scene({ fondId: 'blanc', version: 'couleur', src: s.couleur, nom: 'Le logo étiré en largeur : plus large qu’il ne devrait l’être', l: '92cqw', logo: 'aspect-ratio:230 / 100;object-fit:fill;' }), 'étiré en largeur', ''),
+      faux: cas('faux', scene({ fondId: 'blanc', version: 'couleur', src: s.couleur, nom: 'Le logo déformé : étiré en largeur et aplati en hauteur', l: '96cqw', logo: 'aspect-ratio:309 / 100;object-fit:fill;' }), 'déformé, plus large et plus plat', ''),
       juste: cas('juste', scene({ fondId: 'blanc', version: 'couleur', src: s.couleur, nom: 'Le logo avec ses proportions d’origine' }), 'proportions gardées', ''),
     }),
   },
   {
     id: 'recolorer',
     titre: 'Ne le recolorez pas',
-    raison: 'Dans le logo, le turquoise est la seule couleur qui ne soit pas un gris sombre : c’est elle qu’on reconnaît. Une autre teinte, même le violet de nos outils, et c’est le logo d’une autre école. Quand la couleur est impossible, il existe deux versions d’une seule couleur : le blanc et l’anthracite.',
+    raison: 'Dans le logo, le turquoise est la seule couleur qui ne soit pas un gris sombre : c’est elle qu’on reconnaît. Une autre teinte, même le violet de nos outils, et c’est le logo d’une autre école. Quand la couleur est impossible, il existe deux versions d’une seule couleur, le blanc et l’anthracite : ce sont des replis neutres, qui ne mettent aucune autre couleur à la place du turquoise.',
     demo: (s) => ({
       faux: cas('faux', scene({ fondId: 'blanc', version: 'violet', src: s.violet, nom: 'Le logo entièrement en violet' }), 'repeint en violet', ''),
       juste: cas('juste', scene({ fondId: 'blanc', version: 'couleur', src: s.couleur, nom: 'Le logo dans ses couleurs d’origine' }), 'turquoise et anthracite', ''),
@@ -521,6 +532,7 @@ function zoneHtml(s) {
 
 function taillesHtml(s) {
   const px = Math.round((PETITES_LETTRES / DESSIN.largeur) * TAILLE_MINI.ecranPx);
+  const capTiny = Math.round(CORPS_TINY * CAPITALE_INTER);
   const mm = ((PETITES_LETTRES / DESSIN.largeur) * TAILLE_MINI.impressionMm).toFixed(1).replace('.', ',');
   const montre = (largeurCss, nom) => scene({
     fondId: 'blanc',
@@ -546,7 +558,7 @@ function taillesHtml(s) {
         <figcaption class="lg-cas__legende body-sm"><span class="lg-cas__marque" aria-hidden="true">✓</span><span><strong>Impression</strong>&nbsp;: ${TAILLE_MINI.impressionMm}&nbsp;mm de large</span></figcaption>
       </figure>
     </div>
-    <p class="body ds-mesure lg-lecture">À ${TAILLE_MINI.ecranPx}&nbsp;px de large, les petites lettres de MY et de DIGITAL font ${px}&nbsp;px de haut, ${mm}&nbsp;mm à l’impression. C’est la taille de <code>.body-tiny</code>, le plus petit texte de lecture de nos interfaces&nbsp;: le logo ne descend pas sous le plus petit texte qui l’accompagne.</p>
+    <p class="body ds-mesure lg-lecture">À ${TAILLE_MINI.ecranPx}&nbsp;px de large, les capitales de MY et de DIGITAL font ${px}&nbsp;px de haut, ${mm}&nbsp;mm à l’impression. Une capitale de <code>.body-tiny</code>, le plus petit texte de lecture de nos interfaces, a un corps de ${CORPS_TINY}&nbsp;px et ne fait qu’environ ${capTiny}&nbsp;px de haut&nbsp;: le logo reste plus grand que lui.</p>
   </div>
 </section>`;
 }
@@ -611,6 +623,11 @@ function interditsHtml(s) {
       <h2 class="ds-titre">Neuf interdits</h2>
       <p class="ds-chapeau">Chacun est montré, avec ce qu’il faut faire à la place. Retenez la raison&nbsp;: c’est elle qui dit quoi faire dans les cas que cette page n’a pas prévus.</p>
     </div>
+    <nav aria-label="Les neuf interdits">
+      <ul class="ds-groupes__liste">
+      ${INTERDITS.map((i, n) => `<li><a class="ds-groupes__lien body-sm" href="#interdit-${i.id}">${n + 1}.&nbsp;${i.titre}</a></li>`).join('\n      ')}
+      </ul>
+    </nav>
     <ol class="lg-interdits ds-grille ds-grille--3">
   ${INTERDITS.map((i, n) => interditHtml(i, n + 1, s)).join('\n  ')}
     </ol>
