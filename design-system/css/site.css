@@ -716,6 +716,133 @@ summary:focus-visible,
 /* « Enfermer » : le logo, au contact du bord d'un rond. */
 .lg-forme { flex: none; width: var(--d); aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; }
 
+/* ---- Le chapitre Couleurs et la dette de contraste ----
+   `design-system/js/couleurs.js` rend la page, `dette.js` rend les tableaux ; ces règles les
+   mettent en forme. Deux préfixes : `cl-` pour la page (la tension marque / produit, la palette,
+   les noms), `dt-` pour la dette (le tableau, ses échantillons, sa version repliée).
+
+   Aucune couleur du kit n'est utilisée ici pour poser du texte sur un fond : les fonds du kit
+   n'apparaissent que dans les pastilles (sans texte) et dans les échantillons de la dette. Les
+   échantillons posent leur paire en ligne parce que la paire EST la donnée : ce sont les seuls
+   textes du site qui échouent, ils sont cachés aux lecteurs d'écran (la ligne dit déjà la paire),
+   et un test vérifie qu'aucun fond n'est posé en ligne hors des pastilles (sans texte) et des
+   échantillons. Le texte du site, lui, reste dans les paires de `palette-site.js`.
+
+   Le rouge et le vert des bords de ligne ne portent jamais de texte : le verdict est dit en mots,
+   avec un signe, et le bord ne fait que le répéter. */
+
+.cl-ch[id],
+.dt-bloc { scroll-margin-top: calc(var(--size-topbar) + var(--space-lg)); }
+.cl-ch code,
+.dt-table code { font-family: var(--ds-mono); overflow-wrap: anywhere; }
+
+/* Marque et produit. */
+.cl-carte {
+  display: grid;
+  gap: var(--space-md);
+  align-content: start;
+  padding: var(--space-2xl);
+  border-radius: var(--radius-xl);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  background: var(--ds-fond);
+  min-width: 0;
+}
+.cl-aplats { display: flex; gap: var(--space-sm); }
+.cl-aplat {
+  flex: 1;
+  height: calc(var(--size-control-md) * 2);
+  border-radius: var(--radius-lg);
+  border: var(--stroke-thin) solid var(--ds-filet);
+}
+.cl-figure { margin: 0; display: grid; gap: var(--space-md); }
+.cl-ensemble {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xl);
+  padding: var(--space-3xl);
+  border-radius: var(--radius-xl);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  background: var(--ds-fond);
+}
+.cl-ensemble__filet { align-self: stretch; border-left: var(--stroke-thin) solid var(--ds-filet); }
+
+/* La palette : une couleur, son nom hexadécimal, les tokens qui la portent. */
+.cl-famille { display: grid; gap: var(--space-lg); }
+.cl-teintes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); }
+.cl-teinte {
+  display: flex;
+  gap: var(--space-lg);
+  align-items: flex-start;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  background: var(--ds-fond);
+  min-width: 0;
+}
+.cl-pastille { width: calc(var(--size-control-md) + var(--space-lg)); height: calc(var(--size-control-md) + var(--space-lg)); }
+.cl-teinte__corps { display: grid; gap: var(--space-sm); min-width: 0; }
+.cl-jetons,
+.cl-lecture { display: grid; gap: var(--space-xxs); }
+
+/* Les noms qu'on utilise : deux colonnes de rôles. */
+.cl-groupe { display: grid; gap: var(--space-md); }
+.cl-noms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-3xl); }
+.cl-nom {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+  padding: var(--space-md) 0;
+  border-top: var(--stroke-thin) solid var(--ds-filet);
+  min-width: 0;
+}
+.cl-nom > div { display: grid; gap: var(--space-xs); min-width: 0; }
+.cl-mini { width: var(--size-control-sm); height: var(--size-control-sm); }
+
+/* La dette. */
+.dt-decision { border-left: var(--space-xs) solid var(--ds-violet); }
+.dt-bloc { display: grid; gap: var(--space-lg); min-width: 0; }
+/* Garde-fou : si la page est plus étroite que le tableau, c'est le tableau qui défile. */
+.dt-defilement { overflow-x: auto; }
+.dt-table { width: 100%; border-collapse: collapse; }
+.dt-table th,
+.dt-table td {
+  padding: var(--space-md) var(--space-lg) var(--space-md) 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: var(--stroke-thin) solid var(--ds-filet);
+}
+.dt-entete th { font-size: 14px; line-height: 18px; font-weight: 700; padding-top: 0; }
+.dt-table td:last-child { min-width: 15rem; }
+/* Le bord de la ligne répète le verdict, sans le porter : l'échec est dit en mots à côté. */
+.dt-ligne > :first-child { border-left: var(--space-xs) solid transparent; padding-left: var(--space-md); }
+.dt-ligne--echec > :first-child { border-left-color: var(--feedback-error); }
+.dt-ligne--ok > :first-child { border-left-color: var(--feedback-success); }
+.dt-nom { display: grid; gap: var(--space-xs); font-weight: 400; min-width: 10rem; }
+.dt-nom code { overflow-wrap: normal; }
+.dt-note { max-width: 30ch; }
+.dt-couleur { display: block; margin-bottom: var(--space-xs); }
+/* Un nom de classe coupé au milieu (`.kpi__la` / `bel`) ne se lit plus : la colonne s'élargit plutôt. */
+.dt-taille { display: block; margin-bottom: var(--space-xs); }
+.dt-taille code { white-space: nowrap; overflow-wrap: normal; }
+.dt-ratio { display: block; white-space: nowrap; }
+.dt-ratio + span { white-space: nowrap; }
+.dt-verdict { display: block; }
+
+/* Les échantillons : la paire, posée pour de vrai. Ils portent leurs couleurs en ligne. */
+.dt-echantillon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  border: var(--stroke-thin) solid var(--ds-filet);
+  max-width: 100%;
+}
+.dt-echantillon--badge { height: 22px; padding: 0 var(--space-sm); border-radius: var(--radius-full); letter-spacing: .3px; white-space: nowrap; line-height: 14px; }
+.dt-point { flex: none; width: calc(var(--space-xs) + var(--space-xxs)); height: calc(var(--space-xs) + var(--space-xxs)); border-radius: 50%; background: currentColor; }
+.dt-echantillon--kpi { flex-direction: column; align-items: flex-start; gap: var(--space-xs); padding: var(--space-md) var(--space-lg); border-radius: var(--radius-lg); line-height: 1.4; }
+.dt-echantillon--texte { padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-xs); line-height: 1.4; }
+.dt-echantillon--majuscules { text-transform: uppercase; letter-spacing: .8px; }
+
 /* ---- Pied ---- */
 
 .ds-pied {
@@ -781,6 +908,53 @@ summary:focus-visible,
   .ds-entete__titre-suite { display: none; }
   .ds-nav { order: 4; width: 100%; }
   .lg-hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-3xl); }
+  .cl-teintes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cl-noms { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* La dette se replie plus tôt que le reste du site : sept colonnes ne tiennent pas sous 1100 px, et
+   un tableau qui défile de côté se lit mal et s'atteint mal au clavier. */
+@media (max-width: 1100px) {
+  /* La dette se replie en cartes : une paire par carte, le verdict et le ratio juste sous le nom.
+     L'en-tête reste dans l'arbre d'accessibilité (clip, pas display: none), et chaque cellule
+     rappelle sa colonne par son étiquette. */
+  .dt-table,
+  .dt-table tbody { display: block; }
+  .dt-entete { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .dt-table tr.dt-ligne {
+    display: grid;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    padding: var(--space-lg);
+    border: var(--stroke-thin) solid var(--ds-filet);
+    border-left: var(--space-xs) solid transparent;
+    border-radius: var(--radius-lg);
+  }
+  .dt-table tr.dt-ligne.dt-ligne--echec { border-left-color: var(--feedback-error); }
+  .dt-table tr.dt-ligne.dt-ligne--ok { border-left-color: var(--feedback-success); }
+  .dt-table th,
+  .dt-table td { display: block; padding: 0; border: 0; }
+  .dt-ligne > :first-child,
+  .dt-ligne--echec > :first-child,
+  .dt-ligne--ok > :first-child { border-left: 0; padding-left: 0; }
+  .dt-table th.dt-nom { display: grid; }
+  .dt-table td:last-child { min-width: 0; }
+  .dt-table td[data-etiquette]::before { content: attr(data-etiquette); display: block; font-size: 14px; line-height: 18px; font-weight: 700; margin-bottom: var(--space-xs); }
+  /* L'aperçu se passe d'étiquette : la ligne dit déjà ce qu'il montre. */
+  .dt-table td[data-etiquette="Aperçu"]::before { display: none; }
+  .dt-table th[data-etiquette] { order: 0; }
+  .dt-table td[data-etiquette="Verdict"] { order: 1; }
+  .dt-table td[data-etiquette="Ratio"] { order: 2; }
+  .dt-table td { order: 3; }
+  .dt-note { max-width: none; }
+}
+
+/* Entre téléphone et bureau, la carte d'une paire se range sur deux colonnes : sinon elle s'étire sur
+   toute la largeur pour trois mots. */
+@media (min-width: 640px) and (max-width: 1100px) {
+  .dt-table tr.dt-ligne { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md) var(--space-2xl); }
+  .dt-table th.dt-nom,
+  .dt-table td:last-child { grid-column: 1 / -1; }
 }
 
 @media (max-width: 600px) {
@@ -815,6 +989,9 @@ summary:focus-visible,
   .lg-version,
   .lg-interdit { padding: var(--space-lg); }
   .lg-paire { gap: var(--space-sm); }
+  .cl-teintes { grid-template-columns: minmax(0, 1fr); }
+  .cl-carte,
+  .cl-ensemble { padding: var(--space-lg); }
 }
 
 /* ---- Mouvement réduit ----

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Couleurs — Guide de marque MyDigitalSchool</title>
+  <meta name="description" content="Le turquoise du logo, le violet des outils, et laquelle sert à quoi. La palette lue dans le code, les noms à employer, et la dette de contraste du kit, publiée telle qu’elle est.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les feuilles du dépôt d’abord, la feuille du site ensuite : c’est elle qui passe le fond en blanc. -->
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <!-- Le contenu est rendu par `js/couleurs.js` : il lit `css/tokens.css`, range les couleurs, mesure les
+       contrastes, puis pose la page. Ce qui est écrit ici est ce qu’on voit quand cela n’a pas pu se faire,
+       quelle que soit la raison. `ds-message--attente` ne le fait apparaître qu’après un délai, pour qu’il
+       ne clignote pas sur un site qui marche ; en cas d’échec attrapé plus bas, il apparaît tout de suite. -->
+  <main id="contenu">
+    <section class="ds-bande">
+      <div class="ds-section">
+        <h1 class="ds-titre-page">Les couleurs</h1>
+        <div class="ds-message ds-message--attente" id="repli">
+          <p class="body">La page n’a pas pu s’afficher. Si vous avez ouvert ce fichier directement, voici la raison.</p>
+          <p class="body" id="raison">Cette page lit les tokens dans <code>css/tokens.css</code>, ce qu’un navigateur refuse sur un fichier local. Ouvrez le site depuis un serveur&nbsp;: <code>npm run serve</code>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, piedHtml } from './js/chrome.js';
+    import { valeursDepuis } from './js/tokens.js';
+    import { pageHtml } from './js/couleurs.js';
+
+    // Cette page est à la racine de design-system/ : l’adresse passée au chrome est `couleurs.html`.
+    document.getElementById('entete').outerHTML = enteteHtml('couleurs.html');
+    document.getElementById('pied').outerHTML = piedHtml();
+
+    const contenu = document.getElementById('contenu');
+    try {
+      const reponse = await fetch('../css/tokens.css');
+      if (!reponse.ok) throw new Error(`le serveur répond ${reponse.status}`);
+      contenu.innerHTML = pageHtml(valeursDepuis(await reponse.text()));
+      // Le contenu n’existait pas quand le navigateur a lu l’adresse : un lien profond (#dette)
+      // n’a donc rien atteint. On y va maintenant qu’il est posé.
+      if (location.hash) {
+        const cible = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        if (cible) cible.scrollIntoView();
+      }
+    } catch (erreur) {
+      const repli = document.getElementById('repli');
+      repli.classList.remove('ds-message--attente');
+      document.getElementById('raison').textContent = `Les tokens n’ont pas pu être lus (${erreur.message}). Si vous avez ouvert ce fichier directement, ouvrez plutôt le site depuis un serveur : npm run serve.`;
+    }
+  </script>
+</body>
+</html>
