@@ -842,6 +842,17 @@ summary:focus-visible,
 .dt-echantillon--kpi { flex-direction: column; align-items: flex-start; gap: var(--space-xs); padding: var(--space-md) var(--space-lg); border-radius: var(--radius-lg); line-height: 1.4; }
 .dt-echantillon--texte { padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-xs); line-height: 1.4; }
 .dt-echantillon--majuscules { text-transform: uppercase; letter-spacing: .8px; }
+.dt-echantillon--alerte { padding: var(--space-md) var(--space-lg); border-radius: var(--radius-lg); line-height: 1.5; }
+.dt-echantillon--bouton { min-height: var(--size-control-sm); padding: var(--space-xs) var(--space-lg); border-radius: var(--radius-lg); line-height: 1.4; }
+.dt-echantillon--notification { padding: var(--space-md) var(--space-xl); border-radius: var(--radius-lg); line-height: 1.4; }
+
+/* L'index des paires : une puce par ligne du tableau, avec son ratio et son verdict en mots. */
+.dt-index { display: grid; gap: var(--space-sm); }
+.dt-index .ds-groupes__lien { height: auto; min-height: var(--size-control-sm); padding-block: var(--space-xs); }
+
+/* La réserve sur le partage marque / produit : dite avant les cartes, comme celle du chapitre Logo. */
+.cl-reserve { border-left: var(--space-xs) solid var(--ds-violet); }
+.cl-reserve p { max-width: 58ch; }
 
 /* ---- Pied ---- */
 
@@ -939,6 +950,12 @@ summary:focus-visible,
   .dt-ligne--ok > :first-child { border-left: 0; padding-left: 0; }
   .dt-table th.dt-nom { display: grid; }
   .dt-table td:last-child { min-width: 0; }
+  /* Deux colonnes : le verdict et le ratio côte à côte (un lecteur les lit d'un coup), le reste sur toute la largeur. */
+  .dt-table tr.dt-ligne { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-lg); }
+  .dt-table th.dt-nom,
+  .dt-table td { grid-column: 1 / -1; }
+  .dt-table td[data-etiquette="Verdict"],
+  .dt-table td[data-etiquette="Ratio"] { grid-column: auto; }
   .dt-table td[data-etiquette]::before { content: attr(data-etiquette); display: block; font-size: 14px; line-height: 18px; font-weight: 700; margin-bottom: var(--space-xs); }
   /* L'aperçu se passe d'étiquette : la ligne dit déjà ce qu'il montre. */
   .dt-table td[data-etiquette="Aperçu"]::before { display: none; }
@@ -952,7 +969,8 @@ summary:focus-visible,
 /* Entre téléphone et bureau, la carte d'une paire se range sur deux colonnes : sinon elle s'étire sur
    toute la largeur pour trois mots. */
 @media (min-width: 640px) and (max-width: 1100px) {
-  .dt-table tr.dt-ligne { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md) var(--space-2xl); }
+  .dt-table tr.dt-ligne { column-gap: var(--space-2xl); }
+  .dt-table td { grid-column: auto; }
   .dt-table th.dt-nom,
   .dt-table td:last-child { grid-column: 1 / -1; }
 }

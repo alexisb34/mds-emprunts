@@ -16,7 +16,7 @@
 //
 // Chaque paire dit :
 //   nom        l'identifiant que la page et le registre emploient (une classe, ou un sélecteur)
-//   famille    'badge', 'kpi' ou 'tableau' : le tableau où elle apparaît
+//   famille    'badge', 'kpi', 'tableau', 'alerte', 'bouton' ou 'notification' : le bloc où elle apparaît
 //   texte/fond les NOMS de tokens, jamais leurs valeurs : elles sont lues dans `tokens.css`
 //   elements   les éléments de la feuille qui forment la paire, avec leur taille réelle
 //   px, gras   la taille la plus exigeante de ces éléments : la plus petite, et gras seulement
@@ -72,7 +72,7 @@ const kpi = (nom, libelle, fond, echantillon, note) => ({
 });
 
 export const PAIRES_KIT = [
-  { ...badge('maintenance', 'Maintenance'), existant: '--status-maintenance-text' },
+  { ...badge('maintenance', 'Maintenance'), existant: '--status-maintenance-text', existantNote: 'Le kit l’a déjà : l’alerte d’avertissement l’emploie, le badge non.' },
   badge('available', 'Disponible'),
   badge('reserved', 'Réservé'),
   badge('hs', 'Hors service'),
@@ -90,6 +90,70 @@ export const PAIRES_KIT = [
     { libelle: 'Réservations salle à venir', variation: '1 signalement à traiter' }),
   kpi('kpi--disponible', 'Carte disponible', '--status-available-bg',
     { libelle: 'Matériel disponible', variation: 'exemplaires prêts à être empruntés' }),
+
+  // Les retours : alertes, bouton de danger, notifications. Du plus faible au meilleur, comme le reste.
+  // Les échantillons reprennent des textes que les vues écrivent vraiment (un test les y retrouve).
+  {
+    nom: 'toast--success',
+    famille: 'notification',
+    libelle: 'Notification de succès',
+    texte: '--text-inverse',
+    fond: '--feedback-success',
+    px: 14,
+    gras: true,
+    elements: [{ selecteur: '.toast', px: 14, gras: true }],
+    echantillon: { texte: 'Réglages enregistrés' },
+  },
+  {
+    nom: 'alert--info',
+    famille: 'alerte',
+    libelle: 'Alerte d’information',
+    texte: '--status-reserved-fg',
+    fond: '--brand-secondary-subtle',
+    px: 14,
+    gras: false,
+    elements: [{ selecteur: '.alert', px: 14, gras: false }],
+    echantillon: { texte: 'Le matériel se retire au bureau des pédago' },
+  },
+  {
+    nom: 'alert--error',
+    famille: 'alerte',
+    libelle: 'Alerte d’erreur',
+    texte: '--status-late-fg',
+    fond: '--status-late-bg',
+    px: 14,
+    gras: false,
+    elements: [{ selecteur: '.alert', px: 14, gras: false }],
+    echantillon: { texte: 'Réservation refusée' },
+  },
+  {
+    nom: 'btn--danger',
+    famille: 'bouton',
+    libelle: 'Bouton de danger',
+    texte: '--text-inverse',
+    fond: '--feedback-error',
+    px: 12,
+    gras: true,
+    elements: [{ selecteur: '.btn', px: 14, gras: true }, { selecteur: '.btn--sm', px: 12, gras: true }],
+    existant: '--feedback-error-hover',
+    existantRole: 'fond',
+    existantNote: 'Le kit l’a déjà : c’est le fond du bouton de danger au survol.',
+    echantillon: { texte: 'Annuler la réservation' },
+  },
+  {
+    nom: 'toast--error',
+    famille: 'notification',
+    libelle: 'Notification d’erreur',
+    texte: '--text-inverse',
+    fond: '--feedback-error',
+    px: 14,
+    gras: true,
+    elements: [{ selecteur: '.toast', px: 14, gras: true }],
+    existant: '--feedback-error-hover',
+    existantRole: 'fond',
+    existantNote: 'Le kit l’a déjà : c’est le fond du bouton de danger au survol.',
+    echantillon: { texte: 'Date invalide.' },
+  },
 
   {
     nom: 'table th',
@@ -171,20 +235,51 @@ function enRgb([h, s, l]) {
   return [r + m, g + m, b + m];
 }
 
-// Le ton le plus clair, de la même teinte et de la même saturation, qui passe `seuil` sur ce
-// fond : on garde la teinte et on baisse la luminosité par pas de 0,2 %. C'est un REPÈRE, pas
-// un choix : la couleur retenue se décide dans Figma.
+// Le ton le plus clair, de la même teinte et de la même saturation, qui passe `seuil` face à
+// `contre` : on garde la teinte et on baisse la luminosité par pas de 0,2 %. `couleur` doit déjà
+// être la plus sombre des deux. C'est un REPÈRE, pas un choix : la couleur retenue se décide
+// dans Figma.
+function foncer(couleur, contre, seuil) {
+  if (ratioExact(couleur, contre) >= seuil) return couleur;
+  if (ratioExact(couleur, '#ffffff') <= ratioExact(contre, '#ffffff')) {
+    throw new Error('Il n’y a rien à foncer : la couleur n’est pas la plus sombre des deux');
+  }
+  const [h, s, l] = enHsl(couleur);
+  for (let luminosite = l; luminosite >= 0; luminosite -= 0.002) {
+    const ton = hexDepuis(enRgb([h, s, luminosite]));
+    if (ratioExact(ton, contre) >= seuil) return ton;
+  }
+  throw new Error(`Aucun ton de cette teinte ne passe ${seuil}:1 face à ${contre}`);
+}
+
+// Un texte sombre sur un fond clair : le texte à foncer.
 export function tonMinimal(texteHex, fondHex, seuil = SEUIL_TEXTE) {
   if (ratioExact(texteHex, fondHex) >= seuil) return texteHex;
   if (ratioExact(texteHex, '#ffffff') <= ratioExact(fondHex, '#ffffff')) {
     throw new Error('tonMinimal ne sait que foncer un texte posé sur un fond plus clair que lui');
   }
-  const [h, s, l] = enHsl(texteHex);
-  for (let luminosite = l; luminosite >= 0; luminosite -= 0.002) {
-    const ton = hexDepuis(enRgb([h, s, luminosite]));
-    if (ratioExact(ton, fondHex) >= seuil) return ton;
+  return foncer(texteHex, fondHex, seuil);
+}
+
+// Un texte clair sur un aplat : c'est l'aplat qu'il faut foncer, le texte est déjà blanc.
+export function fondMinimal(texteHex, fondHex, seuil = SEUIL_TEXTE) {
+  if (ratioExact(texteHex, fondHex) >= seuil) return fondHex;
+  if (ratioExact(fondHex, '#ffffff') <= ratioExact(texteHex, '#ffffff')) {
+    throw new Error('fondMinimal ne sait que foncer un fond sous un texte plus clair que lui');
   }
-  throw new Error(`Aucun ton de cette teinte ne passe ${seuil}:1 sur ${fondHex}`);
+  return foncer(fondHex, texteHex, seuil);
+}
+
+// Le texte est-il plus sombre que son fond ? Sinon c'est un texte clair sur un aplat.
+export const texteSurFondClair = (paire, valeurs) => ratioExact(valeurs[paire.texte], '#ffffff') > ratioExact(valeurs[paire.fond], '#ffffff');
+
+// Le repère de correction d'une paire qui échoue : quelle couleur foncer, et jusqu'où. Rend `null`
+// pour une paire qui passe, ou quand le kit a déjà de quoi la corriger (`existant`).
+export function repereCorrection(paire, valeurs, seuil = SEUIL_TEXTE) {
+  if (!jugerPaire(paire, valeurs).echoue || paire.existant) return null;
+  return texteSurFondClair(paire, valeurs)
+    ? { role: 'texte', hex: tonMinimal(valeurs[paire.texte], valeurs[paire.fond], seuil) }
+    : { role: 'fond', hex: fondMinimal(valeurs[paire.texte], valeurs[paire.fond], seuil) };
 }
 
 // Les chiffres qui se retrouvent dans la page et dans le registre. Tout est calculé ici, pour
@@ -199,8 +294,11 @@ export function syntheseDette(paires, valeurs) {
   const pire = secondaires.reduce((a, b) => (b.j.exact < a.j.exact ? b : a), secondaires[0]);
   const tonSecondaire = pire ? tonMinimal(valeurs[pire.p.texte], valeurs[pire.p.fond]) : null;
 
+  // Sur un fond pâle, le texte principal est une solution de repli : il tient partout. Sur un aplat
+  // (texte blanc sur rouge ou vert), il ne tient pas, et ce n'est pas la solution : on fonce l'aplat.
   const principal = valeurs['--text-primary'];
-  const textePrincipalMin = echecs.length ? Math.min(...echecs.map(({ p }) => ratioExact(principal, valeurs[p.fond]))) : null;
+  const pales = echecs.filter(({ p }) => texteSurFondClair(p, valeurs));
+  const textePrincipalMin = pales.length ? Math.min(...pales.map(({ p }) => ratioExact(principal, valeurs[p.fond]))) : null;
 
   return {
     mesurees: paires.length,
@@ -209,6 +307,8 @@ export function syntheseDette(paires, valeurs) {
     couvertes: secondaires.length,
     tonSecondaire,
     fondExigeant: pire ? pire.p.fond : null,
+    fondsPales: pales.length,
+    aplats: echecs.length - pales.length,
     textePrincipalMin,
   };
 }
@@ -229,7 +329,7 @@ function echantillonHtml(p) {
     return `<span ${marque('dt-echantillon dt-echantillon--kpi')} style="${couleurs}"><span style="font-size:${libelle.px}px">${echapper(e.libelle)}</span><span style="font-size:${variation.px}px">${echapper(e.variation)}</span></span>`;
   }
   const texte = e && e.texte ? e.texte : (p.libelle || p.nom);
-  const classes = `dt-echantillon dt-echantillon--texte${e && e.majuscules ? ' dt-echantillon--majuscules' : ''}`;
+  const classes = `dt-echantillon dt-echantillon--texte${p.famille ? ` dt-echantillon--${p.famille}` : ''}${e && e.majuscules ? ' dt-echantillon--majuscules' : ''}`;
   return `<span ${marque(classes)} style="${couleurs};font-size:${p.px}px;font-weight:${p.gras ? 700 : 400}">${echapper(texte)}</span>`;
 }
 
@@ -246,18 +346,27 @@ function correctionHtml(p, valeurs, j) {
     return `<p class="body-sm">Rien à changer.${alerte}</p>`;
   }
   if (p.existant) {
-    const exact = ratioExact(valeurs[p.existant], valeurs[p.fond]);
-    return `<p class="body-sm">Employer ${code(p.existant)} (${afficherRatio(exact, ratio(valeurs[p.existant], valeurs[p.fond]), j.seuil)}:1 sur ce fond), que le kit a déjà et que l’alerte d’avertissement emploie. Le badge n’en fait pas usage.</p>`;
+    const fondRole = p.existantRole === 'fond';
+    const [t, f] = fondRole ? [valeurs[p.texte], valeurs[p.existant]] : [valeurs[p.existant], valeurs[p.fond]];
+    const dit = afficherRatio(ratioExact(t, f), ratio(t, f), j.seuil);
+    return `<p class="body-sm">Employer ${code(p.existant)}${fondRole ? ' comme fond' : ''} (${dit}:1 ${fondRole ? 'sous ce texte' : 'sur ce fond'}). ${echapper(p.existantNote || '')}</p>`;
   }
-  const ton = tonMinimal(valeurs[p.texte], valeurs[p.fond], j.seuil);
-  const obtenu = afficherRatio(ratioExact(ton, valeurs[p.fond]), ratio(ton, valeurs[p.fond]), j.seuil);
+  const repere = repereCorrection(p, valeurs, j.seuil);
+  const [tFin, fFin] = repere.role === 'texte' ? [repere.hex, valeurs[p.fond]] : [valeurs[p.texte], repere.hex];
+  const obtenu = afficherRatio(ratioExact(tFin, fFin), ratio(tFin, fFin), j.seuil);
   if (p.texte === '--text-secondary') {
-    return `<p class="body-sm">Foncer ${code('--text-secondary')} jusqu’à ${code(ton)} (${obtenu}:1 sur ce fond). Ce token sert aussi à d’autres lignes&nbsp;: <a class="ds-lien-texte" href="#dette-secondaire">un seul changement les règle toutes</a>.</p>`;
+    return `<p class="body-sm">Foncer ${code('--text-secondary')} jusqu’à ${code(repere.hex)} (${obtenu}:1 sur ce fond). Ce token sert aussi à d’autres lignes&nbsp;: <a class="ds-lien-texte" href="#dette-secondaire">un seul changement les règle toutes</a>.</p>`;
   }
-  return `<p class="body-sm">Foncer le texte jusqu’à ${code(ton)} (${obtenu}:1 sur ce fond), de la même teinte. Le fond ne bouge pas.</p>`;
+  if (repere.role === 'fond') {
+    return `<p class="body-sm">Foncer le fond jusqu’à ${code(repere.hex)} (${obtenu}:1 sous le texte), de la même teinte. Le texte ne bouge pas.</p>`;
+  }
+  return `<p class="body-sm">Foncer le texte jusqu’à ${code(repere.hex)} (${obtenu}:1 sur ce fond), de la même teinte. Le fond ne bouge pas.</p>`;
 }
 
 const COLONNES = ['Composant', 'Aperçu', 'Texte sur fond', 'Taille', 'Ratio', 'Verdict', 'Ce qu’il faudrait faire'];
+
+// L'ancre d'une paire : de quoi la retrouver depuis l'index. Un nom de classe ou de sélecteur n'est pas un id valide tel quel.
+export const ancrePaire = (nom) => `paire-${String(nom).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
 
 function ligneHtml(p, valeurs) {
   const j = jugerPaire(p, valeurs);
@@ -265,7 +374,7 @@ function ligneHtml(p, valeurs) {
   const verdictHtml = j.echoue
     ? `<strong class="dt-verdict body-bold"><span aria-hidden="true">✕</span> échoue</strong><span class="body-sm">à corriger</span>`
     : `<strong class="dt-verdict body-bold"><span aria-hidden="true">✓</span> conforme</strong><span class="body-sm">AA${j.exact - j.seuil < 0.1 ? ', de justesse' : ''}</span>`;
-  return `    <tr class="dt-ligne dt-ligne--${j.echoue ? 'echec' : 'ok'}" role="row" data-paire="${echapper(p.nom)}">
+  return `    <tr class="dt-ligne dt-ligne--${j.echoue ? 'echec' : 'ok'}" role="row" id="${ancrePaire(p.nom)}" data-paire="${echapper(p.nom)}">
       <th scope="row" role="rowheader" class="dt-nom" data-etiquette="${COLONNES[0]}">${code(p.nom)}<span class="body-sm ds-oeil">${echapper(p.libelle || '')}</span>${p.note ? `<span class="body-sm dt-note">${echapper(p.note).replace(/`([^`]+)`/g, '<code>$1</code>')}</span>` : ''}</th>
       <td role="cell" class="dt-apercu" data-etiquette="${COLONNES[1]}">${echantillonHtml(p)}</td>
       <td role="cell" data-etiquette="${COLONNES[2]}"><span class="dt-couleur">Texte&nbsp;: ${code(p.texte)} <span class="body-sm ds-oeil">${echapper(valeurs[p.texte])}</span></span><span class="dt-couleur">Fond&nbsp;: ${code(p.fond)} <span class="body-sm ds-oeil">${echapper(valeurs[p.fond])}</span></span></td>

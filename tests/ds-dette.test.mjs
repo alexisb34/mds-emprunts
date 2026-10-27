@@ -12,14 +12,14 @@
 //   navigateur, et le rapport de la tâche dit ce qui y a été vu.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { ratio, ratioExact, verdict } from '../design-system/js/contraste.js';
 import { valeursDepuis } from '../design-system/js/tokens.js';
 import { enteteHtml } from '../design-system/js/chrome.js';
 import { COULEURS } from '../design-system/js/logo.js';
 import { LABELS } from '../js/models.js';
 import {
-  PAIRES_KIT, tableauDetteHtml, jugerPaire, tonMinimal, syntheseDette, DATE_CONSTAT,
+  PAIRES_KIT, tableauDetteHtml, jugerPaire, tonMinimal, fondMinimal, repereCorrection, syntheseDette, ancrePaire, DATE_CONSTAT,
 } from '../design-system/js/dette.js';
 import { pageHtml, palette, familleDe, FAMILLES, SEMANTIQUES, NON_EMPLOYES } from '../design-system/js/couleurs.js';
 
@@ -52,10 +52,13 @@ function declarations(regles, selecteur) {
 const KIT = reglesDe([lire('css/base.css'), lire('css/components.css')].join('\n'));
 const FEUILLES = ['base.css', 'components.css', 'admin.css', 'mobile.css'].map((f) => lire(`css/${f}`)).join('\n');
 const DASHBOARD = lire('js/admin/views/dashboard.js');
+// Toutes les vues et tous les modules : pour savoir si une classe ou un texte est émis QUELQUE PART.
+const VUES = readdirSync(new URL('../js/', import.meta.url), { recursive: true }).filter((f) => f.endsWith('.js')).map((f) => lire(`js/${f}`)).join('\n');
 const UI = lire('js/ui.js');
 
 const badges = PAIRES_KIT.filter((p) => p.nom.startsWith('badge'));
 const virgule = (n) => n.toFixed(2).replace('.', ',');
+const r2 = (a, b) => virgule(ratio(a, b));
 const texte = (html) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 
 // ---- Les assertions du brief ----
@@ -347,21 +350,67 @@ test('le badge de maintenance renvoie à ce que le kit a déjà : --status-maint
 
 test('la synthèse compte les paires et propose un seul correctif pour --text-secondary', () => {
   const s = syntheseDette(PAIRES_KIT, VALEURS);
-  assert.equal(s.mesurees, 13);
-  assert.equal(s.echouent, 11);
+  assert.equal(s.mesurees, 18);
+  assert.equal(s.echouent, 16);
   assert.equal(s.conformes, 2);
   assert.equal(s.mesurees, s.echouent + s.conformes);
   // Six lignes tiennent à un seul token. Le ton proposé passe sur chacune d'elles.
   const secondaires = PAIRES_KIT.filter((p) => p.texte === '--text-secondary' && jugerPaire(p, VALEURS).echoue);
   assert.equal(secondaires.length, 6);
   assert.equal(s.couvertes, 6);
+  assert.deepEqual(secondaires.map((p) => p.famille).sort(), ['kpi', 'kpi', 'kpi', 'kpi', 'kpi', 'tableau']);
   for (const p of secondaires) assert.ok(ratioExact(s.tonSecondaire, VALEURS[p.fond]) >= 4.5, `${s.tonSecondaire} ne passe pas sur ${p.fond}`);
   assert.ok(ratioExact(s.tonSecondaire, '#ffffff') > ratioExact(VALEURS['--text-secondary'], '#ffffff'));
-  // Et le texte principal tient déjà partout où l'on pourrait être tenté de le remplacer.
-  for (const p of PAIRES_KIT.filter((x) => jugerPaire(x, VALEURS).echoue)) {
-    assert.ok(ratioExact(VALEURS['--text-primary'], VALEURS[p.fond]) >= s.textePrincipalMin - 1e-9, `${p.nom}`);
-  }
+});
+
+test('le texte principal est un repli sur les fonds pâles seulement : sur les aplats, c’est le fond qu’on fonce', () => {
+  const s = syntheseDette(PAIRES_KIT, VALEURS);
+  const echecs = PAIRES_KIT.filter((x) => jugerPaire(x, VALEURS).echoue);
+  const pales = echecs.filter((p) => ratioExact(VALEURS[p.texte], '#ffffff') > ratioExact(VALEURS[p.fond], '#ffffff'));
+  const aplats = echecs.filter((p) => !pales.includes(p));
+  assert.equal(s.fondsPales, pales.length);
+  assert.equal(s.aplats, aplats.length);
+  assert.deepEqual(aplats.map((p) => p.nom).sort(), ['btn--danger', 'toast--error', 'toast--success']);
+  for (const p of pales) assert.ok(ratioExact(VALEURS['--text-primary'], VALEURS[p.fond]) >= s.textePrincipalMin - 1e-9, p.nom);
   assert.ok(s.textePrincipalMin >= 4.5);
+  // Sur un aplat, le texte principal ne tient PAS : le dire serait faux.
+  for (const p of aplats) assert.ok(ratioExact(VALEURS['--text-primary'], VALEURS[p.fond]) < 4.5, `${p.nom} : le texte principal tient sur cet aplat, la page doit le dire autrement`);
+});
+
+test('le repère de correction fonce le texte sur un fond pâle, et le fond sous un texte blanc', () => {
+  const de = (nom) => PAIRES_KIT.find((p) => p.nom === nom);
+  const succes = repereCorrection(de('toast--success'), VALEURS);
+  assert.equal(succes.role, 'fond');
+  assert.ok(ratioExact(VALEURS['--text-inverse'], succes.hex) >= 4.5, `${succes.hex} ne passe pas sous du blanc`);
+  assert.ok(ratioExact(succes.hex, '#ffffff') > ratioExact(VALEURS['--feedback-success'], '#ffffff'), 'le fond n’est pas plus sombre');
+  const retard = repereCorrection(de('alert--error'), VALEURS);
+  assert.equal(retard.role, 'texte');
+  assert.ok(ratioExact(retard.hex, VALEURS['--status-late-bg']) >= 4.5);
+  // Ce qui passe n'a pas de repère ; ce que le kit sait déjà corriger non plus (il renvoie à son token).
+  assert.equal(repereCorrection(de('badge--borrowed'), VALEURS), null);
+  assert.equal(repereCorrection(de('toast--error'), VALEURS), null);
+  assert.equal(repereCorrection(de('badge--maintenance'), VALEURS), null);
+});
+
+test('fondMinimal ne sait foncer qu’un fond plus sombre que son texte, et laisse tel quel ce qui passe', () => {
+  assert.equal(fondMinimal('#ffffff', '#3c3c3b'), '#3c3c3b');
+  // Un texte gris clair sur blanc échoue, et le fond est déjà plus clair que le texte : on ne sait pas le foncer.
+  assert.ok(ratioExact('#cccccc', '#ffffff') < 4.5);
+  assert.throws(() => fondMinimal('#cccccc', '#ffffff'), /foncer/);
+});
+
+test('le rouge d’erreur plus sombre que le kit a déjà passe 4,5:1 sous du blanc, et le bouton de danger l’emploie au survol', () => {
+  // Les deux lignes `btn--danger` et `toast--error` renvoient à ce token : la phrase doit être vraie.
+  for (const nom of ['btn--danger', 'toast--error']) {
+    const p = PAIRES_KIT.find((x) => x.nom === nom);
+    assert.equal(p.existant, '--feedback-error-hover');
+    assert.equal(p.existantRole, 'fond');
+    assert.ok(ratioExact(VALEURS[p.texte], VALEURS[p.existant]) >= 4.5, `${p.existant} ne passe pas sous ${p.texte}`);
+  }
+  assert.equal(declarations(KIT, '.btn--danger:hover:not(:disabled)').background, 'var(--feedback-error-hover)');
+  const html = tableauDetteHtml(PAIRES_KIT.filter((p) => p.nom === 'btn--danger'), VALEURS);
+  assert.match(html, /--feedback-error-hover/);
+  assert.match(html, /5,55:1/);
 });
 
 test('la date du constat est celle de la décision', () => {
@@ -371,22 +420,70 @@ test('la date du constat est celle de la décision', () => {
 
 // ---- Ce que la page annonce comme périmètre ----
 
-test('le périmètre annoncé est honnête : les composants non listés ont bien des paires sous le seuil', () => {
-  // La page dit que le tableau n'est pas l'inventaire du kit et nomme cinq composants qui
-  // ont aussi des paires sous le seuil. Cette phrase se lit dans le CSS, pas dans la mémoire.
-  const nonListes = ['.alert--error', '.alert--info', '.btn--danger', '.toast--success', '.toast--error'];
-  const tailles = { '.alert--error': [14, false], '.alert--info': [14, false], '.btn--danger': [14, true], '.toast--success': [14, true], '.toast--error': [14, true] };
+test('les cinq retours (alertes, bouton de danger, notifications) sont formés par le CSS et émis par les vues', () => {
+  const de = (nom) => PAIRES_KIT.find((p) => p.nom === nom);
+  const retours = ['toast--success', 'alert--info', 'alert--error', 'btn--danger', 'toast--error'];
+  assert.deepEqual(retours.map((n) => de(n)?.famille), ['notification', 'alerte', 'alerte', 'bouton', 'notification']);
+  // Une alerte : 14 px, graisse normale.
+  const alerte = declarations(KIT, '.alert');
+  assert.equal(alerte['font-size'], '14px');
+  assert.ok(!('font-weight' in alerte));
+  for (const nom of ['alert--error', 'alert--info']) {
+    const p = de(nom);
+    const d = declarations(KIT, `.${nom}`);
+    assert.equal(d.color, `var(${p.texte})`, `${nom} : texte`);
+    assert.equal(d.background, `var(${p.fond})`, `${nom} : fond`);
+    assert.deepEqual(p.elements, [{ selecteur: '.alert', px: 14, gras: false }]);
+    assert.ok(VUES.includes(`alert ${nom}`), `aucune vue n'émet « alert ${nom} »`);
+  }
+  // Le bouton de danger : `.btn` 14 px gras, `.btn--sm` 12 px ; les deux tailles sont émises.
+  const danger = de('btn--danger');
+  assert.equal(declarations(KIT, '.btn--danger').color, `var(${danger.texte})`);
+  assert.equal(declarations(KIT, '.btn--danger').background, `var(${danger.fond})`);
+  assert.equal(declarations(KIT, '.btn')['font-size'], '14px');
+  assert.equal(declarations(KIT, '.btn')['font-weight'], '700');
+  assert.equal(declarations(KIT, '.btn--sm')['font-size'], '12px');
+  assert.deepEqual(danger.elements, [{ selecteur: '.btn', px: 14, gras: true }, { selecteur: '.btn--sm', px: 12, gras: true }]);
+  assert.ok(VUES.includes('btn--danger btn--sm'), 'aucune vue n’émet le petit bouton de danger');
+  assert.match(UI, /btn btn--\$\{a\.variant/, 'les modales ne fabriquent plus btn--<variante>');
+  assert.match(VUES, /variant: 'danger'/, 'aucune modale ne demande le bouton de danger');
+  // Les notifications : `.toast` pose le texte et la taille, la variante pose le fond.
+  const toast = declarations(KIT, '.toast');
+  assert.equal(toast.color, 'var(--text-inverse)');
+  assert.equal(toast['font-size'], '14px');
+  assert.equal(toast['font-weight'], '700');
+  for (const nom of ['toast--success', 'toast--error']) {
+    const p = de(nom);
+    assert.equal(p.texte, '--text-inverse');
+    assert.equal(declarations(KIT, `.${nom}`).background, `var(${p.fond})`, `${nom} : fond`);
+    assert.deepEqual(p.elements, [{ selecteur: '.toast', px: 14, gras: true }]);
+  }
+  assert.match(UI, /toast toast--\$\{variant\}/);
+  assert.match(VUES, /toast\([^)]*'success'\)/, 'aucune vue ne lance de notification de succès');
+  assert.match(VUES, /toast\([^)]*'error'\)/, 'aucune vue ne lance de notification d’erreur');
+  // Les échantillons écrivent un texte que l'application écrit (à la casse près : elle l'écrit en milieu de phrase).
+  for (const nom of retours) {
+    const texteEchantillon = de(nom).echantillon.texte.toLowerCase();
+    assert.ok(VUES.toLowerCase().includes(texteEchantillon), `« ${de(nom).echantillon.texte} » n'est écrit par aucune vue`);
+  }
+});
+
+test('le périmètre restant est honnête : les paires repérées mais non vérifiées dans les vues sont bien sous le seuil', () => {
+  // La page dit que le tableau n'est pas l'inventaire du kit et nomme ce qui reste. Cette phrase se lit dans le CSS.
   const nomDe = (v) => (v.match(/var\((--[\w-]+)\)/) || [])[1];
-  for (const sel of nonListes) {
-    // Une notification pose sa couleur de texte sur `.toast`, et sa teinte sur la variante.
-    const d = { ...(sel.startsWith('.toast') ? declarations(KIT, '.toast') : {}), ...declarations(KIT, sel) };
-    const t = nomDe(d.color || '');
-    const f = nomDe(d.background || '');
-    assert.ok(t && f, `${sel} ne forme plus une paire lisible`);
-    const [px, gras] = tailles[sel];
-    assert.equal(verdict(ratioExact(VALEURS[t], VALEURS[f]), px, gras), 'echec', `${sel} passe désormais : la page ne doit plus le citer`);
-    // On compare des composants, pas des couleurs : `.alert--error` reprend les couleurs de `badge--late` à 14 px.
-    assert.ok(!PAIRES_KIT.some((p) => p.nom === sel.slice(1) || p.elements.some((e) => e.selecteur === sel)), `${sel} est déjà dans le tableau : la phrase de périmètre est périmée`);
+  const sous = (nomTexte, nomFond, px, gras) => verdict(ratioExact(VALEURS[nomTexte], VALEURS[nomFond]), px, gras) === 'echec';
+  assert.equal(nomDe(declarations(KIT, '.text-error').color), '--feedback-error');
+  assert.equal(nomDe(declarations(KIT, '.text-success').color), '--feedback-success');
+  assert.ok(KIT.some((r) => r.selecteurs.includes('.input::placeholder') && /var\(--text-disabled\)/.test(r.corps)), 'le texte désactivé n’est plus celui des champs vides');
+  assert.equal(declarations(reglesDe(lire('css/admin.css')), '.page-header__meta').color, 'var(--text-secondary)');
+  // Sur une carte blanche pour les trois premiers, sur le fond de l'application pour le dernier : toutes sous le seuil.
+  assert.ok(sous('--feedback-error', '--bg-surface', 14, false), '.text-error passe sur blanc');
+  assert.ok(sous('--feedback-success', '--bg-surface', 14, false), '.text-success passe sur blanc');
+  assert.ok(sous('--text-disabled', '--bg-surface', 14, false), 'le texte désactivé passe sur blanc');
+  assert.ok(sous('--text-secondary', '--bg-canvas', 14, false), 'le texte discret passe sur le fond de l’application');
+  // Et aucune n'est déjà au tableau.
+  for (const sel of ['.text-error', '.text-success', '.page-header__meta']) {
+    assert.ok(!PAIRES_KIT.some((p) => p.elements.some((e) => e.selecteur === sel)), `${sel} est déjà au tableau : la phrase est périmée`);
   }
 });
 
@@ -506,7 +603,7 @@ test('chaque valeur citée dans la page vient de tokens.css ou des couleurs du l
   const hexs = new Set([...texte(PAGE.replace(/style="[^"]*"/g, '')).matchAll(/#[0-9a-fA-F]{6}\b/g)].map((m) => m[0].toLowerCase()));
   const connus = new Set([...Object.values(VALEURS).filter((v) => /^#/.test(v)).map((v) => v.toLowerCase()), COULEURS.turquoise.toLowerCase(), COULEURS.anthracite.toLowerCase()]);
   // Les tons proposés par « ce qu'il faudrait faire » sont calculés, donc pas dans tokens.css.
-  const proposes = new Set([...PAIRES_KIT.map((p) => tonMinimal(VALEURS[p.texte], VALEURS[p.fond])), syntheseDette(PAIRES_KIT, VALEURS).tonSecondaire].map((h) => h.toLowerCase()));
+  const proposes = new Set([...PAIRES_KIT.map((p) => repereCorrection(p, VALEURS)).filter(Boolean).map((r) => r.hex), syntheseDette(PAIRES_KIT, VALEURS).tonSecondaire].map((h) => h.toLowerCase()));
   for (const h of hexs) assert.ok(connus.has(h) || proposes.has(h), `${h} n'est ni un token ni un ton calculé`);
   assert.ok(hexs.size >= 15);
 });
@@ -544,8 +641,20 @@ test('les usages du violet et du turquoise que la page cite sont dans le CSS du 
   assert.match(PAGE, /en fond d’alerte/);
 });
 
-test('la page dit qu’elle décrit l’existant et que la marque ne l’a pas validé', () => {
-  assert.match(texte(PAGE), /n’a été validé par personne du côté de la marque/);
+test('la réserve sur le partage marque / produit est dite AVANT les cartes, comme celle du chapitre Logo', () => {
+  const section = PAGE.match(/<section[^>]*id="marque-produit"[\s\S]*?<\/section>/)[0];
+  const reserve = section.match(/<aside class="ds-message[^>]*>[\s\S]*?<\/aside>/);
+  assert.ok(reserve, 'la section n’a pas d’encart de réserve');
+  assert.ok(section.indexOf(reserve[0]) < section.indexOf('class="cl-carte"'), 'la réserve vient après les cartes : on la lit après s’en être servi');
+  const brut = texte(reserve[0]);
+  assert.match(brut, /Ce partage n’est pas une charte officielle/);
+  assert.match(brut, /construit pour ce site/);
+  assert.match(brut, /n’a été validé par personne du côté de la marque/);
+  assert.match(brut, /ne le citez pas comme une règle de la marque/);
+  // Et elle dit d'où il vient : ce que montrent le logo et le code.
+  assert.match(brut, /seul ancrage de couleur de la marque/);
+  // Elle n'est pas répétée en note de bas de section : une seule voix, en haut.
+  assert.equal((texte(section).match(/n’a été validé par personne/g) || []).length, 1);
 });
 
 test('la règle du nom donne sa raison, avec les quatre rôles du violet', () => {
@@ -568,25 +677,49 @@ test('la section de dette porte sa date, son périmètre, la décision, et le re
   assert.match(brut, /ne les reprenez pas/);
   assert.match(brut, /docs\/correctifs-figma\.md/);
   assert.match(brut, /Figma fait foi/);
-  // Le périmètre : ce que le tableau couvre, et ce qu'il ne couvre pas, sans chiffre inventé.
+  // Le périmètre : ce que le tableau couvre, et ce qu'il ne couvre pas.
   assert.match(brut, /n’est pas l’inventaire complet du kit/);
-  for (const nom of ['alertes', 'bouton de danger', 'notifications']) assert.ok(brut.includes(nom), `le périmètre ne nomme pas « ${nom} »`);
+  const perimetre = texte(dette.match(/<p class="body-sm">Ce tableau n’est pas[\s\S]*?<\/p>/)[0]);
+  for (const nom of ['badges de statut', 'cartes KPI', 'tableaux', 'alertes', 'bouton de danger', 'notifications']) assert.ok(perimetre.includes(nom), `le périmètre ne nomme pas « ${nom} » parmi ce qu’il couvre`);
+  for (const nom of ['texte d’erreur', 'texte de succès', 'texte désactivé', 'texte discret']) assert.ok(perimetre.includes(nom), `le périmètre ne nomme pas « ${nom} » parmi ce qui reste`);
+  assert.match(perimetre, /pas encore vérifiées dans les vues/);
   // Le total de la phrase d'ouverture est celui de la synthèse.
   const s = syntheseDette(PAIRES_KIT, VALEURS);
   assert.ok(brut.includes(`${s.echouent} des ${s.mesurees} paires`), 'la phrase d’ouverture ne reprend pas la synthèse');
   assert.ok(brut.includes(`${virgule(s.textePrincipalMin)}:1`));
+  assert.ok(brut.includes(`${s.fondsPales} lignes`) || brut.includes(`${s.fondsPales} paires`), 'le nombre de fonds pâles manque');
   assert.ok(brut.includes(s.tonSecondaire));
 });
 
-test('la section de dette contient les trois tableaux, avec un index', () => {
+test('la section de dette contient les quatre tableaux, avec un index des blocs et un index des paires', () => {
   const dette = PAGE.match(/<section[^>]*id="dette"[\s\S]*?<\/section>\s*$/)[0];
-  assert.equal((dette.match(/<table\b/g) || []).length, 3);
-  for (const id of ['dette-badges', 'dette-kpi', 'dette-tableau', 'dette-secondaire']) {
+  assert.equal((dette.match(/<table\b/g) || []).length, 4);
+  for (const id of ['dette-badges', 'dette-kpi', 'dette-tableau', 'dette-retours', 'dette-secondaire']) {
     assert.ok(dette.includes(`id="${id}"`), `${id} manque`);
     assert.ok(dette.includes(`href="#${id}"`), `l'index ne mène pas à ${id}`);
   }
-  // Toutes les paires y sont, une fois chacune.
-  for (const p of PAIRES_KIT) assert.equal((dette.match(new RegExp(`data-paire="${p.nom}"`, 'g')) || []).length, 1, `${p.nom}`);
+  // Toutes les paires y sont, une fois chacune, et l'index des paires mène à chacune.
+  const ancres = new Set();
+  for (const p of PAIRES_KIT) {
+    assert.equal((dette.match(new RegExp(`data-paire="${p.nom}"`, 'g')) || []).length, 1, `${p.nom}`);
+    const ancre = ancrePaire(p.nom);
+    assert.equal(ancres.has(ancre), false, `l'ancre ${ancre} sert deux fois`);
+    ancres.add(ancre);
+    assert.equal((dette.match(new RegExp(`id="${ancre}"`, 'g')) || []).length, 1, `${p.nom} : la ligne n'a pas son id`);
+    assert.equal((dette.match(new RegExp(`<a[^>]*href="#${ancre}"`, 'g')) || []).length, 1, `${p.nom} : l'index des paires ne la cite pas une fois`);
+  }
+  const index = dette.match(/<nav[^>]*aria-label="Retrouver une paire"[\s\S]*?<\/nav>/)[0];
+  const jugees = PAIRES_KIT.map((p) => jugerPaire(p, VALEURS));
+  assert.equal((index.match(/<li>/g) || []).length, PAIRES_KIT.length);
+  // L'index dit le verdict en mots, pas seulement par sa position : « échoue » seize fois, « conforme » deux.
+  assert.equal((texte(index).match(/échoue/g) || []).length, jugees.filter((j) => j.echoue).length);
+  assert.equal((texte(index).match(/conforme/g) || []).length, jugees.filter((j) => !j.echoue).length);
+});
+
+test('l’ancre d’une paire est un id valide, même pour un sélecteur', () => {
+  assert.equal(ancrePaire('badge--late'), 'paire-badge-late');
+  assert.equal(ancrePaire('table tr:hover'), 'paire-table-tr-hover');
+  assert.match(ancrePaire('<b>x</b>'), /^paire-[a-z0-9-]+$/);
 });
 
 test('chaque aplat posé en ligne est une pastille sans texte ou un échantillon déclaré', () => {
@@ -659,7 +792,7 @@ test('le registre des correctifs nomme chaque paire publiée qui échoue, avec s
   const REGISTRE = registre();
   assert.match(REGISTRE, /26 octobre 2026/);
   const echouent = PAIRES_KIT.filter((p) => jugerPaire(p, VALEURS).echoue);
-  assert.equal(echouent.length, 11);
+  assert.equal(echouent.length, 16);
   for (const p of echouent) {
     const ligne = REGISTRE.split('\n').find((l) => l.includes(`\`${p.nom}\``));
     assert.ok(ligne, `le registre ne nomme pas ${p.nom}`);
@@ -674,15 +807,37 @@ test('le registre des correctifs nomme chaque paire publiée qui échoue, avec s
   assert.ok(REGISTRE.includes(`tomberait à ${ratio(VALEURS['--text-secondary'], VALEURS['--bg-canvas']).toFixed(2).replace('.', ',')}:1`));
 });
 
-test('le registre cite, avec leur ratio, les cinq composants qu’il dit sous le seuil et non publiés', () => {
+test('le registre cite, avec leur ratio, les paires repérées mais non publiées, et dit qu’elles ne sont pas vérifiées dans les vues', () => {
+  // Le registre est écrit en lignes de 100 colonnes : une phrase peut y changer de ligne.
+  const REGISTRE = registre().replace(/\s+/g, ' ');
+  const r = (a, b) => `${ratio(VALEURS[a], VALEURS[b]).toFixed(2).replace('.', ',')}:1`;
+  for (const attendu of [
+    `\`.text-error\` (${r('--feedback-error', '--bg-surface')} sur blanc)`,
+    `\`.text-success\` (${r('--feedback-success', '--bg-surface')})`,
+    `\`--text-disabled\` (${r('--text-disabled', '--bg-surface')} sur blanc`,
+    `\`--text-secondary\` sur \`--bg-canvas\` (${r('--text-secondary', '--bg-canvas')}`,
+  ]) assert.ok(REGISTRE.includes(attendu), `le registre ne dit pas « ${attendu} »`);
+  assert.match(REGISTRE, /pas vérifiées dans les vues/);
+});
+
+test('le registre propose, pour chaque ligne à aplat, de foncer le fond ou d’employer ce que le kit a déjà', () => {
   const REGISTRE = registre();
-  const attendus = { '.alert--error': 'alert--error', '.alert--info': 'alert--info', '.btn--danger': 'btn--danger', '.toast--success': 'toast--success', '.toast--error': 'toast--error' };
-  for (const sel of Object.keys(attendus)) {
-    const d = { ...(sel.startsWith('.toast') ? declarations(KIT, '.toast') : {}), ...declarations(KIT, sel) };
-    const t = d.color.match(/var\((--[\w-]+)\)/)[1];
-    const f = d.background.match(/var\((--[\w-]+)\)/)[1];
-    const attendu = `\`${sel}\` (${ratio(VALEURS[t], VALEURS[f]).toFixed(2).replace('.', ',')}:1)`;
-    assert.ok(REGISTRE.includes(attendu), `le registre ne dit pas « ${attendu} »`);
+  const succes = repereCorrection(PAIRES_KIT.find((p) => p.nom === 'toast--success'), VALEURS);
+  assert.ok(REGISTRE.includes(`\`${succes.hex}\``), 'le registre ne cite pas le vert plus sombre calculé');
+  assert.ok(REGISTRE.includes('`--feedback-error-hover`'));
+  assert.ok(REGISTRE.includes(`(${r2(VALEURS['--text-inverse'], VALEURS['--feedback-error-hover'])}:1`), 'ratio du rouge plus sombre');
+});
+
+test('le registre dit que les alertes reprennent les couleurs des badges : c’est vrai, et le même ton les règle', () => {
+  const REGISTRE = registre().replace(/\s+/g, ' ');
+  const de = (nom) => PAIRES_KIT.find((p) => p.nom === nom);
+  for (const [alerte, badge] of [['alert--error', 'badge--late'], ['alert--info', 'badge--reserved']]) {
+    const a = de(alerte); const b = de(badge);
+    // Les noms de tokens peuvent différer ; ce qui compte, c'est que les VALEURS soient les mêmes.
+    assert.equal(VALEURS[a.texte].toLowerCase(), VALEURS[b.texte].toLowerCase(), `${alerte} et ${badge} n’ont plus le même texte`);
+    assert.equal(VALEURS[a.fond].toLowerCase(), VALEURS[b.fond].toLowerCase(), `${alerte} et ${badge} n’ont plus le même fond`);
+    assert.equal(repereCorrection(a, VALEURS).hex, repereCorrection(b, VALEURS).hex);
+    assert.ok(REGISTRE.includes(`\`${repereCorrection(a, VALEURS).hex}\` pour \`${badge}\` et \`${alerte}\``), `le registre ne dit pas « ${repereCorrection(a, VALEURS).hex} pour ${badge} et ${alerte} »`);
   }
 });
 

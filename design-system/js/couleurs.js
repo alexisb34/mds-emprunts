@@ -19,7 +19,7 @@
 import { echapper } from './texte.js';
 import { ratio, ratioExact, GRAND_TEXTE } from './contraste.js';
 import { COULEURS, fmtRatio } from './logo.js';
-import { PAIRES_KIT, DATE_CONSTAT, tableauDetteHtml, syntheseDette, jugerPaire, enLettres, afficherRatio } from './dette.js';
+import { PAIRES_KIT, DATE_CONSTAT, tableauDetteHtml, syntheseDette, jugerPaire, enLettres, afficherRatio, ancrePaire } from './dette.js';
 
 const BLANC = '#ffffff';
 const SEUIL = 4.5;
@@ -212,6 +212,11 @@ function marqueProduitHtml(valeurs) {
       <h2 class="ds-titre" id="titre-marque-produit">Le logo est turquoise, les outils sont violets</h2>
       <p class="ds-chapeau">Ce n’est pas une erreur, et ce n’est pas à chacun de trancher au cas par cas&nbsp;: deux choses différentes ont chacune leur couleur.</p>
     </div>
+    <aside class="ds-message cl-reserve">
+      <p class="body-bold">Ce partage n’est pas une charte officielle.</p>
+      <p class="body">Il a été construit pour ce site, à partir de ce que montrent le logo et le code aujourd’hui&nbsp;: le logo est le seul ancrage de couleur de la marque, et le violet n’y figure pas. Il n’a été validé par personne du côté de la marque.</p>
+      <p class="body">Ce site est public&nbsp;: ne le citez pas comme une règle de la marque.</p>
+    </aside>
     <div class="ds-grille ds-grille--2">
       <article class="cl-carte">
         <div class="cl-aplats" aria-hidden="true">
@@ -242,7 +247,6 @@ function marqueProduitHtml(valeurs) {
       </div>
       <figcaption class="body-sm ds-oeil ds-mesure">Le logo garde ses couleurs, l’action garde la sienne. Aucune ne reprend l’autre&nbsp;: le violet ne sert jamais à recolorer le logo, voir <a class="ds-lien-texte" href="logo.html#interdit-recolorer">«&nbsp;Ne le recolorez pas&nbsp;»</a>.</figcaption>
     </figure>
-    <p class="body-sm ds-oeil ds-mesure">Ce partage décrit ce qui existe aujourd’hui. Il n’a été validé par personne du côté de la marque.</p>
   </div>
 </section>`;
 }
@@ -284,6 +288,7 @@ function detteHtml(valeurs) {
   const tableau = famille('tableau');
   const survol = tableau.find((p) => p.nom === 'table tr:hover');
   const entete = tableau.find((p) => p.nom === 'table th');
+  const retours = PAIRES_KIT.filter((p) => ['alerte', 'bouton', 'notification'].includes(p.famille));
   const bConformes = badges.filter((p) => !jugerPaire(p, valeurs).echoue).map((p) => p.libelle);
   const petit = String(GRAND_TEXTE.pxGras).replace('.', ',');
   const seuil = String(SEUIL).replace('.', ',');
@@ -303,16 +308,28 @@ function detteHtml(valeurs) {
     <aside class="ds-message dt-decision">
       <h3 class="h6">Pourquoi elles sont publiées</h3>
       <p class="body-sm">Le ${DATE_CONSTAT.texte}, la décision a été prise de publier ces chiffres plutôt que de les taire, ou de changer la palette d’un prototype qui tourne. Corriger la palette revient à l’école&nbsp;: ce guide ne la modifie pas. Les correctifs sont notés dans <code>docs/correctifs-figma.md</code>, où Figma fait foi et le code suit.</p>
-      <p class="body-sm">Ce tableau n’est pas l’inventaire complet du kit. Il couvre les badges de statut, les cartes KPI et les tableaux. Les alertes, le bouton de danger et les notifications de succès et d’erreur ont aussi des paires sous le seuil, qui ne sont pas encore listées ici.</p>
+      <p class="body-sm">Ce tableau n’est pas l’inventaire complet du kit. Il couvre les badges de statut, les cartes KPI, les tableaux, les alertes, le bouton de danger et les notifications. Il reste des paires repérées dans le CSS, pas encore vérifiées dans les vues, donc non publiées&nbsp;: le texte d’erreur et le texte de succès (${code('.text-error')}, ${code('.text-success')}), le texte désactivé, et le texte discret posé directement sur le fond de l’application, hors des tableaux.</p>
     </aside>
     <nav class="ds-groupes" aria-label="Dans cette section">
       <ul class="ds-groupes__liste">
         <li><a class="ds-groupes__lien body-sm" href="#dette-badges">Les badges</a></li>
         <li><a class="ds-groupes__lien body-sm" href="#dette-kpi">Les cartes KPI</a></li>
         <li><a class="ds-groupes__lien body-sm" href="#dette-tableau">Les tableaux</a></li>
+        <li><a class="ds-groupes__lien body-sm" href="#dette-retours">Alertes, danger, notifications</a></li>
         <li><a class="ds-groupes__lien body-sm" href="#dette-secondaire">Un seul changement pour ${enLettres(s.couvertes)} lignes</a></li>
       </ul>
     </nav>
+    <div class="dt-index">
+      <p class="body-sm">Retrouver une paire&nbsp;: chacune mène à sa ligne.</p>
+      <nav aria-label="Retrouver une paire">
+        <ul class="ds-groupes__liste">
+          ${PAIRES_KIT.map((p) => {
+    const j = jugerPaire(p, valeurs);
+    return `<li><a class="ds-groupes__lien body-sm" href="#${ancrePaire(p.nom)}">${echapper(p.nom)}&nbsp;<span class="dt-index__verdict"><span aria-hidden="true">${j.echoue ? '✕' : '✓'}</span> ${j.affiche}:1, ${j.echoue ? 'échoue' : 'conforme'}</span></a></li>`;
+  }).join('\n          ')}
+        </ul>
+      </nav>
+    </div>
 
     <div class="dt-bloc" id="dette-badges">
       <div class="ds-mesure lg-tete">
@@ -338,11 +355,19 @@ function detteHtml(valeurs) {
       ${tableauDetteHtml(tableau, valeurs, { titreId: 'titre-dette-tableau' })}
     </div>
 
+    <div class="dt-bloc" id="dette-retours">
+      <div class="ds-mesure lg-tete">
+        <h3 class="h5" id="titre-dette-retours">Les alertes, le bouton de danger et les notifications</h3>
+        <p class="body">Une alerte se pose en pâle, comme un badge&nbsp;: un texte de couleur sur le fond clair de sa teinte. Un bouton de danger et une notification ont un texte blanc, en gras, sur un aplat&nbsp;: le rouge de l’erreur ou le vert du succès. ${compte(retours) === retours.length ? `Les ${enLettres(retours.length)} lignes` : `${majuscule(enLettres(compte(retours)))} lignes sur ${enLettres(retours.length)}`} ne passent pas. Sur un aplat, ce n’est pas le texte qu’il faut changer, il est déjà blanc&nbsp;: c’est l’aplat.</p>
+      </div>
+      ${tableauDetteHtml(retours, valeurs, { titreId: 'titre-dette-retours' })}
+    </div>
+
     <div class="dt-bloc ds-mesure lg-tete" id="dette-secondaire">
       <h3 class="h5">Un seul changement pour ${enLettres(s.couvertes)} lignes</h3>
       <p class="body">Les ${enLettres(s.couvertes)} lignes en ${code('--text-secondary')}, les cartes KPI et la ligne survolée, tiennent à un seul token. Le foncer jusqu’à ${code(s.tonSecondaire)} les fait passer toutes, y compris sur le plus exigeant des fonds, ${code(s.fondExigeant)}. C’est un repère calculé, pas une décision&nbsp;: le ton exact se choisit dans Figma, et il touche tous les textes discrets de l’outil.</p>
       <h3 class="h6">Pour un nouvel écran</h3>
-      <p class="body">Ne copiez aucune des lignes qui ne passent pas. Sur ces mêmes fonds, ${code('--text-primary')} fait au moins ${fmtRatio(Math.round(s.textePrincipalMin * 100) / 100)}:1&nbsp;: c’est le texte à employer en attendant. La couleur d’un statut peut alors se porter par un filet ou une pastille plutôt que par le texte.</p>
+      <p class="body">Ne copiez aucune des lignes qui ne passent pas. Sur les ${s.fondsPales} lignes à fond pâle, ${code('--text-primary')} fait au moins ${fmtRatio(Math.round(s.textePrincipalMin * 100) / 100)}:1&nbsp;: c’est le texte à employer en attendant, et la couleur d’un statut peut alors se porter par un filet ou une pastille plutôt que par le texte. Sur un aplat (${s.aplats} lignes), le texte principal ne tient pas&nbsp;: c’est le fond qu’il faut prendre plus sombre, comme ${code('--feedback-error-hover')} pour le rouge.</p>
     </div>
   </div>
 </section>`;
