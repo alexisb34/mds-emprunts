@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Badge et étiquette — Design system MyDigitalSchool</title>
+  <meta name="description" content="Le badge dit un état, l’étiquette se choisit : les six teintes, la fonction badge() et ses familles, le HTML à copier, et la dette de contraste du badge.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Badge et étiquette</h1>
+        <p class="ds-chapeau ds-mesure">Deux pastilles qui se ressemblent et ne font pas le même travail. Le badge dit où en est quelque chose&nbsp;; l’étiquette est une catégorie qu’on choisit.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">Le <strong>badge</strong> (<code>.badge</code>) dit l’état d’une chose&nbsp;: un matériel est disponible, un emprunt est en retard. Il s’affiche, il ne se touche pas.</p>
+        <p class="body ds-mesure">L’<strong>étiquette</strong> (<code>.chip</code>) est le «&nbsp;tag&nbsp;» de la maquette Figma, dont la page s’appelle «&nbsp;Badge &amp; Tag&nbsp;». C’est une catégorie qu’on choisit&nbsp;: Photo, Audio, Lumière. Elle se touche.</p>
+        <p class="body ds-mesure"><strong>Ce qui décide entre les deux&nbsp;: peut-on cliquer dessus&nbsp;?</strong> Si oui, c’est une étiquette. Si elle ne fait que renseigner, c’est un badge.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <h3 class="h6">Les badges</h3>
+        <div id="cadre-variantes"></div>
+        <h3 class="h6">Les étiquettes</h3>
+        <p class="body ds-mesure">Dans le cadre, «&nbsp;Tout&nbsp;» est l’étiquette active. Les étiquettes sont des démonstrations&nbsp;: elles ne filtrent rien.</p>
+        <div id="cadre-etiquettes"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Les six teintes du badge</h3>
+        <p class="body ds-mesure">Un badge a la couleur du statut qu’il porte, lue dans les tokens <code>--status-*-fg</code> et <code>--status-*-bg</code>. Un point précède toujours le libellé&nbsp;: la feuille le dessine, il ne s’écrit pas.</p>
+        <ul class="ds-liste body">
+          <li><code>badge--available</code>, vert&nbsp;: ce qui est prêt ou terminé. Disponible, Retourné, Clos, Actif.</li>
+          <li><code>badge--borrowed</code>, violet&nbsp;: ce qui est en cours chez quelqu’un. Emprunté, En cours.</li>
+          <li><code>badge--reserved</code>, turquoise&nbsp;: ce qui est prévu. Réservé, À venir.</li>
+          <li><code>badge--late</code>, rouge&nbsp;: ce qui demande qu’on agisse. En retard, Ouvert.</li>
+          <li><code>badge--maintenance</code>, jaune&nbsp;: ce qui est en réparation. Maintenance.</li>
+          <li><code>badge--hs</code>, gris&nbsp;: ce qui est fini sans suite, ou hors jeu. Hors service, Refusé, Annulé, Désactivé.</li>
+        </ul>
+        <p class="body ds-mesure"><strong>Une teinte ne porte pas un sens universel.</strong> «&nbsp;En cours&nbsp;» est violet pour un emprunt et jaune pour une intervention de maintenance. C’est la famille du badge qui décide de sa teinte, pas son libellé.</p>
+
+        <h3 class="h6">Les familles de <code>badge()</code></h3>
+        <p class="body ds-mesure">La fonction <code>badge(kind, value)</code> de <code>js/ui.js</code> prend deux arguments&nbsp;: la famille, puis la valeur. Elle en tire la teinte et le libellé français. Sept familles existent&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li><code>item</code>&nbsp;: l’état d’un matériel.</li>
+          <li><code>loan</code>&nbsp;: l’état d’un emprunt, plus <code>en_retard</code>, qui n’est pas stocké mais calculé.</li>
+          <li><code>booking</code>&nbsp;: l’état d’une réservation de la salle photo.</li>
+          <li><code>maint</code>&nbsp;: l’état d’une intervention de maintenance.</li>
+          <li><code>circuit</code>&nbsp;: la façon dont un matériel s’emprunte.</li>
+          <li><code>role</code>&nbsp;: le rôle d’une personne.</li>
+          <li><code>derived</code>&nbsp;: les valeurs calculées, qui ne sont pas un statut stocké&nbsp;: en retard, sortie non faite, compte actif ou désactivé, horloge simulée ou temps réel.</li>
+        </ul>
+        <p class="body ds-mesure">Le tableau ci-dessous liste chaque couple que la fonction sait produire, avec ce qu’elle rend.</p>
+        <div id="cadre-familles"></div>
+        <p class="body ds-mesure"><strong>Une valeur inconnue ne casse rien&nbsp;: elle devient grise.</strong> <code>badge('item', 'perdu')</code> rend un <code>badge--hs</code> qui affiche «&nbsp;perdu&nbsp;», tel quel. Un badge gris qui montre un identifiant technique en minuscules, c’est une valeur mal orthographiée à l’appel.</p>
+
+        <h3 class="h6">Les étiquettes</h3>
+        <p class="body ds-mesure"><code>chip</code> au repos, <code>chip--active</code> pour celle qui est choisie. Le libellé est mis en capitales par la feuille, à 11&nbsp;px&nbsp;: on l’écrit en casse normale. Dans l’application, les étiquettes sont rangées dans <code>.chips</code>, qui vient de <code>css/mobile.css</code> et les fait défiler à l’horizontale&nbsp;; l’exemple ne charge pas cette feuille et les range avec <code>.row</code>.</p>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <ul class="ds-liste body">
+          <li><strong>Aucun état pour l’étiquette autre que « active ».</strong> Pas de survol, pas d’état désactivé, pas d’anneau de focus dessiné. Rien ne change quand la souris passe dessus, alors que c’est une cible.</li>
+          <li><strong>Aucune autre taille.</strong> Le badge fait 22&nbsp;px de haut, l’étiquette 28&nbsp;px.</li>
+          <li><strong>Aucun badge sans point,</strong> ni avec une icône.</li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+
+        <h3 class="h6">Un badge se produit avec <code>badge()</code>, pas à la main</h3>
+        <p class="body ds-mesure">Écrire <code>&lt;span class="badge badge--late"&gt;</code> à la main, c’est choisir soi-même une teinte et un libellé que la fonction choisit déjà, et diverger le jour où l’un change. Importez la fonction&nbsp;: <code>import { badge } from './ui.js'</code>. <code>badge('loan', 'en_retard')</code> rend le HTML ci-dessous.</p>
+        <div id="cadre-produire"></div>
+        <div id="code-produire"></div>
+        <ul class="ds-liste body">
+          <li>Le libellé vient de <code>LABELS</code>, dans <code>js/models.js</code>&nbsp;: pour changer un mot, c’est là.</li>
+          <li>Le libellé est échappé, le résultat est du HTML&nbsp;: posez-le dans un <code>innerHTML</code>, ou dans un gabarit qui en est un.</li>
+        </ul>
+
+        <h3 class="h6">Une étiquette est un bouton</h3>
+        <p class="body ds-mesure">Une étiquette n’a pas de fonction, c’est du HTML à copier. Le <code>type="button"</code> évite qu’elle envoie un formulaire.</p>
+        <div id="code-etiquettes"></div>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour déclencher une action.</strong> Un badge ne répond à aucun clic. Employez <a href="bouton.html">un bouton</a>.</li>
+          <li><strong>Pour choisir ou filtrer.</strong> Un état que personne ne choisit n’est pas une étiquette&nbsp;; et un badge ne se coche pas. Pour filtrer, c’est <code>.chip</code>.</li>
+          <li><strong>Pour compter.</strong> Le nombre d’un onglet ou d’une entrée de menu est un compteur neutre, <code>.tab__count</code> ou <code>.nav-item__count</code>&nbsp;: voir <a href="navigation.html">Navigation</a>.</li>
+          <li><strong>Pour dire une erreur ou donner une consigne.</strong> Une phrase n’a pas sa place dans une pastille de 22&nbsp;px. C’est le rôle de l’alerte et de la notification&nbsp;: <a href="modale.html">Modale et retours</a>.</li>
+          <li><strong>Pour inventer une septième teinte.</strong> Employez la teinte de l’état le plus proche, et distinguez le nouvel état par son libellé.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Contraste, mesuré&nbsp;: la teinte seule ne suffit pas</h3>
+        <p class="body ds-mesure">Un libellé de badge fait 11&nbsp;px en gras, taille pour laquelle WCAG exige 4,5:1. Les six paires, mesurées dans <code>css/tokens.css</code> au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li><code>badge--maintenance</code>&nbsp;: <strong id="mesure-maintenance">à mesurer depuis un serveur</strong></li>
+          <li><code>badge--available</code>&nbsp;: <strong id="mesure-available">à mesurer depuis un serveur</strong></li>
+          <li><code>badge--reserved</code>&nbsp;: <strong id="mesure-reserved">à mesurer depuis un serveur</strong></li>
+          <li><code>badge--hs</code>&nbsp;: <strong id="mesure-hs">à mesurer depuis un serveur</strong></li>
+          <li><code>badge--late</code>&nbsp;: <strong id="mesure-late">à mesurer depuis un serveur</strong></li>
+          <li><code>badge--borrowed</code>&nbsp;: <strong id="mesure-borrowed">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Le chapitre <a href="../couleurs.html#dette">Couleurs</a> publie le tableau complet de ces paires, et ce qu’il faudrait faire pour les corriger. En attendant, <strong>le libellé est la seule information fiable d’un badge&nbsp;: ne le retirez jamais, et ne dites rien par la teinte seule.</strong></p>
+
+        <h3 class="h6">Lecteurs d’écran</h3>
+        <p class="body ds-mesure">Un badge est un <code>&lt;span&gt;</code> sans rôle&nbsp;: son libellé est lu comme n’importe quel texte. Le point est dessiné par la feuille, il n’est pas dans le balisage. Un badge se lit à côté de ce qu’il qualifie&nbsp;; dans un tableau, c’est l’en-tête de sa colonne qui le nomme.</p>
+
+        <h3 class="h6">Étiquette</h3>
+        <p class="body ds-mesure">Une étiquette est un <code>&lt;button&gt;</code>&nbsp;: elle s’atteint au clavier. Mais <strong>son état actif ne tient qu’à la couleur</strong>, et l’écran du catalogue ne pose pas <code>aria-pressed</code>. Une personne qui n’en voit pas la couleur ne sait pas laquelle est choisie. Ajoutez <code>aria-pressed="true"</code> sur l’active, <code>"false"</code> sur les autres.</p>
+        <ul class="ds-liste body">
+          <li>étiquette au repos, 11&nbsp;px en gras&nbsp;: <strong id="mesure-chip">à mesurer depuis un serveur</strong></li>
+          <li>étiquette active&nbsp;: <strong id="mesure-chip-active">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Une étiquette fait 28&nbsp;px de haut&nbsp;: au-dessus du minimum de 24&nbsp;px de WCAG 2.5.8, sous les 44&nbsp;px que recommande WCAG 2.5.5. Le badge, qui ne se touche pas, n’est pas concerné.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesurePaire, mesureTexte } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/badge.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/badge.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/badge.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
+    // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
+    document.getElementById('cadre-variantes').outerHTML = cadreHtml({ fichier: 'badge.html', demo: 'variantes', titre: 'Les six teintes de badge, rendues par le CSS de l’outil d’emprunt' });
+    document.getElementById('cadre-etiquettes').outerHTML = cadreHtml({ fichier: 'badge.html', demo: 'etiquettes', titre: 'Cinq étiquettes de catégorie, dont la première est active' });
+    document.getElementById('cadre-familles').outerHTML = cadreHtml({ fichier: 'badge.html', demo: 'familles', titre: 'Chaque couple famille et valeur que badge() sait produire, avec le badge rendu' });
+    document.getElementById('cadre-produire').outerHTML = cadreHtml({ fichier: 'badge.html', demo: 'produire', titre: 'Le badge que rend la fonction badge() pour un emprunt en retard' });
+    document.getElementById('code-produire').outerHTML = codeHtml({ fichier: 'badge.html', demo: 'produire', titre: 'Le HTML que rend la fonction badge() pour un emprunt en retard' });
+    document.getElementById('code-etiquettes').outerHTML = codeHtml({ fichier: 'badge.html', demo: 'etiquettes', titre: 'Cinq étiquettes de catégorie, dont la première est active' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais écrits
+    // dans la page. Sur un fichier local, le navigateur refuse de lire les règles de la feuille et
+    // la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-maintenance': mesurePaire(valeurs, 'badge--maintenance'),
+        'mesure-available': mesurePaire(valeurs, 'badge--available'),
+        'mesure-reserved': mesurePaire(valeurs, 'badge--reserved'),
+        'mesure-hs': mesurePaire(valeurs, 'badge--hs'),
+        'mesure-late': mesurePaire(valeurs, 'badge--late'),
+        'mesure-borrowed': mesurePaire(valeurs, 'badge--borrowed'),
+        'mesure-chip': mesureTexte(valeurs, '--text-secondary', '--bg-surface', 11, true),
+        'mesure-chip-active': mesureTexte(valeurs, '--text-on-brand', '--brand-primary', 11, true),
+      });
+    }
+  </script>
+</body>
+</html>

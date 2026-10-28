@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Avatar — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les démonstrations de l’avatar, rendues par le CSS de l’outil d’emprunt. Chaque section est montrée dans un cadre de la page Avatar.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les seules feuilles dont ce composant a besoin : celles de l’application, rien de plus. Voir
+       l’exemple du bouton pour le détail. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    body { padding: var(--space-lg); }
+  </style>
+</head>
+<body>
+  <!-- Les deux tailles, chacune à côté du nom, comme l’outil les pose. -->
+  <section data-demo="tailles">
+    <div class="row row--wrap">
+      <span class="row"><span class="avatar avatar--sm" title="Léa Pezzetti">LP</span>Léa Pezzetti</span>
+      <span class="row"><span class="avatar avatar--md" title="Yann Guihard">YG</span>Yann Guihard</span>
+    </div>
+  </section>
+
+  <!-- Ce que rend avatar({ prenom: 'Léa', nom: 'Pezzetti' }, 'md') : un test appelle la fonction et compare. -->
+  <section data-demo="produire">
+    <span class="avatar avatar--md" title="Léa Pezzetti">LP</span>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

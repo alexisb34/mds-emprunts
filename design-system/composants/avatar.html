@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Avatar — Design system MyDigitalSchool</title>
+  <meta name="description" content="L’avatar de l’outil d’emprunt : un cercle et deux initiales, ses deux tailles, la fonction avatar(), et ce qu’il ne sait pas faire.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Avatar</h1>
+        <p class="ds-chapeau ds-mesure">Un cercle, deux initiales&nbsp;: de quoi reconnaître une personne dans un tableau ou dans un en-tête. Deux tailles, aucune image.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">L’avatar (<code>.avatar</code>) représente une personne par l’initiale de son prénom et celle de son nom. On le pose à côté du nom, dans une ligne de tableau, une barre latérale ou une fiche, pour retrouver la personne d’un coup d’œil.</p>
+        <p class="body ds-mesure">Il n’a pas de sens tout seul&nbsp;: il accompagne un nom.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <p class="body ds-mesure">Les deux tailles, chacune à côté du nom comme l’outil les pose. À la souris, un survol de l’avatar affiche le nom complet dans une infobulle.</p>
+        <div id="cadre-tailles"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Les deux tailles</h3>
+        <ul class="ds-liste body">
+          <li><code>avatar--sm</code>&nbsp;: <strong id="mesure-avatar-sm">à mesurer depuis un serveur</strong> de côté (<code>--size-avatar-sm</code>), initiales à 12&nbsp;px. C’est la taille des lignes de tableau, de la barre latérale et de l’en-tête mobile.</li>
+          <li><code>avatar--md</code>&nbsp;: 44&nbsp;px de côté, initiales à 14&nbsp;px. C’est la taille de l’écran de connexion et de la fiche d’une personne. Ces 44&nbsp;px sont écrits en dur dans la feuille, ils ne viennent d’aucun token.</li>
+        </ul>
+
+        <h3 class="h6">La couleur</h3>
+        <p class="body ds-mesure">Par défaut, des initiales blanches sur le violet de la marque. Deux écrans l’inversent, parce que leur barre est blanche&nbsp;: un fond violet très clair et des initiales violettes. C’est la barre latérale de l’administration (<code>.sidebar__footer .avatar</code>, dans <code>css/admin.css</code>) et l’en-tête mobile (<code>.m-header__avatar .avatar</code>, dans <code>css/mobile.css</code>). L’exemple ne montre pas cette version&nbsp;: elle vit dans des feuilles que les exemples ne chargent pas.</p>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <ul class="ds-liste body">
+          <li><strong>Aucune photo.</strong> <code>avatar()</code> ne rend jamais d’image, seulement des initiales.</li>
+          <li><strong>Aucune troisième taille.</strong> <code>avatar(user, 'lg')</code> écrit la classe <code>avatar--lg</code>, que rien ne définit&nbsp;: l’avatar perd sa taille et se réduit à ses deux lettres. La fonction ne vérifie pas la taille qu’on lui passe.</li>
+          <li><strong>Aucune couleur par personne, aucune pastille de statut.</strong></li>
+          <li><strong>Aucun moyen de distinguer deux personnes qui ont les mêmes initiales.</strong> Seul le nom, à côté, le fait.</li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+
+        <h3 class="h6">Un avatar se produit avec <code>avatar(user, size)</code></h3>
+        <p class="body ds-mesure"><code>user</code> est un objet qui porte <code>prenom</code> et <code>nom</code>&nbsp;; <code>size</code> vaut <code>'sm'</code> par défaut, ou <code>'md'</code>. La fonction vient de <code>js/ui.js</code>. <code>avatar({ prenom: 'Léa', nom: 'Pezzetti' }, 'md')</code> rend le HTML ci-dessous.</p>
+        <div id="cadre-produire"></div>
+        <div id="code-produire"></div>
+        <ul class="ds-liste body">
+          <li>Le nom complet est écrit dans <code>title</code>, et les initiales dans le contenu. Les deux sont échappés.</li>
+          <li>Les initiales sont mises en capitales. Si le prénom ou le nom manque, il n’y en a qu’une.</li>
+        </ul>
+
+        <h3 class="h6">Dans une ligne, à côté du nom</h3>
+        <p class="body ds-mesure">C’est la forme que les tableaux et les fiches de l’outil écrivent&nbsp;: un <code>.row</code> qui range l’avatar et le nom.</p>
+        <div id="code-tailles"></div>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour représenter un objet.</strong> Un avatar est une personne. Un matériel a sa photo, dans l’image d’une carte&nbsp;: voir <a href="cartes.html">Cartes</a>.</li>
+          <li><strong>Pour dire un état.</strong> Une pastille de couleur qui dit «&nbsp;en retard&nbsp;» est un badge&nbsp;: <a href="badge.html">Badge et étiquette</a>.</li>
+          <li><strong>Pour identifier quelqu’un sans écrire son nom.</strong> Deux personnes peuvent avoir les mêmes initiales, et l’infobulle n’existe qu’à la souris. Écrivez le nom à côté. Dans l’outil, seul l’en-tête mobile pose l’avatar seul&nbsp;: c’est celui de la personne connectée, dans un lien qui porte un <code>aria-label</code>.</li>
+          <li><strong>Pour afficher une photo de profil.</strong> Le composant n’en sait rien&nbsp;; il faudrait le dessiner dans Figma avant de le coder.</li>
+          <li><strong>Pour une autre taille.</strong> Il y en a deux. Une troisième se définit dans la feuille, pas dans l’appel.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Le nom</h3>
+        <p class="body ds-mesure">L’attribut <code>title</code> porte le nom complet, mais il ne s’affiche qu’au survol de la souris. Le nom doit donc être écrit à côté. Rien dans le balisage ne masque les initiales aux lecteurs d’écran&nbsp;: elles font partie du texte de la ligne, avant le nom. <code>avatar()</code> n’a pas d’option pour poser <code>aria-hidden="true"</code>.</p>
+
+        <h3 class="h6">Contraste, mesuré</h3>
+        <p class="body ds-mesure">Les initiales font 12 et 14&nbsp;px en gras, taille pour laquelle WCAG exige 4,5:1. Les deux paires, mesurées dans <code>css/tokens.css</code> au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>initiales blanches sur le violet de la marque, version par défaut&nbsp;: <strong id="mesure-avatar">à mesurer depuis un serveur</strong></li>
+          <li>initiales violettes sur le violet très clair, version de la barre latérale et de l’en-tête mobile&nbsp;: <strong id="mesure-avatar-clair">à mesurer depuis un serveur</strong></li>
+        </ul>
+
+        <h3 class="h6">Taille de cible</h3>
+        <p class="body ds-mesure">L’avatar n’est pas interactif, sauf dans l’en-tête mobile, où il sert de contenu à un lien vers le profil. Il y fait 32&nbsp;px&nbsp;: au-dessus du minimum de 24&nbsp;px de WCAG 2.5.8, sous les 44&nbsp;px que recommande WCAG 2.5.5.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesureTexte } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/avatar.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/avatar.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/avatar.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
+    // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
+    document.getElementById('cadre-tailles').outerHTML = cadreHtml({ fichier: 'avatar.html', demo: 'tailles', titre: 'Les deux tailles d’avatar, chacune à côté d’un nom' });
+    document.getElementById('cadre-produire').outerHTML = cadreHtml({ fichier: 'avatar.html', demo: 'produire', titre: 'L’avatar que rend la fonction avatar() pour une personne, en taille md' });
+    document.getElementById('code-produire').outerHTML = codeHtml({ fichier: 'avatar.html', demo: 'produire', titre: 'Le HTML que rend la fonction avatar() pour une personne, en taille md' });
+    document.getElementById('code-tailles').outerHTML = codeHtml({ fichier: 'avatar.html', demo: 'tailles', titre: 'Deux avatars, chacun rangé à côté d’un nom' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais écrits
+    // dans la page. Sur un fichier local, le navigateur refuse de lire les règles de la feuille et
+    // la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-avatar-sm': valeurs['--size-avatar-sm'],
+        'mesure-avatar': mesureTexte(valeurs, '--text-on-brand', '--brand-primary', 12, true),
+        'mesure-avatar-clair': mesureTexte(valeurs, '--text-brand', '--brand-primary-subtle', 12, true),
+      });
+    }
+  </script>
+</body>
+</html>

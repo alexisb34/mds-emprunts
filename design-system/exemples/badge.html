@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Badge et étiquette — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les démonstrations de badge et d’étiquette, rendues par le CSS de l’outil d’emprunt. Chaque section est montrée dans un cadre de la page Badge et étiquette.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les seules feuilles dont ce composant a besoin : celles de l’application, rien de plus. Voir
+       l’exemple du bouton pour le détail. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    body { padding: var(--space-lg); }
+  </style>
+</head>
+<body>
+  <!-- Les six teintes d’état, avec les libellés que l’outil leur donne. -->
+  <section data-demo="variantes">
+    <div class="row row--wrap">
+      <span class="badge badge--available">Disponible</span>
+      <span class="badge badge--borrowed">Emprunté</span>
+      <span class="badge badge--reserved">Réservé</span>
+      <span class="badge badge--late">En retard</span>
+      <span class="badge badge--maintenance">Maintenance</span>
+      <span class="badge badge--hs">Hors service</span>
+    </div>
+  </section>
+
+  <!-- Chaque couple (famille, valeur) que badge() sait produire, avec ce qu’il rend. Un test
+       appelle la vraie fonction et compare, ligne à ligne. -->
+  <section data-demo="familles">
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr><th>Famille</th><th>Valeur</th><th>Badge</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>item</td><td>disponible</td><td><span class="badge badge--available">Disponible</span></td></tr>
+          <tr><td>item</td><td>emprunte</td><td><span class="badge badge--borrowed">Emprunté</span></td></tr>
+          <tr><td>item</td><td>maintenance</td><td><span class="badge badge--maintenance">Maintenance</span></td></tr>
+          <tr><td>item</td><td>hs</td><td><span class="badge badge--hs">Hors service</span></td></tr>
+          <tr><td>loan</td><td>reservee</td><td><span class="badge badge--reserved">Réservé</span></td></tr>
+          <tr><td>loan</td><td>en_cours</td><td><span class="badge badge--borrowed">En cours</span></td></tr>
+          <tr><td>loan</td><td>retournee</td><td><span class="badge badge--available">Retourné</span></td></tr>
+          <tr><td>loan</td><td>refusee</td><td><span class="badge badge--hs">Refusé</span></td></tr>
+          <tr><td>loan</td><td>expiree</td><td><span class="badge badge--hs">Non retiré</span></td></tr>
+          <tr><td>loan</td><td>annulee</td><td><span class="badge badge--hs">Annulé</span></td></tr>
+          <tr><td>loan</td><td>en_retard</td><td><span class="badge badge--late">En retard</span></td></tr>
+          <tr><td>booking</td><td>a_venir</td><td><span class="badge badge--reserved">À venir</span></td></tr>
+          <tr><td>booking</td><td>en_cours</td><td><span class="badge badge--borrowed">En cours</span></td></tr>
+          <tr><td>booking</td><td>terminee</td><td><span class="badge badge--available">Terminée</span></td></tr>
+          <tr><td>booking</td><td>annulee</td><td><span class="badge badge--hs">Annulée</span></td></tr>
+          <tr><td>maint</td><td>ouvert</td><td><span class="badge badge--late">Ouvert</span></td></tr>
+          <tr><td>maint</td><td>en_cours</td><td><span class="badge badge--maintenance">En cours</span></td></tr>
+          <tr><td>maint</td><td>clos</td><td><span class="badge badge--available">Clos</span></td></tr>
+          <tr><td>circuit</td><td>self</td><td><span class="badge badge--available">Self-service</span></td></tr>
+          <tr><td>circuit</td><td>salle</td><td><span class="badge badge--reserved">Salle photo</span></td></tr>
+          <tr><td>circuit</td><td>valeur</td><td><span class="badge badge--borrowed">Sur réservation</span></td></tr>
+          <tr><td>role</td><td>eleve</td><td><span class="badge badge--reserved">Élève</span></td></tr>
+          <tr><td>role</td><td>intervenant</td><td><span class="badge badge--borrowed">Intervenant</span></td></tr>
+          <tr><td>role</td><td>pedago</td><td><span class="badge badge--available">Pédagogie</span></td></tr>
+          <tr><td>derived</td><td>en_retard</td><td><span class="badge badge--late">En retard</span></td></tr>
+          <tr><td>derived</td><td>sortie_non_faite</td><td><span class="badge badge--late">Sortie non faite</span></td></tr>
+          <tr><td>derived</td><td>actif</td><td><span class="badge badge--available">Actif</span></td></tr>
+          <tr><td>derived</td><td>desactive</td><td><span class="badge badge--hs">Désactivé</span></td></tr>
+          <tr><td>derived</td><td>horloge_demo</td><td><span class="badge badge--maintenance">Horloge simulée</span></td></tr>
+          <tr><td>derived</td><td>temps_reel</td><td><span class="badge badge--available">Temps réel</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Ce que rend badge('loan', 'en_retard') : un test appelle la fonction et compare. -->
+  <section data-demo="produire">
+    <span class="badge badge--late">En retard</span>
+  </section>
+
+  <!-- Le tag : une catégorie qu’on choisit. Le premier est actif. -->
+  <section data-demo="etiquettes">
+    <div class="row row--wrap">
+      <button type="button" class="chip chip--active">Tout</button>
+      <button type="button" class="chip">Photo</button>
+      <button type="button" class="chip">Audio</button>
+      <button type="button" class="chip">Bureautique</button>
+      <button type="button" class="chip">Lumière</button>
+    </div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>
