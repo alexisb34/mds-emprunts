@@ -69,7 +69,7 @@ const utilise = (motif) => SOURCES.filter((s) => motif.test(s.source)).map((s) =
   .concat(RACINE_HTML.filter((f) => motif.test(lire(f))));
 
 const PAGES_10 = ['badge', 'avatar', 'formulaires', 'cartes'];
-const PAGES_11 = [];
+const PAGES_11 = ['tableau', 'kpi', 'navigation', 'icones'];
 const PAGES = [...PAGES_10, ...PAGES_11];
 
 // ---- Les tests du brief, mot pour mot ----
@@ -587,3 +587,447 @@ test('cartes : toutes les formes de carte du CSS sont montrées', () => {
   for (const v of variantes) assert.match(exemple('cartes'), new RegExp(`card--${v}\\b`));
 });
 
+// >>> TÂCHE 11 : tout ce qui suit disparaît de la version du premier commit
+
+// ---- Les tests du brief de la tâche 11, mot pour mot ----
+
+test('les deux versions d’onglets sont documentées et distinguées', () => {
+  const html = readFileSync(new URL('../design-system/composants/navigation.html', import.meta.url), 'utf8');
+  assert.match(html, /tab--active/);
+  assert.match(html, /is-active/);
+  assert.match(html, /desktop/i);
+});
+
+test('les quatre teintes de carte KPI sont montrées', () => {
+  const exemple = readFileSync(new URL('../design-system/exemples/kpi.html', import.meta.url), 'utf8');
+  for (const v of ['disponible', 'emprunte', 'retard', 'salle']) assert.match(exemple, new RegExp(`kpi--${v}\\b`));
+});
+
+test('les noms de kpi--brand et kpi--teal sont bien ceux de la planche kit.html', () => {
+  const kit = lire('kit.html');
+  assert.match(kit, /kpi--brand/);
+  assert.match(kit, /kpi--teal/);
+  assert.match(texte(page('kpi')), /kpi--brand et kpi--teal/);
+});
+
+// ======================= TABLEAU =======================
+
+// Les colonnes et les lignes que l'exemple montre : le test les rejoue avec les vraies fonctions.
+const COLONNES = [
+  { key: 'item', label: 'Matériel', sortable: true, sortValue: (r) => r.nom, render: (r) => `<strong>${r.nom}</strong><br><span class="body-tiny text-secondary">${r.code}</span>` },
+  { key: 'user', label: 'Emprunteur', sortable: true, sortValue: (r) => `${r.user.nom} ${r.user.prenom}`, render: (r) => `<span class="row">${avatar(r.user)}${r.user.prenom} ${r.user.nom}</span>` },
+  { key: 'fin', label: 'Retour prévu', sortable: true, sortValue: (r) => r.fin, render: (r) => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(...r.fin.split('-').map((n, i) => (i === 1 ? Number(n) - 1 : Number(n))))) },
+  { key: 'statut', label: 'Statut', sortable: true, sortValue: (r) => r.statut, render: (r) => badge('loan', r.statut) },
+  { key: 'actions', label: '', align: 'right', render: () => '<div class="table__actions"><button type="button" class="btn btn--primary btn--sm">Réceptionner</button><button type="button" class="btn btn--ghost btn--sm">Prolonger</button></div>' },
+];
+const LIGNES = [
+  { nom: 'Canon R10 + 18-55', code: 'MDS-0029', user: LEA, fin: '2026-09-19', statut: 'en_cours' },
+  { nom: 'DJI Ronin RSC2', code: 'MDS-0014', user: YANN, fin: '2026-09-14', statut: 'en_retard' },
+  { nom: 'Micro-cravate Sennheiser', code: 'MDS-0041', user: { prenom: 'Camille', nom: 'Dubois' }, fin: '2026-09-21', statut: 'en_cours' },
+];
+
+test('tableau : l’exemple « trie » est exactement ce que renderTable() rend, tri compris', () => {
+  const tri = { key: 'fin', dir: 'asc' };
+  const rendu = renderTable({ columns: COLONNES, rows: sortRows(LIGNES, tri, COLONNES), sort: tri, rowHref: (r) => `/materiel/${r.code}` });
+  const section = compact(demo('tableau', 'trie'));
+  assert.equal(section, `<div class="card">${rendu}</div>`);
+  assert.match(rendu, /Retour prévu ↑/, 'la flèche du tri n’est pas dans le libellé');
+});
+
+test('tableau : l’exemple « vide » est exactement ce que renderTable() rend sans ligne', () => {
+  assert.equal(compact(demo('tableau', 'vide')), `<div class="card">${renderTable({ columns: COLONNES, rows: [] })}</div>`);
+  assert.match(renderTable({ columns: COLONNES, rows: [] }), /<div class="empty-state">Aucun résultat\.<\/div>/);
+  assert.match(texte(page('tableau')), /« Aucun résultat\. » par défaut/);
+});
+
+test('tableau : ni l’en-tête ni la ligne ne sont focalisables, et aria-sort n’est posé nulle part', () => {
+  const source = lire('js/admin/table.js');
+  assert.doesNotMatch(source, /tabindex|tabIndex|aria-sort|scope=|role=/i, 'table.js pose un attribut d’accessibilité : la page doit changer');
+  assert.deepEqual(utilise(/aria-sort/), []);
+  const rendu = renderTable({ columns: COLONNES, rows: LIGNES, rowHref: (r) => `/materiel/${r.code}` });
+  assert.doesNotMatch(rendu, /<tr[^>]*tabindex|<th[^>]*tabindex|<th[^>]*scope/);
+  const t = texte(page('tableau'));
+  assert.match(t, /Aucun anneau de focus dessiné sur la ligne cliquable\. Et la ligne ne peut même pas recevoir le focus/);
+  assert.match(t, /aria-sort/);
+  assert.match(t, /tabindex/);
+  assert.match(t, /leur tabIndex vaut −1/);
+});
+
+test('tableau : la table des retards du tableau de bord ne contient ni lien ni bouton', () => {
+  const dashboard = lire('js/admin/views/dashboard.js');
+  const debut = dashboard.indexOf('function lateRows');
+  const fonction = dashboard.slice(debut, dashboard.indexOf('\n}', debut));
+  assert.ok(fonction.includes('data-href'), 'lateRows ne pose plus data-href');
+  assert.doesNotMatch(fonction, /<a[\s>]|<button|<input|<select/);
+  assert.match(texte(page('tableau')), /la ligne ne contient ni l’un ni l’autre/);
+});
+
+test('tableau : le survol colore toutes les lignes, cliquables ou non', () => {
+  assert.ok(regle(COMPONENTS, '.table tbody tr:hover'), 'la règle de survol a changé');
+  assert.doesNotMatch(COMPONENTS, /tr\[data-href\]:hover/);
+  assert.match(regle(COMPONENTS, '.table tr[data-href]'), /cursor:\s*pointer/);
+  assert.match(regle(COMPONENTS, '.table th[data-sortable]'), /cursor:\s*pointer/);
+  assert.match(regle(COMPONENTS, '.table th[data-sortable]'), /user-select:\s*none/);
+  assert.match(texte(page('tableau')), /Le survol colore toutes les lignes, cliquables ou non/);
+});
+
+test('tableau : un clic sur un bouton, un lien, un champ, un libellé ou une liste ne déclenche pas la ligne', () => {
+  const gestionnaires = [];
+  const ligne = { dataset: { href: '/materiel/MDS-0029' }, addEventListener: (_, f) => gestionnaires.push(f) };
+  const racine = { querySelectorAll: (s) => (s === 'tr[data-href]' ? [ligne] : []) };
+  const ouvertes = [];
+  bindTable(racine, { onSort: () => {}, onRow: (h) => ouvertes.push(h) });
+  gestionnaires[0]({ target: { closest: () => null } });
+  assert.deepEqual(ouvertes, ['/materiel/MDS-0029']);
+  const demandes = [];
+  gestionnaires[0]({ target: { closest: (s) => { demandes.push(s); return {}; } } });
+  assert.equal(ouvertes.length, 1, 'un clic sur un contrôle a ouvert la fiche');
+  assert.equal(demandes[0], 'button, a, input, label, select');
+  assert.match(texte(page('tableau')), /un bouton, un lien, un champ, un libellé ou une liste/);
+});
+
+test('tableau : le tri compare les nombres comme des nombres, le texte en français, et met le vide à la fin', () => {
+  const colonnes = [{ key: 'n' }];
+  const trier = (valeurs, dir = 'asc') => sortRows(valeurs.map((n) => ({ n })), { key: 'n', dir }, colonnes).map((r) => r.n);
+  assert.deepEqual(trier([10, 9, 100]), [9, 10, 100]);
+  assert.deepEqual(trier(['b', 'a', 'é', 'z']), ['a', 'b', 'é', 'z']);
+  assert.deepEqual(trier(['MDS-10', 'MDS-9', 'MDS-100']), ['MDS-9', 'MDS-10', 'MDS-100'], 'les chiffres se comparent en nombres');
+  assert.deepEqual(trier([3, null, 1]), [1, 3, null]);
+  assert.deepEqual(trier([3, null, 1], 'desc'), [3, 1, null], 'une valeur absente passe à la fin dans les deux sens');
+  const lignes = [{ n: 2 }, { n: 1 }];
+  sortRows(lignes, { key: 'n', dir: 'asc' }, colonnes);
+  assert.deepEqual(lignes.map((r) => r.n), [2, 1], 'sortRows trie une copie');
+  assert.deepEqual(toggleSort({ key: 'n', dir: 'asc' }, 'n'), { key: 'n', dir: 'desc' });
+  assert.deepEqual(toggleSort({ key: 'n', dir: 'desc' }, 'n'), { key: 'n', dir: 'asc' });
+  assert.deepEqual(toggleSort({ key: 'n', dir: 'desc' }, 'x'), { key: 'x', dir: 'asc' });
+});
+
+test('tableau : une colonne au libellé vide donne un en-tête sans nom, et un libellé est échappé', () => {
+  assert.match(renderTable({ columns: [{ key: 'a', label: '', align: 'right' }], rows: [{ a: 1 }] }), /<th style="text-align:right"><\/th>/);
+  assert.match(renderTable({ columns: [{ key: 'a', label: '<b>' }], rows: [] }), /<th>&lt;b&gt;<\/th>/);
+  assert.match(renderTable({ columns: [{ key: 'a', label: 'A' }], rows: [{ a: '<i>' }] }), /<td>&lt;i&gt;<\/td>/, 'sans render, la valeur est échappée');
+  assert.match(renderTable({ columns: [{ key: 'a', label: 'A', render: (r) => r.a }], rows: [{ a: '<i>' }] }), /<td><i><\/td>/, 'avec render, le HTML n’est pas échappé');
+  assert.match(texte(page('tableau')), /Il n’est pas échappé/);
+});
+
+test('tableau : renderTable() n’écrit data-sortable que pour une colonne triable, et data-href que pour une ligne qui a une route', () => {
+  const rendu = renderTable({ columns: [{ key: 'a', label: 'A', sortable: true }, { key: 'b', label: 'B' }], rows: [{ a: 1, b: 2 }, { a: 3, b: 4 }], rowHref: (r) => (r.a === 1 ? '/x' : null) });
+  assert.equal((rendu.match(/data-sortable/g) || []).length, 1);
+  assert.equal((rendu.match(/data-href/g) || []).length, 1);
+});
+
+test('tableau : la page affiche les deux paires du tableau, et la hauteur des boutons de ligne', () => {
+  const html = page('tableau');
+  assert.match(html, /mesurePaire\(valeurs, 'table th'\)/);
+  assert.match(html, /mesurePaire\(valeurs, 'table tr:hover'\)/);
+  assert.ok(PAIRES_KIT.some((p) => p.nom === 'table th') && PAIRES_KIT.some((p) => p.nom === 'table tr:hover'));
+  assert.match(html, /valeurs\['--size-control-sm'\]/);
+});
+
+test('tableau : .table n’a aucun repli pour un écran étroit', () => {
+  assert.doesNotMatch(`${COMPONENTS}${ADMIN}`, /overflow-x|\.table-wrap|\.table-responsive/);
+  assert.match(texte(page('tableau')), /Aucun repli pour un écran étroit/);
+  assert.match(texte(page('tableau')), /l’exemple ci-dessus déborde de la sienne et son cadre défile à l’horizontale/);
+});
+
+// ======================= CARTE KPI =======================
+
+test('kpi : toutes les variantes de carte du CSS sont montrées', () => {
+  const variantes = new Set([...COMPONENTS.matchAll(/\.kpi--([\w-]+)/g)].map((m) => m[1]));
+  assert.deepEqual([...variantes].sort(), ['disponible', 'emprunte', 'link', 'retard', 'salle']);
+  for (const v of variantes) assert.match(exemple('kpi'), new RegExp(`kpi--${v}\\b`), `kpi--${v} n’est pas montré`);
+});
+
+test('kpi : chaque teinte est le fond du badge de même état', () => {
+  for (const [kpi, statut] of [['disponible', 'available'], ['emprunte', 'borrowed'], ['retard', 'late'], ['salle', 'reserved']]) {
+    assert.match(regle(COMPONENTS, `.kpi--${kpi}`), new RegExp(`background:\\s*var\\(--status-${statut}-bg\\)`));
+    assert.match(regle(COMPONENTS, `.badge--${statut}`), new RegExp(`background:\\s*var\\(--status-${statut}-bg\\)`));
+  }
+  assert.match(texte(page('kpi')), /Chaque teinte est le fond du badge de l’état correspondant/);
+});
+
+test('kpi : la carte-lien est le gabarit de kpiCard() du tableau de bord, adresse réelle comprise', () => {
+  const dashboard = lire('js/admin/views/dashboard.js');
+  assert.match(dashboard, /<a class="kpi kpi--link \$\{variant\}" href="#\$\{escapeHtml\(href\)\}">/);
+  const lien = demo('kpi', 'lien');
+  assert.match(lien, /<a class="kpi kpi--link kpi--retard" href="#\/emprunts\/retards">/);
+  assert.ok(dashboard.includes("'/emprunts/retards'"), 'l’adresse de la démonstration n’est pas celle que le tableau de bord écrit');
+  assert.match(lien, /<span class="kpi__label">[^<]+<\/span><span class="kpi__value">[^<]+<\/span><span class="kpi__delta">[^<]+<\/span>/);
+});
+
+test('kpi : kpiCard n’est pas exportée, et la page le dit', () => {
+  const dashboard = lire('js/admin/views/dashboard.js');
+  assert.match(dashboard, /^function kpiCard/m);
+  assert.doesNotMatch(dashboard, /export (?:default )?function kpiCard|export \{[^}]*kpiCard/);
+  assert.match(texte(page('kpi')), /Aucune fonction partagée/);
+});
+
+test('kpi : l’anneau est tel que la page le décrit', () => {
+  const r = regle(COMPONENTS, '.kpi--link:focus-visible');
+  assert.match(r, /outline:\s*2px solid var\(--brand-primary\)/);
+  assert.match(r, /outline-offset:\s*2px/);
+  const t = texte(page('kpi'));
+  assert.match(t, /contour de 2 px de --brand-primary, décalé de 2 px à l’extérieur/);
+  assert.match(t, /l’une des deux seules règles de focus que le dépôt dessine/);
+  assert.match(t, /\.input:focus/);
+  assert.match(t, /docs\/correctifs-figma\.md/);
+  assert.match(page('kpi'), /mesureNonTexte\(valeurs, '--brand-primary', '--bg-canvas'\)/);
+});
+
+test('kpi : le soulèvement est de 2 px, ombre flottante, sans garde pour le mouvement réduit', () => {
+  assert.match(regle(COMPONENTS, '.kpi--link:hover'), /translateY\(-2px\)/);
+  assert.match(regle(COMPONENTS, '.kpi--link:hover'), /box-shadow:\s*var\(--shadow-floating\)/);
+  assert.match(regle(COMPONENTS, '.kpi--link'), /transition:\s*transform \.12s ease, box-shadow \.12s ease/);
+  assert.doesNotMatch(`${COMPONENTS}${ADMIN}`, /prefers-reduced-motion/);
+  const t = texte(page('kpi'));
+  assert.match(t, /soulève de 2 px/);
+  assert.match(t, /0,12 s/);
+  assert.match(t, /prefers-reduced-motion/);
+});
+
+test('kpi : .kpi__delta n’a qu’une règle, sans couleur de hausse ni de baisse', () => {
+  assert.equal((COMPONENTS.match(/\.kpi__delta/g) || []).length, 1);
+  assert.match(regle(COMPONENTS, '.kpi__delta'), /color:\s*var\(--text-secondary\)/);
+  assert.match(texte(page('kpi')), /ne colore ni une hausse ni une baisse/);
+});
+
+test('kpi : la page affiche les cinq paires de carte, celles que le kit publie', () => {
+  const html = page('kpi');
+  const paires = PAIRES_KIT.filter((p) => p.famille === 'kpi').map((p) => p.nom);
+  assert.deepEqual(paires.sort(), ['kpi', 'kpi--disponible', 'kpi--emprunte', 'kpi--retard', 'kpi--salle']);
+  for (const nom of paires) assert.match(html, new RegExp(`mesurePaire\\(valeurs, '${nom}'\\)`), `${nom} : le script ne le mesure pas`);
+});
+
+test('kpi : le chiffre, en grand et en gras, passe sur chaque teinte, comme la page le dit', () => {
+  assert.match(regle(COMPONENTS, '.kpi__value'), /color:\s*var\(--text-primary\)/);
+  assert.match(regle(COMPONENTS, '.kpi__value'), /font-size:\s*40px/);
+  assert.match(regle(COMPONENTS, '.kpi__value'), /font-weight:\s*800/);
+  for (const fond of ['--bg-muted', '--status-available-bg', '--status-borrowed-bg', '--status-late-bg', '--status-reserved-bg']) {
+    assert.ok(ratioExact(TOKENS['--text-primary'], TOKENS[fond]) >= 4.5, `${fond} : le chiffre ne passe plus`);
+  }
+  assert.match(texte(page('kpi')), /Le chiffre, lui, est en grand et en gras : il passe/);
+});
+
+test('kpi : le dessin des quatre teintes reprend les libellés du tableau de bord', () => {
+  const dashboard = lire('js/admin/views/dashboard.js');
+  const exemple4 = demo('kpi', 'teintes');
+  for (const libelle of ['Matériel disponible', 'Emprunts en cours', 'Retards', 'Réservations salle à venir']) {
+    assert.ok(dashboard.includes(libelle), `« ${libelle} » n’est pas un libellé du tableau de bord`);
+    assert.ok(exemple4.includes(libelle), `« ${libelle} » manque à l’exemple`);
+  }
+  assert.doesNotMatch(exemple4, /kpi--link/, 'les quatre teintes ne sont pas des liens');
+});
+
+// ======================= NAVIGATION =======================
+
+// Les cinq règles d'onglets que `admin.css` écrit : l'exemple de la version admin les recopie.
+const reglesOnglets = (css) => css.split('\n').map((l) => l.trim()).filter((l) => /^\.tabs? |^\.tab[:.]|^\.tab__count /.test(l));
+
+test('navigation : l’exemple de la version admin recopie les règles d’onglets d’admin.css, à l’identique', () => {
+  const originales = reglesOnglets(lire('css/admin.css'));
+  assert.equal(originales.length, 5, `${originales.length} règles d’onglets dans admin.css : l’exemple doit suivre`);
+  const style = [...exemple('onglets-admin').matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n').replace(/\/\*[\s\S]*?\*\//g, '');
+  const copiees = reglesOnglets(style);
+  assert.deepEqual(copiees, originales, 'la copie a dérivé de l’original');
+  // L'ordre compte : l'exemple charge components.css d'abord, comme l'interface.
+  const html = exemple('onglets-admin');
+  assert.ok(html.indexOf('components.css') < html.indexOf('<style>'), 'les règles recopiées doivent venir après la feuille des composants');
+  assert.doesNotMatch(html, /admin\.css/, 'un exemple ne charge pas admin.css');
+});
+
+test('navigation : le détecteur de règles d’onglets voit une règle qui change', () => {
+  // Garde le test précédent honnête : une copie modifiée ne passe pas.
+  const modifiee = lire('css/admin.css').replace('font-weight: 600', 'font-weight: 700');
+  assert.notDeepEqual(reglesOnglets(modifiee), reglesOnglets(lire('css/admin.css')));
+});
+
+test('navigation : .tab--active n’est employé que par l’écran mobile Emprunts, .is-active des onglets que par l’administration', () => {
+  assert.deepEqual(utilise(/(?<![\w-])tab--active/), ['js/mobile/views/emprunts.js']);
+  assert.deepEqual(utilise(/class="tab\$\{[^}]*is-active/).sort(), ['js/admin/views/emprunts.js', 'js/admin/views/maintenance.js']);
+  const t = texte(page('navigation'));
+  assert.match(t, /le seul écran qui l’emploie aujourd’hui est « Emprunts » sur mobile/);
+  assert.match(t, /js\/mobile\/views\/emprunts\.js/);
+  assert.match(t, /Les écrans Emprunts et Maintenance de l’administration l’emploient/);
+});
+
+test('navigation : les deux versions ne partagent pas leur classe d’état', () => {
+  assert.match(COMPONENTS, /\.tab--active\s*\{/);
+  assert.doesNotMatch(COMPONENTS, /is-active/);
+  assert.match(ADMIN, /\.tab\.is-active\s*\{/);
+  assert.doesNotMatch(ADMIN, /tab--active/);
+  assert.match(texte(page('navigation')), /\.is-active n’a aucun effet sur un onglet desktop/);
+  // Les deux versions sont nommées dans le TEXTE : le test du brief lit aussi le script, où « desktop » est un nom de démonstration.
+  assert.match(texte(page('navigation')), /Desktop, dans css\/components\.css/);
+  assert.match(texte(page('navigation')), /Admin, dans css\/admin\.css/);
+});
+
+test('navigation : la version admin ne retire pas le filet de .tabs, comme la page le dit', () => {
+  assert.match(regle(COMPONENTS, '.tabs'), /border-bottom:/);
+  assert.doesNotMatch(regle(ADMIN, '.tabs'), /border/);
+  assert.match(regle(COMPONENTS, '.tab'), /margin-bottom:\s*-1px/);
+  assert.doesNotMatch(regle(ADMIN, '.tab'), /margin-bottom/);
+  assert.match(texte(page('navigation')), /les pastilles reposent sur le filet de bas de \.tabs/);
+});
+
+test('navigation : la version admin ne défile ni ne passe à la ligne, comme la page le dit', () => {
+  assert.doesNotMatch(regle(COMPONENTS, '.tabs'), /overflow|flex-wrap/);
+  assert.doesNotMatch(regle(ADMIN, '.tabs'), /overflow|flex-wrap/);
+  assert.match(texte(page('navigation')), /Aucun défilement ni retour à la ligne pour la version admin/);
+});
+
+test('navigation : le défilement des onglets sur mobile est dans mobile.css', () => {
+  assert.match(MOBILE, /\.m-shell \.tabs\s*\{[^}]*overflow-x:\s*auto/);
+  assert.match(texte(page('navigation')), /\.m-shell \.tabs/);
+});
+
+test('navigation : l’exemple « menu » est exactement ce que sidebarHtml() met dans son <nav>', () => {
+  const html = sidebarHtml({ currentPath: '/emprunts', counts: { emprunts: 3, maintenance: 0 }, user: null });
+  const liens = html.match(/<nav class="sidebar__nav">([\s\S]*?)<\/nav>/)[1];
+  assert.equal(compact(demo('navigation', 'menu')), liens);
+  assert.equal((liens.match(/nav-item--active/g) || []).length, 1);
+});
+
+test('navigation : le compteur n’est écrit que si le nombre dépasse zéro', () => {
+  const avec = sidebarHtml({ currentPath: '/', counts: { emprunts: 3, maintenance: 0 }, user: null });
+  assert.equal((avec.match(/nav-item__count/g) || []).length, 1);
+  assert.match(texte(page('navigation')), /Il n’est écrit que si le nombre dépasse zéro/);
+});
+
+test('navigation : la page courante ne se dit que par une classe — aucun aria-current dans l’outil', () => {
+  assert.doesNotMatch(sidebarHtml({ currentPath: '/emprunts', counts: {}, user: null }), /aria-current/);
+  assert.deepEqual(utilise(/aria-current/), [], 'quelqu’un pose aria-current : la page doit changer');
+  assert.deepEqual(utilise(/role="tab(?:list)?"|aria-selected/), [], 'quelqu’un pose un rôle d’onglet : la page doit changer');
+  const t = texte(page('navigation'));
+  assert.match(t, /aria-current n’est posé nulle part dans l’outil/);
+  assert.match(t, /Ni role="tablist", ni aria-selected/);
+});
+
+test('navigation : les valeurs de la feuille que la page écrit sont celles de nav-item', () => {
+  assert.match(regle(COMPONENTS, '.nav-item'), /height:\s*44px/);
+  assert.match(regle(COMPONENTS, '.nav-item'), /color:\s*var\(--text-secondary\)/);
+  assert.match(regle(COMPONENTS, '.nav-item--active'), /color:\s*var\(--text-brand\)/);
+  assert.match(regle(COMPONENTS, '.nav-item--active'), /background:\s*var\(--brand-primary-subtle\)/);
+  assert.match(regle(COMPONENTS, '.nav-item__count'), /background:\s*var\(--bg-canvas\)/);
+  assert.match(regle(COMPONENTS, '.nav-item__count'), /color:\s*var\(--text-secondary\)/);
+  assert.match(regle(COMPONENTS, '.nav-item__count'), /font-size:\s*11px/);
+  const html = page('navigation');
+  assert.match(html, /mesureTexte\(valeurs, '--text-secondary', '--bg-canvas', 11\)/);
+  assert.match(html, /mesureTexte\(valeurs, '--text-brand', '--brand-primary-subtle', 14, true\)/);
+  assert.match(texte(page('navigation')), /44 px de haut/);
+});
+
+test('navigation : l’exemple desktop montre un onglet actif et des compteurs, comme l’écran mobile', () => {
+  const t = demo('navigation', 'onglets-desktop');
+  assert.equal((t.match(/tab--active/g) || []).length, 1);
+  assert.equal((t.match(/tab__count/g) || []).length, 3);
+  assert.doesNotMatch(t, /is-active/);
+  const mobile = lire('js/mobile/views/emprunts.js');
+  assert.match(mobile, /<button type="button" class="tab\$\{[^}]*tab--active[^}]*\}" data-tab="\$\{t\.key\}">\$\{escapeHtml\(t\.label\)\} <span class="tab__count">/);
+  const admin = demo('onglets-admin', 'onglets-admin');
+  assert.equal((admin.match(/is-active/g) || []).length, 1);
+  assert.doesNotMatch(admin, /tab--active/);
+});
+
+test('navigation : le retour passe par .back-link, d’admin.css', () => {
+  assert.match(ADMIN, /\.back-link\s*\{/);
+  assert.match(lire('js/admin/views/materielFiche.js'), /class="back-link" href="#\/materiel">← Matériel/);
+});
+
+test('navigation : les cadres de la page visent les deux fichiers d’exemple', () => {
+  const html = page('navigation');
+  assert.match(html, /fichier: 'navigation\.html', demo: 'menu'/);
+  assert.match(html, /fichier: 'navigation\.html', demo: 'onglets-desktop'/);
+  assert.match(html, /fichier: 'onglets-admin\.html', demo: 'onglets-admin'/);
+});
+
+// ======================= ICÔNES =======================
+
+test('icônes : l’inventaire montre chaque icône de ICONS, à l’identique, avec son nom', () => {
+  const inventaire = compact(demo('icones', 'inventaire'));
+  const noms = Object.keys(ICONS);
+  assert.equal(noms.length, 9, 'ICONS n’a plus neuf icônes : la page doit changer');
+  for (const nom of noms) assert.ok(inventaire.includes(`<span class="row">${ICONS[nom]}<span class="body-sm">${nom}</span></span>`), `${nom} : l’exemple ne montre pas ICONS.${nom}`);
+  assert.equal((inventaire.match(/<svg/g) || []).length, noms.length, 'l’exemple montre une icône qui n’est pas dans ICONS');
+  assert.match(texte(page('icones')), /Neuf dessins en ligne/);
+});
+
+test('icônes : le gabarit « modele » est ICONS.check, et les neuf partagent le même gabarit', () => {
+  assert.equal(compact(demo('icones', 'modele')), ICONS.check);
+  for (const [nom, svg] of Object.entries(ICONS)) {
+    assert.match(svg, /^<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/, `${nom} : gabarit différent`);
+    assert.match(svg, /aria-hidden="true"/, `${nom} : visible d’un lecteur d’écran`);
+  }
+  const t = texte(page('icones'));
+  assert.match(t, /de 24 px, au trait de 2, aux bouts arrondis/);
+  assert.match(t, /aria-hidden="true"/);
+});
+
+test('icônes : chaque nom de ICONS est nommé sur la page, et chaque usage cité est dans le code', () => {
+  const html = page('icones');
+  for (const nom of Object.keys(ICONS)) assert.match(html, new RegExp(`<code>${nom}</code>`), `${nom} n’est pas nommé`);
+  const layout = lire('js/mobile/layout.js');
+  const scan = lire('js/mobile/views/scan.js');
+  for (const icone of ['accueil', 'catalogue', 'salle', 'emprunts']) assert.match(layout, new RegExp(`icon: '${icone}'`), `${icone} n’est plus un onglet de la barre du bas`);
+  assert.match(layout, /\$\{ICONS\.scan\}<\/a>/, 'scan : le bouton central');
+  assert.match(layout, /\$\{ICONS\.back\}/, 'back : le retour de l’en-tête');
+  assert.match(scan, /ICONS\.camera, 'Prendre la photo de l’objet'/);
+  assert.match(scan, /ICONS\.check, 'Confirmer l’emprunt'/);
+  assert.match(scan, /ICONS\.croix, 'Annuler l’emprunt'/);
+  assert.match(scan, /ICONS\.scan, 'Scanner un autre objet'/);
+  assert.match(scan, /etat === 'done' \? ICONS\.check/);
+});
+
+test('icônes : le dépôt n’a aucun système d’icônes, comme la page le dit', () => {
+  assert.doesNotMatch(TOUT_LE_CSS, /@font-face|icon-font|font-family:[^;]*(?:icon|awesome|material)/i);
+  const racine = RACINE_HTML.map((f) => lire(f)).join('\n');
+  assert.doesNotMatch(racine, /<symbol|<use |fontawesome|font-awesome|material-icons|material symbols|lucide|feather|bootstrap-icons|heroicons|phosphor/i);
+  assert.deepEqual(readdirSync(new URL('../assets/', import.meta.url)).sort(), ['icon-192.png', 'icon-512.png'], 'un fichier est apparu dans assets/ : la page doit changer');
+  assert.doesNotMatch(SOURCES.map((s) => s.source).join('\n'), /<symbol|<use /);
+  const t = texte(page('icones'));
+  assert.match(t, /Il n’y a pas de système d’icônes/);
+  assert.match(t, /Aucun système d’icônes\. Ni police d’icônes, ni sprite, ni bibliothèque, ni dossier d’icônes/);
+});
+
+test('icônes : les neuf dessins sont les seuls <svg> du code, tous dans le module mobile', () => {
+  const avec = SOURCES.filter((s) => /<svg/.test(s.source)).map((s) => s.fichier);
+  assert.deepEqual(avec, ['js/mobile/layout.js']);
+  assert.doesNotMatch(RACINE_HTML.map((f) => lire(f)).join('\n'), /<svg/);
+  assert.match(lire('js/mobile/layout.js'), /import \{ auth \} from '\.\.\/auth\.js'/);
+  assert.match(texte(page('icones')), /charge js\/mobile\/layout\.js et, avec lui, js\/auth\.js/);
+});
+
+test('icônes : .btn > svg et la réduction du stepper sont dans mobile.css, pas dans la feuille des composants', () => {
+  assert.match(MOBILE, /\.btn > svg\s*\{[^}]*width:\s*20px/);
+  assert.match(MOBILE, /\.stepper__dot--done svg\s*\{[^}]*width:\s*15px/);
+  assert.doesNotMatch(COMPONENTS, /(?:^|\n)[^{}\n]*\bsvg\b[^{}\n]*\{/, 'une règle de la feuille des composants vise un svg : la page doit changer');
+  const t = texte(page('icones'));
+  assert.match(t, /\.btn > svg à 20 px/);
+  assert.match(t, /\.stepper__dot--done svg à 15 px/);
+});
+
+test('icônes : la loupe a la couleur de --text-secondary, recopiée dans l’image', () => {
+  const r = regle(COMPONENTS, '.input--search');
+  const stroke = decodeURIComponent(r.match(/stroke='([^']+)'/)[1]).toLowerCase();
+  assert.equal(stroke, TOKENS['--text-secondary'].toLowerCase(), 'la loupe n’a plus la couleur du token : la page doit changer');
+  assert.match(r, /data:image\/svg\+xml/);
+  assert.match(texte(page('icones')), /recopiée dans l’image et non lue du token/);
+});
+
+test('icônes : les caractères et l’emoji cités sont ceux que l’outil écrit', () => {
+  const tout = SOURCES.filter((s) => !s.fichier.endsWith('seed.js')).map((s) => s.source).join('\n');
+  for (const g of ['← Matériel', 'Tout voir →', "' ↓' : ' ↑'", '&times;', "'✓'", 'Aucun retard. 🎉', 'Bonjour ${escapeHtml(user.prenom)} 👋']) assert.ok(tout.includes(g), `« ${g} » n’est plus dans le code`);
+  const glyphes = demo('icones', 'glyphes');
+  for (const g of ['←', '→', '↑', '↓', '×', '✓', '🎉', '👋']) assert.ok(glyphes.includes(g), `${g} manque à l’exemple`);
+  assert.deepEqual([...new Set(tout.match(/\p{Extended_Pictographic}/gu))].sort(), ['🎉', '👋'], 'les emoji de l’outil ont changé : la page doit changer');
+});
+
+test('icônes : l’exemple « recherche » est un .input--search', () => {
+  assert.match(demo('icones', 'recherche'), /class="input input--search"/);
+});
+
+test('icônes : le bouton central et la flèche de retour portent un aria-label, comme la page le dit', () => {
+  const layout = lire('js/mobile/layout.js');
+  assert.match(layout, /class="m-nav__scan" href="#\/scan" aria-label="Scanner un QR code"/);
+  assert.match(layout, /class="m-header__back" href="#\$\{back\}" aria-label="Retour"/);
+  assert.match(lire('js/mobile/views/salle.js'), /aria-label="Semaine précédente">←<\/button>/);
+});

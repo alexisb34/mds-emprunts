@@ -615,7 +615,9 @@ test('un exemple charge les polices avant ses feuilles et reste relatif', () => 
     assert.ok(html.includes('<link rel="preconnect" href="https://fonts.googleapis.com">'), `${f} : preconnect googleapis`);
     assert.ok(html.includes('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'), `${f} : preconnect gstatic`);
     assert.ok(famille < html.indexOf('href="../../css/tokens.css"'), `${f} : les polices passent avant nos feuilles`);
-    assert.doesNotMatch(html, /(?:src|href)="\/[^/]/, `${f} : chemin absolu`);
+    // `data-href` n'est pas une adresse de ressource : c'est la route que l'outil écrit sur une ligne
+    // de tableau (`/materiel/MDS-0029`), lue par son routeur. Seuls `src` et `href` nus comptent.
+    assert.doesNotMatch(html, /(?<![\w-])(?:src|href)="\/[^/]/, `${f} : chemin absolu`);
   }
 });
 

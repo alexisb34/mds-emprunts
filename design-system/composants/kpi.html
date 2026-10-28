@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carte KPI — Design system MyDigitalSchool</title>
+  <meta name="description" content="La carte KPI de l’outil d’emprunt : ses quatre teintes, la carte qui mène quelque part, l’anneau de focus à reprendre partout, et la dette de contraste.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Carte KPI</h1>
+        <p class="ds-chapeau ds-mesure">Un chiffre, son libellé, une phrase d’appui, sur un aplat de la couleur de son état. Cliquable, la carte mène à ce qu’elle compte.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">La carte KPI (<code>.kpi</code>) met un chiffre en avant&nbsp;: combien de matériels sont disponibles, combien d’emprunts sont en retard. Elle a trois parties, un libellé (<code>.kpi__label</code>), le chiffre (<code>.kpi__value</code>) et une phrase d’appui (<code>.kpi__delta</code>). Sa teinte classe, le chiffre se lit.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <p class="body ds-mesure">Les quatre cartes du tableau de bord, avec leurs libellés.</p>
+        <div id="cadre-teintes"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Les quatre teintes</h3>
+        <p class="body ds-mesure">Chaque teinte est le fond du badge de l’état correspondant&nbsp;: une carte et un badge qui disent la même chose ont la même couleur. Aucune ombre, aucun filet.</p>
+        <ul class="ds-liste body">
+          <li><code>kpi--disponible</code>, vert&nbsp;: le matériel prêt à être emprunté.</li>
+          <li><code>kpi--emprunte</code>, violet&nbsp;: les emprunts en cours.</li>
+          <li><code>kpi--retard</code>, rose&nbsp;: les retards.</li>
+          <li><code>kpi--salle</code>, turquoise&nbsp;: les réservations de la salle photo, qui prennent la couleur de l’état «&nbsp;réservé&nbsp;».</li>
+        </ul>
+        <p class="body ds-mesure">Sans teinte, la carte est grise (<code>.kpi</code> seule)&nbsp;: <strong>l’outil n’en emploie aucune</strong>, le tableau de bord passe toujours une teinte. Le kit la définit.</p>
+        <div id="cadre-neutre"></div>
+        <p class="body ds-mesure"><strong>Deux noms de la planche <code>kit.html</code> n’existent pas.</strong> Elle écrit <code>kpi--brand</code> et <code>kpi--teal</code>&nbsp;: aucune règle ne les définit, la carte s’affiche grise sans erreur. Les quatre teintes ci-dessus sont les seules.</p>
+
+        <h3 class="h6">La carte qui mène quelque part</h3>
+        <p class="body ds-mesure"><code>.kpi--link</code>, posée sur un <code>&lt;a&gt;</code>, rend la carte cliquable. Elle prend le curseur, se soulève de 2&nbsp;px au survol en prenant l’ombre flottante du kit (<code>--shadow-floating</code>), et montre un anneau quand elle a le focus au clavier. Le tableau de bord en fait une règle&nbsp;: une carte qui compte quelque chose mène à ce qu’elle compte, par un vrai lien.</p>
+        <div id="cadre-lien"></div>
+
+        <h3 class="h6">L’anneau de focus, et la règle à étendre</h3>
+        <p class="body ds-mesure"><code>.kpi--link:focus-visible</code> trace un contour de 2&nbsp;px de <code>--brand-primary</code>, décalé de 2&nbsp;px à l’extérieur. <strong>C’est l’une des deux seules règles de focus que le dépôt dessine</strong>, avec <code>.input:focus</code>, et c’est de celle-ci qu’il faudrait partir&nbsp;: le bouton, l’onglet et l’élément de menu n’en ont aucune, et leur anneau est celui du navigateur. Le manque est en attente dans <code>docs/correctifs-figma.md</code>.</p>
+        <p class="body ds-mesure">Pour voir l’anneau dans le cadre ci-dessus, appuyez sur Tab jusqu’à y entrer. <strong>Safari saute par défaut les liens et les boutons avec Tab</strong>&nbsp;: utilisez Option+Tab, ou activez la navigation par Tab dans les réglages avancés de Safari.</p>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <ul class="ds-liste body">
+          <li><strong>Aucun état de chargement.</strong> Pas de chiffre en attente, pas de squelette.</li>
+          <li><strong>Aucune variation colorée.</strong> <code>.kpi__delta</code> a le nom d’une variation, mais l’outil y écrit une phrase d’appui et la feuille ne colore ni une hausse ni une baisse.</li>
+          <li><strong>Aucune fonction partagée.</strong> Le gabarit d’une carte est <code>kpiCard()</code>, dans <code>js/admin/views/dashboard.js</code>&nbsp;: elle n’est pas exportée, un autre écran réécrirait le balisage.</li>
+          <li><strong>Aucune règle pour qui a demandé moins de mouvement.</strong> Le soulèvement de 2&nbsp;px ne s’éteint pas.</li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+        <p class="body ds-mesure">Une carte est trois <code>&lt;span&gt;</code> dans un <code>&lt;div&gt;</code>, ou dans un <code>&lt;a&gt;</code> quand elle mène quelque part. Le lien porte une vraie adresse, jamais <code>href="#"</code>.</p>
+
+        <h3 class="h6">Les quatre teintes</h3>
+        <div id="code-teintes"></div>
+
+        <h3 class="h6">La carte-lien</h3>
+        <div id="code-lien"></div>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour un chiffre qui ne mène nulle part.</strong> N’ajoutez pas <code>kpi--link</code> pour l’effet&nbsp;: le soulèvement promet un clic. Sans destination, gardez le <code>&lt;div&gt;</code>.</li>
+          <li><strong>Pour une donnée à lire en détail.</strong> Un chiffre n’a pas de colonnes&nbsp;: <a href="tableau.html">Tableau</a>.</li>
+          <li><strong>Pour décorer.</strong> Une teinte classe un état. Un chiffre qui ne correspond à aucun des quatre passe en carte grise plutôt que d’emprunter une couleur pour sa gaieté.</li>
+          <li><strong>Pour un texte long.</strong> La phrase d’appui tient sur une ligne. Au-delà, c’est le contenu d’une carte&nbsp;: <a href="cartes.html">Cartes</a>.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Le lien et son anneau</h3>
+        <p class="body ds-mesure">Le nom d’une carte-lien est ses trois textes mis bout à bout&nbsp;: libellé, chiffre, phrase d’appui. Le contour de l’anneau, <code>--brand-primary</code> contre le gris de l’application où la carte est posée, mesuré dans <code>css/tokens.css</code> au chargement de cette page (seuil de 3:1 pour un élément qui ne porte pas de texte)&nbsp;: <strong id="mesure-anneau">à mesurer depuis un serveur</strong>. Sur un aplat violet, ce même anneau ne se verrait pas&nbsp;: c’est la réserve du registre des correctifs.</p>
+
+        <h3 class="h6">Contraste, mesuré&nbsp;: la dette du kit</h3>
+        <p class="body ds-mesure">Le libellé de la carte fait 14&nbsp;px et la phrase d’appui 12&nbsp;px, toutes deux dans le texte discret du kit, sur la teinte de la carte. Les cinq paires, mesurées au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>carte grise, <code>.kpi</code>&nbsp;: <strong id="mesure-kpi">à mesurer depuis un serveur</strong></li>
+          <li><code>kpi--retard</code>&nbsp;: <strong id="mesure-kpi-retard">à mesurer depuis un serveur</strong></li>
+          <li><code>kpi--emprunte</code>&nbsp;: <strong id="mesure-kpi-emprunte">à mesurer depuis un serveur</strong></li>
+          <li><code>kpi--salle</code>&nbsp;: <strong id="mesure-kpi-salle">à mesurer depuis un serveur</strong></li>
+          <li><code>kpi--disponible</code>&nbsp;: <strong id="mesure-kpi-disponible">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Le chiffre, lui, est en grand et en gras&nbsp;: il passe. Un seul token, le texte discret, règle les cinq paires d’un coup&nbsp;; le chapitre <a href="../couleurs.html#dette">Couleurs</a> publie le ton calculé et ce qu’il faudrait décider dans Figma.</p>
+
+        <h3 class="h6">Mouvement</h3>
+        <p class="body ds-mesure">Le soulèvement dure 0,12&nbsp;s et ne déplace la carte que de 2&nbsp;px, mais aucune règle <code>prefers-reduced-motion</code> ne l’éteint.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesureNonTexte, mesurePaire } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/kpi.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/kpi.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/kpi.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
+    // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
+    document.getElementById('cadre-teintes').outerHTML = cadreHtml({ fichier: 'kpi.html', demo: 'teintes', titre: 'Les quatre cartes KPI du tableau de bord, une par teinte' });
+    document.getElementById('cadre-neutre').outerHTML = cadreHtml({ fichier: 'kpi.html', demo: 'neutre', titre: 'La carte KPI neutre, sans teinte' });
+    document.getElementById('cadre-lien').outerHTML = cadreHtml({ fichier: 'kpi.html', demo: 'lien', titre: 'Une carte KPI qui mène à la liste des retards' });
+    document.getElementById('code-teintes').outerHTML = codeHtml({ fichier: 'kpi.html', demo: 'teintes', titre: 'Les quatre cartes KPI, une par teinte' });
+    document.getElementById('code-lien').outerHTML = codeHtml({ fichier: 'kpi.html', demo: 'lien', titre: 'Une carte KPI qui mène à la liste des retards' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais écrits
+    // dans la page. Sur un fichier local, le navigateur refuse de lire les règles de la feuille et
+    // la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-anneau': mesureNonTexte(valeurs, '--brand-primary', '--bg-canvas'),
+        'mesure-kpi': mesurePaire(valeurs, 'kpi'),
+        'mesure-kpi-retard': mesurePaire(valeurs, 'kpi--retard'),
+        'mesure-kpi-emprunte': mesurePaire(valeurs, 'kpi--emprunte'),
+        'mesure-kpi-salle': mesurePaire(valeurs, 'kpi--salle'),
+        'mesure-kpi-disponible': mesurePaire(valeurs, 'kpi--disponible'),
+      });
+    }
+  </script>
+</body>
+</html>

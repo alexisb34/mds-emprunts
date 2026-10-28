@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Navigation — Design system MyDigitalSchool</title>
+  <meta name="description" content="Le menu latéral de l’administration et deux versions d’onglets qui portent le même nom : desktop et admin, chacune documentée.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Navigation</h1>
+        <p class="ds-chapeau ds-mesure">Un menu latéral, et des onglets qui existent en deux versions sous le même nom. Elles ne se ressemblent pas et ne se mélangent pas.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">La navigation dit où l’on est et où l’on peut aller. Le kit en définit deux sortes. Le menu latéral de l’administration (<code>.nav-item</code>) mène d’un écran à l’autre. Les onglets (<code>.tabs</code> et <code>.tab</code>) filtrent une liste, dans l’outil&nbsp;: ils ne basculent pas entre des panneaux.</p>
+        <p class="body ds-mesure">La barre du bas de l’écran mobile, <code>.m-nav</code>, est une autre navigation, définie dans <code>css/mobile.css</code>&nbsp;: voir <a href="mobile.html">Mobile</a>.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <h3 class="h6">Le menu latéral</h3>
+        <p class="body ds-mesure">Le menu de l’administration, à la page «&nbsp;Emprunts&nbsp;», avec trois emprunts en attente.</p>
+        <div id="cadre-menu"></div>
+        <h3 class="h6">Les onglets, version desktop</h3>
+        <div id="cadre-onglets-desktop"></div>
+        <h3 class="h6">Les onglets, version admin</h3>
+        <div id="cadre-onglets-admin"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Le menu latéral</h3>
+        <ul class="ds-liste body">
+          <li><code>.nav-item</code>&nbsp;: un lien de 44&nbsp;px de haut, texte discret en gras. Au survol, un fond gris clair et le texte qui fonce.</li>
+          <li><code>.nav-item--active</code>&nbsp;: la page courante, sur un fond violet très clair, en violet.</li>
+          <li><code>.nav-item__count</code>&nbsp;: un compteur, collé à droite. <strong>Il compte, il n’alerte pas</strong>&nbsp;: sa pastille est grise, jamais colorée. Il n’est écrit que si le nombre dépasse zéro.</li>
+        </ul>
+        <p class="body ds-mesure">Dans l’outil, les liens sont rangés dans un <code>&lt;nav class="sidebar__nav"&gt;</code> de <code>css/admin.css</code>, qui les empile avec un petit écart. L’exemple en reproduit la mise en page sur sa section&nbsp;; le code montré est celui des liens.</p>
+
+        <h3 class="h6">Les onglets, en deux versions incompatibles</h3>
+        <p class="body ds-mesure"><strong>Le kit définit deux composants sous le même nom.</strong> Les classes <code>.tabs</code>, <code>.tab</code> et <code>.tab__count</code> existent dans deux feuilles, et l’onglet actif ne s’y écrit pas de la même façon.</p>
+        <ul class="ds-liste body">
+          <li><strong>Desktop</strong>, dans <code>css/components.css</code>&nbsp;: des onglets <em>soulignés</em>. L’actif est <code>.tab--active</code>, en violet avec un trait violet dessous. C’est le nom de la feuille de base&nbsp;; mais <strong>le seul écran qui l’emploie aujourd’hui est «&nbsp;Emprunts&nbsp;» sur mobile</strong> (<code>js/mobile/views/emprunts.js</code>), qui y ajoute le défilement horizontal de <code>.m-shell .tabs</code>, dans <code>css/mobile.css</code>.</li>
+          <li><strong>Admin</strong>, dans <code>css/admin.css</code>&nbsp;: des onglets <em>en pastilles</em>. L’actif est <code>.is-active</code>, plein violet, texte blanc. Les écrans Emprunts et Maintenance de l’administration l’emploient.</li>
+        </ul>
+        <p class="body ds-mesure">Ce qui les rend incompatibles&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li><strong><code>.is-active</code> n’a aucun effet sur un onglet desktop</strong>, et <code>.tab--active</code> ne donne pas une pastille&nbsp;: les deux classes d’état ne se remplacent pas.</li>
+          <li><strong>Charger <code>css/admin.css</code> après <code>css/components.css</code> redéfinit <code>.tabs</code> et <code>.tab</code> pour toute la page.</strong> Mais la version admin ne retire rien de la desktop&nbsp;: les pastilles reposent sur le filet de bas de <code>.tabs</code>, qui vient de la feuille de base. Sur l’écran Emprunts de l’administration, ce filet est visible sous les pastilles.</li>
+          <li>L’exemple de la version admin ne charge pas <code>css/admin.css</code>, qui pose de la mise en page plein écran. Il en recopie les cinq règles d’onglets, dans l’ordre où l’interface les charge, et un test vérifie que la copie reste identique.</li>
+        </ul>
+        <p class="body ds-mesure">Un nom doit désigner une seule chose. Tant que la divergence existe, choisissez la version de l’écran qu’on construit, et ne mélangez pas les deux sur un même écran.</p>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <ul class="ds-liste body">
+          <li><strong>Aucun anneau de focus dessiné</strong> pour <code>.nav-item</code> ni <code>.tab</code>, dans aucune des deux versions. Celui du navigateur reste&nbsp;; voir <a href="bouton.html#accessibilite">Bouton</a>.</li>
+          <li><strong>Aucun état « courant » dans le balisage.</strong> La page active ne se dit que par une classe&nbsp;; <code>aria-current</code> n’est posé nulle part dans l’outil.</li>
+          <li><strong>Aucun rôle d’onglet.</strong> Ni <code>role="tablist"</code>, ni <code>aria-selected</code>&nbsp;: ces onglets sont des boutons qui filtrent.</li>
+          <li><strong>Aucun défilement ni retour à la ligne pour la version admin.</strong> <code>.tabs</code> ne déclare ni <code>overflow</code> ni <code>flex-wrap</code>&nbsp;: sur un écran étroit, les quatre onglets de l’exemple dépassent de leur cadre. Seul <code>.m-shell .tabs</code>, dans <code>css/mobile.css</code>, fait défiler des onglets, et il ne vise que la coquille mobile.</li>
+          <li><strong>Aucun fil d’Ariane, aucune pagination.</strong> Le retour passe par un lien «&nbsp;← Matériel&nbsp;» (<code>.back-link</code>, dans <code>css/admin.css</code>).</li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+
+        <h3 class="h6">Le menu, produit par <code>sidebarHtml()</code></h3>
+        <p class="body ds-mesure">La barre de l’administration est faite par <code>sidebarHtml({ currentPath, counts, user })</code>, de <code>js/admin/layout.js</code>, d’après la liste <code>NAV</code>. Pour ajouter une entrée, on l’ajoute à <code>NAV</code>. Ce que la fonction écrit pour la page «&nbsp;Emprunts&nbsp;» et trois emprunts en attente&nbsp;:</p>
+        <div id="code-menu"></div>
+
+        <h3 class="h6">Les onglets, version desktop</h3>
+        <div id="code-onglets-desktop"></div>
+
+        <h3 class="h6">Les onglets, version admin</h3>
+        <p class="body ds-mesure">Le HTML est le même, à l’état actif près. Il suppose <code>css/admin.css</code>.</p>
+        <div id="code-onglets-admin"></div>
+        <ul class="ds-liste body">
+          <li><code>type="button"</code>&nbsp;: un onglet n’envoie pas de formulaire.</li>
+          <li>Le compteur est dans l’onglet, dans un <code>.tab__count</code>, séparé du libellé par une espace.</li>
+        </ul>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour changer de panneau de contenu.</strong> Des onglets qui montrent un panneau et en cachent un autre demandent <code>role="tablist"</code>, <code>role="tab"</code> et <code>aria-selected</code>, que le kit n’a pas. Ces onglets-ci filtrent une liste. Pour de vrais panneaux, décidez le composant dans Figma avant de l’écrire, et suivez le motif ARIA des onglets.</li>
+          <li><strong>Pour choisir une catégorie.</strong> Quelques catégories toujours visibles sont des étiquettes&nbsp;: <a href="badge.html">Badge et étiquette</a>.</li>
+          <li><strong>Pour déclencher une action.</strong> Un onglet change ce qu’on voit, il ne fait rien. Une action est un <a href="bouton.html">bouton</a>.</li>
+          <li><strong>Pour la navigation d’un écran de téléphone.</strong> C’est la barre du bas, <code>.m-nav</code>&nbsp;: <a href="mobile.html">Mobile</a>.</li>
+          <li><strong>Pour signaler un retard dans un compteur.</strong> Le compteur est neutre&nbsp;; un retard se dit par un badge rouge&nbsp;: <a href="badge.html">Badge et étiquette</a>.</li>
+          <li><strong>Pour mélanger les deux versions d’onglets</strong> sur un même écran. Choisissez celle de l’écran, et gardez-la partout dessus.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">La page courante</h3>
+        <p class="body ds-mesure">L’entrée active du menu ne se distingue que par sa couleur. Ajoutez <code>aria-current="page"</code> sur le lien de la page courante&nbsp;: sans lui, une personne qui ne voit pas la couleur ne sait pas où elle est. De même, l’onglet actif est un bouton ordinaire&nbsp;: <code>aria-pressed="true"</code> dit qu’il est choisi.</p>
+
+        <h3 class="h6">Contraste, mesuré</h3>
+        <p class="body ds-mesure">Les paires du menu, mesurées dans <code>css/tokens.css</code> au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>entrée du menu, 14&nbsp;px en gras, texte discret sur blanc&nbsp;: <strong id="mesure-nav">à mesurer depuis un serveur</strong></li>
+          <li>entrée active, violet sur violet très clair&nbsp;: <strong id="mesure-nav-active">à mesurer depuis un serveur</strong></li>
+          <li>compteur, 11&nbsp;px, texte discret sur la pastille grise&nbsp;: <strong id="mesure-nav-count">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Le compteur est employé par l’outil dès qu’un nombre dépasse zéro, mais le chapitre <a href="../couleurs.html#dette">Couleurs</a> ne publie pas encore cette paire&nbsp;: elle y est à ajouter. Le survol de l’entrée, lui, change le fond <em>et</em> la couleur du texte.</p>
+
+        <h3 class="h6">Taille de cible</h3>
+        <p class="body ds-mesure">Un élément de menu fait 44&nbsp;px de haut, la taille que recommande WCAG 2.5.5. Cette hauteur est écrite en dur dans la feuille.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesureTexte } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/navigation.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/navigation.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/navigation.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
+    // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
+    document.getElementById('cadre-menu').outerHTML = cadreHtml({ fichier: 'navigation.html', demo: 'menu', titre: 'Le menu latéral de l’administration, à la page Emprunts' });
+    document.getElementById('cadre-onglets-desktop').outerHTML = cadreHtml({ fichier: 'navigation.html', demo: 'onglets-desktop', titre: 'Trois onglets soulignés, version desktop' });
+    document.getElementById('cadre-onglets-admin').outerHTML = cadreHtml({ fichier: 'onglets-admin.html', demo: 'onglets-admin', titre: 'Quatre onglets en pastilles, version admin' });
+    document.getElementById('code-menu').outerHTML = codeHtml({ fichier: 'navigation.html', demo: 'menu', titre: 'Les sept liens du menu latéral, celui des emprunts étant actif' });
+    document.getElementById('code-onglets-desktop').outerHTML = codeHtml({ fichier: 'navigation.html', demo: 'onglets-desktop', titre: 'Trois onglets soulignés, version desktop' });
+    document.getElementById('code-onglets-admin').outerHTML = codeHtml({ fichier: 'onglets-admin.html', demo: 'onglets-admin', titre: 'Quatre onglets en pastilles, version admin' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais écrits
+    // dans la page. Sur un fichier local, le navigateur refuse de lire les règles de la feuille et
+    // la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-nav': mesureTexte(valeurs, '--text-secondary', '--bg-surface', 14, true),
+        'mesure-nav-active': mesureTexte(valeurs, '--text-brand', '--brand-primary-subtle', 14, true),
+        'mesure-nav-count': mesureTexte(valeurs, '--text-secondary', '--bg-canvas', 11),
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tableau — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les démonstrations du tableau, rendues par le CSS de l’outil d’emprunt. Chaque section est montrée dans un cadre de la page Tableau.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les seules feuilles dont ce composant a besoin : celles de l’application, rien de plus. Voir
+       l’exemple du bouton pour le détail. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    body { padding: var(--space-lg); }
+  </style>
+</head>
+<body>
+  <!-- Ce que rend renderTable() de js/admin/table.js pour ces trois lignes, triées sur « Retour prévu ».
+       Un test appelle la fonction et compare. Les lignes sont cliquables dans l’outil ; ici, elles ne
+       mènent nulle part. -->
+  <section data-demo="trie">
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th data-sortable data-key="item">Matériel</th>
+            <th data-sortable data-key="user">Emprunteur</th>
+            <th data-sortable data-key="fin">Retour prévu ↑</th>
+            <th data-sortable data-key="statut">Statut</th>
+            <th style="text-align:right"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-href="/materiel/MDS-0014">
+            <td><strong>DJI Ronin RSC2</strong><br><span class="body-tiny text-secondary">MDS-0014</span></td>
+            <td><span class="row"><span class="avatar avatar--sm" title="Yann Guihard">YG</span>Yann Guihard</span></td>
+            <td>14 sept. 2026</td>
+            <td><span class="badge badge--late">En retard</span></td>
+            <td style="text-align:right">
+              <div class="table__actions">
+                <button type="button" class="btn btn--primary btn--sm">Réceptionner</button>
+                <button type="button" class="btn btn--ghost btn--sm">Prolonger</button>
+              </div>
+            </td>
+          </tr>
+          <tr data-href="/materiel/MDS-0029">
+            <td><strong>Canon R10 + 18-55</strong><br><span class="body-tiny text-secondary">MDS-0029</span></td>
+            <td><span class="row"><span class="avatar avatar--sm" title="Léa Pezzetti">LP</span>Léa Pezzetti</span></td>
+            <td>19 sept. 2026</td>
+            <td><span class="badge badge--borrowed">En cours</span></td>
+            <td style="text-align:right">
+              <div class="table__actions">
+                <button type="button" class="btn btn--primary btn--sm">Réceptionner</button>
+                <button type="button" class="btn btn--ghost btn--sm">Prolonger</button>
+              </div>
+            </td>
+          </tr>
+          <tr data-href="/materiel/MDS-0041">
+            <td><strong>Micro-cravate Sennheiser</strong><br><span class="body-tiny text-secondary">MDS-0041</span></td>
+            <td><span class="row"><span class="avatar avatar--sm" title="Camille Dubois">CD</span>Camille Dubois</span></td>
+            <td>21 sept. 2026</td>
+            <td><span class="badge badge--borrowed">En cours</span></td>
+            <td style="text-align:right">
+              <div class="table__actions">
+                <button type="button" class="btn btn--primary btn--sm">Réceptionner</button>
+                <button type="button" class="btn btn--ghost btn--sm">Prolonger</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Le même tableau sans aucune ligne : l’en-tête reste, l’état vide se pose dessous. -->
+  <section data-demo="vide">
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th data-sortable data-key="item">Matériel</th>
+            <th data-sortable data-key="user">Emprunteur</th>
+            <th data-sortable data-key="fin">Retour prévu</th>
+            <th data-sortable data-key="statut">Statut</th>
+            <th style="text-align:right"></th>
+          </tr>
+        </thead>
+      </table>
+      <div class="empty-state">Aucun résultat.</div>
+    </div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

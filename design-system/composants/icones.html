@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Icônes — Design system MyDigitalSchool</title>
+  <meta name="description" content="Il n’y a pas de système d’icônes dans l’outil d’emprunt : l’inventaire de ce qui est réellement employé, et d’où cela vient.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Icônes</h1>
+        <p class="ds-chapeau ds-mesure">Il n’y a pas de système d’icônes. Il y a neuf dessins en ligne, une loupe en image de fond, quelques caractères et deux emoji.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">Une icône aide à reconnaître une action ou un lieu d’un coup d’œil. Cette page n’en décrit pas une bibliothèque&nbsp;: <strong>le kit n’en a pas.</strong> Elle inventorie ce que l’outil emploie, et dit d’où cela vient.</p>
+        <p class="body ds-mesure">Le kit Figma nomme ses icônes <code>Icon/…</code>&nbsp;: le registre des correctifs cite <code>Icon/qr-code</code>, <code>Icon/clock</code> et <code>Icon/arrow-right-left</code>. Le dépôt n’en exporte aucune&nbsp;: les dessins sont recopiés à la main dans le code.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <p class="body ds-mesure">Les neuf icônes dessinées de l’outil, à leur taille d’origine, avec le nom de leur clé dans <code>ICONS</code>.</p>
+        <div id="cadre-inventaire"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Ce qui est réellement employé</h3>
+        <p class="body ds-mesure"><strong>Neuf dessins en ligne</strong>, dans l’objet <code>ICONS</code> de <code>js/mobile/layout.js</code>. Chacun est un <code>&lt;svg&gt;</code> de 24&nbsp;px, au trait de 2, aux bouts arrondis, qui prend la couleur du texte (<code>currentColor</code>) et se cache aux lecteurs d’écran (<code>aria-hidden="true"</code>).</p>
+        <ul class="ds-liste body">
+          <li><code>accueil</code>, <code>catalogue</code>, <code>salle</code>, <code>emprunts</code>&nbsp;: les quatre onglets de la barre du bas.</li>
+          <li><code>scan</code>&nbsp;: le bouton central de la barre, et le bouton «&nbsp;Scanner un autre objet&nbsp;».</li>
+          <li><code>camera</code>&nbsp;: le bouton «&nbsp;Prendre la photo de l’objet&nbsp;».</li>
+          <li><code>check</code>&nbsp;: une étape faite du scan, et le bouton «&nbsp;Confirmer l’emprunt&nbsp;».</li>
+          <li><code>croix</code>&nbsp;: le bouton «&nbsp;Annuler l’emprunt&nbsp;».</li>
+          <li><code>back</code>&nbsp;: la flèche de retour de l’en-tête mobile.</li>
+        </ul>
+
+        <p class="body ds-mesure"><strong>Une loupe</strong>, dans le champ de recherche. Ce n’est pas un élément&nbsp;: c’est l’image de fond de <code>.input--search</code>, écrite dans la feuille. Sa couleur est celle de <code>--text-secondary</code>, <strong>recopiée dans l’image</strong> et non lue du token&nbsp;: si le token change, la loupe ne suit pas.</p>
+        <div id="cadre-recherche"></div>
+
+        <p class="body ds-mesure"><strong>Des caractères</strong>, que l’outil emploie comme des icônes&nbsp;: les flèches <code>←</code> et <code>→</code> dans des libellés de liens et de boutons («&nbsp;← Matériel&nbsp;», «&nbsp;Tout voir →&nbsp;»), <code>↑</code> et <code>↓</code> pour le sens d’un tri, <code>×</code> pour fermer une modale, <code>✓</code> et <code>!</code> pour le résultat d’un scan.</p>
+        <div id="cadre-glyphes"></div>
+
+        <p class="body ds-mesure"><strong>Deux emoji</strong>&nbsp;: 🎉 dans l’état vide de la table des retards, «&nbsp;Aucun retard. 🎉&nbsp;», et 👋 dans la salutation de l’accueil mobile, «&nbsp;Bonjour Léa 👋&nbsp;». Leur dessin dépend de la police de l’appareil&nbsp;; il n’est pas le même partout.</p>
+        <p class="body ds-mesure">Les icônes de l’application installée (<code>assets/icon-192.png</code>, <code>assets/icon-512.png</code>) ne sont pas des icônes d’interface&nbsp;: ce sont celles du manifeste.</p>
+
+        <h3 class="h6">Les tailles</h3>
+        <p class="body ds-mesure">Les neuf icônes ont 24&nbsp;px, par leurs attributs. Deux règles les réduisent, et elles sont dans <code>css/mobile.css</code>, pas dans la feuille des composants&nbsp;: <code>.btn &gt; svg</code> à 20&nbsp;px, et <code>.stepper__dot--done svg</code> à 15&nbsp;px. Un écran qui ne charge pas cette feuille garde les 24&nbsp;px, dans un bouton comme ailleurs.</p>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <ul class="ds-liste body">
+          <li><strong>Aucun système d’icônes.</strong> Ni police d’icônes, ni sprite, ni bibliothèque, ni dossier d’icônes.</li>
+          <li><strong>Aucune icône en ligne dans l’administration.</strong> Hors la loupe de la recherche, elle n’emploie que des caractères.</li>
+          <li><strong>Aucune icône importable seule.</strong> Elles sont dans le module mobile&nbsp;: les importer depuis un écran d’administration charge <code>js/mobile/layout.js</code> et, avec lui, <code>js/auth.js</code>.</li>
+          <li><strong>Aucune variante,</strong> ni de taille, ni de remplissage. La couleur est celle du texte qui les entoure.</li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+        <p class="body ds-mesure">Une icône est un <code>&lt;svg&gt;</code> en ligne, fait pour hériter de la couleur du texte. Les neuf partagent les mêmes attributs et ne changent que leur tracé. Voici le gabarit, avec <code>check</code>&nbsp;:</p>
+        <div id="cadre-modele"></div>
+        <div id="code-modele"></div>
+        <ul class="ds-liste body">
+          <li>Pour en employer une, importez <code>ICONS</code> de <code>js/mobile/layout.js</code> plutôt que de recopier le tracé&nbsp;: <code>ICONS.check</code>.</li>
+          <li>Dans un bouton, l’icône se pose avant le libellé, et le libellé reste écrit&nbsp;: <code>${ICONS.check}&lt;span&gt;Confirmer l’emprunt&lt;/span&gt;</code>.</li>
+        </ul>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour remplacer un libellé.</strong> Une icône seule est muette. Un bouton qui n’en porte qu’une garde un <code>aria-label</code>, comme le bouton central de la barre du bas et la flèche de retour&nbsp;: voir <a href="bouton.html">Bouton</a>.</li>
+          <li><strong>Pour dire un état.</strong> La couleur et le libellé d’un badge le disent mieux qu’un pictogramme&nbsp;: <a href="badge.html">Badge et étiquette</a>.</li>
+          <li><strong>Pour ajouter une dixième icône copiée d’une bibliothèque.</strong> Les tracés suivent ceux du kit Figma, et quand une décision y est prise c’est Figma qui fait foi&nbsp;: une icône qui manque se dessine d’abord dans le kit, puis se recopie ici.</li>
+          <li><strong>Pour décorer.</strong> Une icône qui n’aide à reconnaître rien est du bruit&nbsp;: gardez le libellé seul.</li>
+          <li><strong>Pour un emoji dans l’interface.</strong> Son dessin change d’un appareil à l’autre&nbsp;; l’outil n’en a que deux, dans un état vide et dans une salutation. Employez un des neuf dessins, ou un libellé.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Muette par construction</h3>
+        <p class="body ds-mesure">Les neuf icônes portent <code>aria-hidden="true"</code>&nbsp;: un lecteur d’écran ne les voit pas. C’est voulu, et ça impose que le bouton ou le lien qui les contient se nomme autrement, par son libellé ou son <code>aria-label</code>. L’écran mobile de la salle photo l’écrit pour ses flèches&nbsp;: <code>aria-label="Semaine précédente"</code> sur un bouton qui ne contient que <code>←</code>.</p>
+
+        <h3 class="h6">Contraste</h3>
+        <p class="body ds-mesure">Une icône prend la couleur du texte qui l’entoure&nbsp;: son contraste est celui de ce texte, avec le seuil de 3:1 d’un élément qui ne porte pas de texte (WCAG 1.4.11). La loupe du champ de recherche, <code>--text-secondary</code> sur le blanc du champ, mesurée dans <code>css/tokens.css</code> au chargement de cette page&nbsp;: <strong id="mesure-loupe">à mesurer depuis un serveur</strong>.</p>
+
+        <h3 class="h6">Taille</h3>
+        <p class="body ds-mesure">Une icône n’est jamais la cible&nbsp;: c’est le bouton ou le lien qui la contient. Voir <a href="bouton.html">Bouton</a> pour les hauteurs de cible.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesureNonTexte } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/icones.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/icones.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/icones.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
+    // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
+    document.getElementById('cadre-inventaire').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'inventaire', titre: 'Les neuf icônes dessinées de l’outil, chacune avec son nom' });
+    document.getElementById('cadre-recherche').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'recherche', titre: 'Un champ de recherche et sa loupe, image de fond de la feuille' });
+    document.getElementById('cadre-glyphes').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'glyphes', titre: 'Les caractères et les emoji que l’outil emploie comme des icônes' });
+    document.getElementById('cadre-modele').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'modele', titre: 'L’icône check, gabarit des neuf icônes' });
+    document.getElementById('code-modele').outerHTML = codeHtml({ fichier: 'icones.html', demo: 'modele', titre: 'Le HTML de l’icône check' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais écrits
+    // dans la page. Sur un fichier local, le navigateur refuse de lire les règles de la feuille et
+    // la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-loupe': mesureNonTexte(valeurs, '--text-secondary', '--bg-surface'),
+      });
+    }
+  </script>
+</body>
+</html>
