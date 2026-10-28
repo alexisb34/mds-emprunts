@@ -898,6 +898,13 @@ summary:focus-visible,
 .tn-phrase--faux { border-color: var(--feedback-error); }
 .tn-phrase--juste { border-color: var(--feedback-success); }
 
+/* ---- La page Ressources ----
+   Les blocs à copier reprennent `.ds-code-bloc` (voir « Le code montré »). Celui des variables CSS fait
+   près de cent lignes : il défile dans son cadre plutôt que d'allonger la page. Le `<pre>` est
+   focalisable (`tabindex="0"`), donc le clavier peut le faire défiler. */
+
+.rs-code { max-height: 28rem; overflow-y: auto; }
+
 /* ---- Largeurs étroites ----
    Les deux seuils sont ceux de `css/components.css` : un seul jeu de ruptures pour tout le
    dépôt. À 360 px, rien ne doit déborder. */

@@ -475,7 +475,8 @@ const PRESENTATION = {
   anthracite: { fond: 'blanc', phrase: 'Quand il n’y a qu’une encre&nbsp;: photocopie, tampon, gravure, impression en une couleur.' },
 };
 
-function versionsHtml(s) {
+// Exporté : la page Ressources montre les mêmes trois versions et leurs téléchargements (`telechargement.js`).
+export function versionsHtml(s) {
   const cartes = VERSIONS.map((v) => `<article class="lg-version" id="version-${v.id}">
     ${scene({ fondId: PRESENTATION[v.id].fond, version: v.id, src: s[v.id], nom: `Le logo, version ${v.nom.toLowerCase()}`, l: '58cqw' })}
     <h3 class="h6">${v.nom}</h3>
