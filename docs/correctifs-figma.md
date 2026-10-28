@@ -66,10 +66,12 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
 
   **Trois corrections à trancher dans Figma.** Chaque ton calculé vise 4,8:1, soit 0,3 de marge
   au-dessus du seuil : un repère, pas une limite. On peut l’éclaircir tant que le ratio reste au
-  moins à 4,5:1 ; le foncer davantage ne fait jamais perdre de contraste. (1) Six lignes, les cinq
+  moins à 4,5:1 sur chaque fond où le token sert, pas seulement sur la ligne lue ; le foncer
+  davantage ne fait jamais perdre de contraste. (1) Six lignes, les cinq
   cartes KPI et la ligne survolée, tiennent à un seul token : `--text-secondary` (`#757678`). Le
   foncer jusqu’à `#5f6062` les fait toutes passer (4,86:1 sur `--bg-muted`, le fond le plus
-  exigeant) : la page affiche cette même valeur sur les six lignes. C’est une valeur calculée
+  exigeant, soit 0,36 de marge réelle ; la ligne de `--bg-canvas` affiche 5,72:1 et ne doit pas servir
+  de repère) : la page affiche cette même valeur sur les six lignes. C’est une valeur calculée
   (même teinte, luminosité abaissée), pas une décision, et elle touche tous les textes discrets
   de l’outil. (2) Pour chaque badge, un texte plus sombre de la même teinte. La maintenance a déjà
   de quoi le faire : `--status-maintenance-text` (6,21:1 sur son fond), que l’alerte

@@ -557,7 +557,20 @@ test('la page dit que les tons sont des repères avec une marge, et dans quel se
   assert.ok(marge.includes(`${dec(MARGE_CONSEIL)} de marge`), 'la marge n’est pas écrite');
   assert.match(marge, /repère, pas une limite/);
   assert.match(marge, /éclaircir/);
-  assert.match(marge, /au moins à 4,5:1/);
+  assert.match(marge, /au moins à 4,5:1 sur chaque fond où le token sert/);
+  assert.match(marge, /pas seulement sur la ligne qu’on lit/);
+  // Le fond le plus exigeant est nommé, avec le ratio du ton proposé ET la marge réelle ; la ligne la plus
+  // facile, que le lecteur risque de surveiller, est nommée aussi, avec le ratio qu'elle affiche.
+  const s = syntheseDette(PAIRES_KIT, VALEURS);
+  const secondaires = PAIRES_KIT.filter((p) => p.texte === '--text-secondary' && jugerPaire(p, VALEURS).echoue);
+  const exigeant = ratioExact(s.tonSecondaire, VALEURS[s.fondExigeant]);
+  const facile = secondaires.map((p) => ({ fond: p.fond, r: ratioExact(s.tonSecondaire, VALEURS[p.fond]) })).reduce((a, b) => (b.r > a.r ? b : a));
+  assert.equal(s.fondExigeant, '--bg-muted');
+  assert.ok(marge.includes(`le fond le plus exigeant est ${s.fondExigeant}`), 'le fond exigeant n’est pas nommé');
+  assert.ok(marge.includes(`donne ${virgule(exigeant)}:1`), 'le ratio sur le fond exigeant manque');
+  assert.ok(marge.includes(`${virgule(exigeant - 4.5)} de marge réelle`), 'la marge réelle manque');
+  assert.ok(marge.includes(`la ligne en ${facile.fond} en affiche ${virgule(facile.r)}:1`), 'la ligne la plus facile n’est pas nommée avec son ratio');
+  assert.ok(facile.r - 4.5 > 3 * (exigeant - 4.5), 'la ligne facile ne trompe plus : la phrase n’a plus d’objet');
   assert.match(marge, /foncer davantage ne fait jamais perdre de contraste/);
 });
 
@@ -584,7 +597,11 @@ test('la page dit où se range ce site lui-même, et c’est vrai de sa feuille'
   const section = PAGE.match(/<section[^>]*id="marque-produit"[\s\S]*?<\/section>/)[0];
   const phrase = texte(section.match(/<p class="body ds-mesure" id="ce-site">[\s\S]*?<\/p>/)[0]);
   assert.match(phrase, /Ce site suit le même partage/);
-  assert.match(phrase, /ses boutons et ses liens sont violets/);
+  assert.match(phrase, /ses boutons sont violets, comme ses liens dans le texte, le lien de la page courante et les listes d’étage/);
+  assert.match(phrase, /liens de la barre de navigation et du sommaire restent gris/);
+  assert.doesNotMatch(phrase, /ses liens sont violets/);
+  assert.match(phrase, /deux pastels de l’accueil, violet clair sous l’étage Marque et turquoise clair sous l’étage Composants, sont décoratifs/);
+  assert.match(phrase, /ne portent pas le partage/);
   assert.match(phrase, /turquoise du logo n’y sert qu’en décor/);
   assert.match(phrase, /jamais sous du texte/);
   assert.match(phrase, /seule sa version très claire sert de fond/);
@@ -601,6 +618,25 @@ test('la page dit où se range ce site lui-même, et c’est vrai de sa feuille'
   const emplois = [...css.matchAll(/([\w-]+)\s*:[^;{}]*var\(--ds-turquoise\)/g)].map((m) => m[1]);
   assert.ok(emplois.length >= 2, 'le turquoise n’est plus employé du tout : la phrase est périmée');
   for (const propriete of emplois) assert.match(propriete, /^border/, `--ds-turquoise est employé en « ${propriete} » : ce n’est plus un décor`);
+  // Les liens : lus un par un, parce qu'une phrase sur une couleur doit être exacte jusqu'au bout.
+  const couleurDe = (selecteur) => (css.match(new RegExp(`${selecteur.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{[^}]*\\}`)) || [''])[0].match(/(?:^|[;{\s])color:\s*(var\(--[\w-]+\))/)?.[1];
+  assert.equal(couleurDe('.ds-nav__lien'), 'var(--ds-texte-secondaire)', 'les liens de navigation ne sont plus gris');
+  assert.equal(couleurDe('.ds-sommaire__lien'), 'var(--ds-texte-secondaire)', 'les liens du sommaire ne sont plus gris');
+  assert.equal(couleurDe('.ds-nav__lien[aria-current]'), 'var(--ds-lien)');
+  assert.equal(couleurDe('.ds-lien-texte'), 'var(--ds-lien)');
+  assert.equal(couleurDe('.ds-etage__liste a'), 'var(--ds-lien)');
+  assert.equal(valeur('--ds-texte-secondaire'), '#757678', 'le gris des liens de navigation n’est plus celui du texte discret');
+  // Les pastels de l'accueil : ce que la phrase dit, lu dans la feuille et dans la page d'accueil.
+  const accueil = lire('design-system/index.html');
+  assert.match(accueil, /class="ds-etage ds-etage--marque"/);
+  assert.match(accueil, /class="ds-etage ds-etage--composants"/);
+  assert.equal(css.match(/\.ds-etage--marque\s*\{\s*background:\s*(var\(--[\w-]+\))/)[1], 'var(--ds-fond-doux)');
+  assert.equal(css.match(/\.ds-etage--composants\s*\{\s*background:\s*(var\(--[\w-]+\))/)[1], 'var(--ds-fond-frais)');
+  // « violet clair » et « turquoise clair » : le fond doux est du violet, pas du turquoise.
+  assert.ok(valeur('--ds-fond-doux') !== valeur('--ds-fond-frais'));
+  const teinte = (hex) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)); return r > g && b > g ? 'violet' : g > r && b > r ? 'turquoise' : '?'; };
+  assert.equal(teinte(valeur('--ds-fond-doux')), 'violet');
+  assert.equal(teinte(valeur('--ds-fond-frais')), 'turquoise');
   const boutons = css.match(/\.ds-bouton\s*\{[^}]*\}/)[0];
   assert.match(boutons, /background:\s*var\(--ds-violet\)/);
   assert.match(css.match(/\.ds-nav__lien\[aria-current\]\s*\{[^}]*\}/)[0], /color:\s*var\(--ds-lien\)/);
@@ -614,6 +650,8 @@ test('le registre écrit la marge et les tons que la page affiche', () => {
   assert.ok(REGISTRE.includes(`${dec(MARGE_CONSEIL)} de marge`));
   assert.ok(REGISTRE.includes(`\`${s.tonSecondaire}\``));
   assert.ok(REGISTRE.includes(`${virgule(ratio(s.tonSecondaire, VALEURS[s.fondExigeant]))}:1 sur \`${s.fondExigeant}\``), 'le ratio du ton unique sur le fond le plus exigeant');
+  assert.ok(REGISTRE.includes('au moins à 4,5:1 sur chaque fond où le token sert'), 'le registre ne dit pas « sur chaque fond »');
+  assert.ok(REGISTRE.includes(`la ligne de \`--bg-canvas\` affiche ${virgule(ratio(s.tonSecondaire, VALEURS['--bg-canvas']))}:1`), 'le registre ne nomme pas la ligne qui trompe');
   const succes = repereCorrection(PAIRES_KIT.find((p) => p.nom === 'toast--success'), VALEURS);
   assert.ok(REGISTRE.includes(`\`${succes.hex}\` (${virgule(ratio(VALEURS['--text-inverse'], succes.hex))}:1 sous du blanc`), 'le vert plus sombre et son ratio');
   assert.doesNotMatch(REGISTRE, /suffit \(4,5:1 sous du blanc/);
