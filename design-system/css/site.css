@@ -878,6 +878,26 @@ summary:focus-visible,
 }
 .ds-pied__lien { color: var(--ds-lien); text-decoration: underline; text-underline-offset: var(--space-xxs); }
 
+/* ---- Le chapitre Ton ----
+   Une paire « au lieu de / écrire » : deux phrases côte à côte, la fautive cernée du rouge de
+   l'erreur et la bonne du vert du succès. Les couleurs ne servent qu'au filet : le texte des deux est
+   celui du site, et la légende porte aussi un signe (✕, ✓), pour que la différence ne tienne pas à la
+   seule couleur. Sur un téléphone, les deux phrases s'empilent. */
+
+.tn-paire { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--space-lg); }
+.tn-cas { display: grid; gap: var(--space-sm); align-content: start; min-width: 0; }
+.tn-phrase {
+  margin: 0;
+  padding: var(--space-lg);
+  border: var(--space-xxs) solid;
+  border-radius: var(--radius-lg);
+  font-size: var(--ds-taille-chapeau);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.tn-phrase--faux { border-color: var(--feedback-error); }
+.tn-phrase--juste { border-color: var(--feedback-success); }
+
 /* ---- Largeurs étroites ----
    Les deux seuils sont ceux de `css/components.css` : un seul jeu de ruptures pour tout le
    dépôt. À 360 px, rien ne doit déborder. */

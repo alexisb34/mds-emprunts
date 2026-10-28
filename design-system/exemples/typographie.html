@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Typographie — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les deux polices, l’échelle complète de css/base.css et les deux interdits typographiques. Chaque section est montrée dans un cadre du chapitre Typographie.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les deux feuilles qui portent la typographie du kit, et rien de plus : l’échelle est dans la
+       seconde. Le fond est blanc, comme celui d’une carte de l’outil : le texte secondaire du kit
+       n’atteint pas 4,5:1 sur le gris de l’application, et rien ici n’en emploie. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <style>
+    /* La mise en page des démonstrations, et rien d’autre. Les styles montrés sont ceux de base.css ;
+       les deux classes `ty-inter` et `ty-trop-petit` sont des FAUTES, écrites ici pour être montrées. */
+    body { padding: var(--space-lg); background: var(--bg-surface); }
+    .ty-ligne { display: grid; gap: var(--space-xs); padding: var(--space-md) 0; border-bottom: var(--stroke-thin) solid var(--border-default); }
+    .ty-ligne > :first-child { overflow-wrap: anywhere; }
+    .ty-familles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--space-2xl); }
+    .ty-famille { display: grid; gap: var(--space-xs); align-content: start; }
+    .ty-specimen { font-size: 72px; line-height: 1; margin: 0; }
+    .ty-specimen--titre { font-family: var(--font-heading); font-weight: 800; letter-spacing: -2px; }
+    .ty-specimen--texte { font-family: var(--font-body); font-weight: 400; }
+    .ty-paire { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--space-lg); }
+    .ty-cas { display: grid; gap: var(--space-sm); align-content: start; margin: 0; padding: var(--space-lg); border: var(--space-xxs) solid; border-radius: var(--radius-lg); }
+    .ty-cas--faux { border-color: var(--feedback-error); }
+    .ty-cas--juste { border-color: var(--feedback-success); }
+    .ty-titre { margin: 0; }
+    code { white-space: nowrap; }
+    .ty-inter { font-family: var(--font-body); font-weight: 400; font-size: 24px; line-height: 30px; }
+    .ty-trop-petit { margin: 0; font-size: 9px; line-height: 12px; }
+  </style>
+</head>
+<body>
+  <!-- Les deux familles du kit : leurs noms viennent de --font-heading et --font-body. -->
+  <section data-demo="familles">
+    <div class="ty-familles">
+      <div class="ty-famille">
+        <p class="ty-specimen ty-specimen--titre" aria-hidden="true">Aa</p>
+        <p class="h6">Bricolage Grotesque</p>
+        <p class="body-sm">ExtraBold. Les titres et les chiffres clés.</p>
+      </div>
+      <div class="ty-famille">
+        <p class="ty-specimen ty-specimen--texte" aria-hidden="true">Aa</p>
+        <p class="h6">Inter</p>
+        <p class="body-sm">Regular et Bold. Le texte, les boutons, les étiquettes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tous les styles de css/base.css, dans l’ordre de la feuille. L’étiquette est vérifiée contre
+       la feuille par un test : taille, interligne, graisse, capitales. -->
+  <section data-demo="echelle">
+    <div class="ty-ligne">
+      <p class="h5">Les talents se connectent</p>
+      <p class="ty-nom body-sm"><strong>.h5</strong> · 24 / 30 px · ExtraBold</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="h6">Inventaire</p>
+      <p class="ty-nom body-sm"><strong>.h6</strong> · 18 / 26 px · ExtraBold</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="kpi-number">128</p>
+      <p class="ty-nom body-sm"><strong>.kpi-number</strong> · 40 / 44 px · ExtraBold</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="body">Le matériel est disponible au bureau des pédago.</p>
+      <p class="ty-nom body-sm"><strong>.body</strong> · 16 / 25 px · Regular</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="body-bold">Retour attendu aujourd’hui avant 17h.</p>
+      <p class="ty-nom body-sm"><strong>.body-bold</strong> · 16 / 25 px · Bold</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="body-sm">Le matériel est disponible au bureau des pédago.</p>
+      <p class="ty-nom body-sm"><strong>.body-sm</strong> · 14 / 21 px · Regular</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="body-sm-bold">Retour attendu aujourd’hui avant 17h.</p>
+      <p class="ty-nom body-sm"><strong>.body-sm-bold</strong> · 14 / 21 px · Bold</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="body-tiny">Ajouté le 12 mars · modifié le 3 avril</p>
+      <p class="ty-nom body-sm"><strong>.body-tiny</strong> · 11 / 16 px · Regular</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="label-lg">Caméra Sony A7</p>
+      <p class="ty-nom body-sm"><strong>.label-lg</strong> · 16 / 20 px · Bold</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="label-md">Valider l’emprunt</p>
+      <p class="ty-nom body-sm"><strong>.label-md</strong> · 14 / 18 px · Bold</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="label-sm">Code de retrait</p>
+      <p class="ty-nom body-sm"><strong>.label-sm</strong> · 12 / 16 px · Bold</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="label-caps">Administration</p>
+      <p class="ty-nom body-sm"><strong>.label-caps</strong> · 11 / 14 px · Bold · capitales</p>
+    </div>
+    <div class="ty-ligne">
+      <p class="label-mini-caps">Photographie</p>
+      <p class="ty-nom body-sm"><strong>.label-mini-caps</strong> · 10 / 12 px · Bold · capitales</p>
+    </div>
+  </section>
+
+  <!-- Premier interdit : deux polices dans un titre. -->
+  <section data-demo="melange">
+    <div class="ty-paire">
+      <figure class="ty-cas ty-cas--faux">
+        <p class="ty-titre"><span class="h5">Réservez</span> <span class="ty-inter">votre matériel</span></p>
+        <figcaption class="body-sm"><span aria-hidden="true">✕</span> <strong>À ne pas faire</strong>&nbsp;: deux polices dans une même ligne.</figcaption>
+      </figure>
+      <figure class="ty-cas ty-cas--juste">
+        <p class="ty-titre"><span class="h5">Réservez votre matériel</span></p>
+        <figcaption class="body-sm"><span aria-hidden="true">✓</span> <strong>À faire</strong>&nbsp;: une seule police, d’un bout à l’autre.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Second interdit : du texte à lire plus petit que le plus petit style du kit. -->
+  <section data-demo="taille-mini">
+    <div class="ty-paire">
+      <figure class="ty-cas ty-cas--faux">
+        <p class="ty-trop-petit">Le matériel se retire le jour de la réservation, avant la fermeture du bureau.</p>
+        <figcaption class="body-sm"><span aria-hidden="true">✕</span> <strong>À ne pas faire</strong>&nbsp;: 9&nbsp;px, sous le plus petit style.</figcaption>
+      </figure>
+      <figure class="ty-cas ty-cas--juste">
+        <p class="body-sm">Le matériel se retire le jour de la réservation, avant la fermeture du bureau.</p>
+        <figcaption class="body-sm"><span aria-hidden="true">✓</span> <strong>À faire</strong>&nbsp;: un style de l’échelle, ici <code>body-sm</code>.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

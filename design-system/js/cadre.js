@@ -55,15 +55,19 @@ export const MARQUE_CADRE = 'ds-cadre';
 // Le délai au bout duquel un cadre chargé qui n'a rien annoncé est déclaré introuvable.
 export const DELAI_CADRE = 1000;
 
-// Les exemples vivent à côté des pages de composants, dans le dossier frère.
+// Les exemples vivent à côté des pages de composants, dans le dossier frère. Une page de la
+// racine de `design-system/` (un chapitre de la marque) les a, elle, juste en dessous d'elle.
 const DOSSIER_EXEMPLES = '../exemples/';
+const DOSSIER_EXEMPLES_DEPUIS_RACINE = 'exemples/';
 
 // `fichier` : le nom du fichier dans `design-system/exemples/`, sans chemin.
 // `demo` : la valeur du `data-demo` de la section à montrer, dans ce fichier.
 // `titre` : ce que le cadre est, en une phrase. C'est le nom que lit un lecteur d'écran, et
 // le seul moyen d'annoncer un `<iframe>` : il est obligatoire.
 // `etroit` : un cadre à largeur de téléphone, pour les motifs mobiles.
-export function cadreHtml({ fichier, demo, titre, etroit = false } = {}) {
+// `depuisRacine` : la page est à la racine de `design-system/` (typographie.html), pas dans
+// `composants/` : l'adresse du cadre est alors `exemples/…` et non `../exemples/…`.
+export function cadreHtml({ fichier, demo, titre, etroit = false, depuisRacine = false } = {}) {
   if (!estNom(fichier, FICHIER_VALIDE)) {
     throw new Error(`cadreHtml : fichier « ${fichier} » — attendu le nom d’un fichier de design-system/exemples/, par exemple « bouton.html »`);
   }
@@ -74,10 +78,15 @@ export function cadreHtml({ fichier, demo, titre, etroit = false } = {}) {
     throw new Error(`cadreHtml : titre manquant pour ${fichier}#${demo} — un <iframe> sans titre est muet pour un lecteur d’écran`);
   }
 
+  if (typeof depuisRacine !== 'boolean') {
+    throw new Error(`cadreHtml : depuisRacine « ${depuisRacine} » — attendu true ou false`);
+  }
+  const dossier = depuisRacine ? DOSSIER_EXEMPLES_DEPUIS_RACINE : DOSSIER_EXEMPLES;
+
   // `loading="lazy"` : une page de composant porte quatre à six cadres, et les charger tous
   // au premier rendu ferait six requêtes de page complète pour un écran qui n'en montre qu'un.
   return `<div class="ds-cadre${etroit ? ' ds-cadre--etroit' : ''}" data-fichier="${echapper(fichier)}" data-demo="${echapper(demo)}">
-  <iframe class="ds-cadre__vue" src="${echapper(`${DOSSIER_EXEMPLES}${fichier}#${demo}`)}" title="${echapper(titre)}" loading="lazy"></iframe>
+  <iframe class="ds-cadre__vue" src="${echapper(`${dossier}${fichier}#${demo}`)}" title="${echapper(titre)}" loading="lazy"></iframe>
 </div>`;
 }
 
