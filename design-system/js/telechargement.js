@@ -1,4 +1,4 @@
-// La page Ressources : le logo dans tous ses formats, les tokens à coller, les polices.
+// La page Ressources : le logo en SVG et en PNG, les tokens à coller, les liens des polices.
 //
 // ## Ce qui est stocké, ce qui est fabriqué
 //
@@ -89,7 +89,7 @@ function heroHtml() {
   <div class="ds-section">
     <div class="ds-groupe">
       <h1 class="ds-titre-page">Les ressources</h1>
-      <p class="ds-chapeau ds-mesure">Tout ce qu’il faut pour travailler hors de ce site&nbsp;: le logo, les couleurs, les polices. Rien à demander à personne.</p>
+      <p class="ds-chapeau ds-mesure">Le logo en SVG et en PNG, les couleurs à coller dans une feuille de style, les liens des polices. Rien à demander à personne.</p>
       <aside class="ds-message">
         <p class="body">Le fichier couleur du logo est celui de mydigitalschool.com. Les versions blanche et anthracite sont fabriquées ici, en remplaçant ses deux couleurs&nbsp;: personne du côté de la marque ne les a validées.</p>
         <p class="body">Les règles d’usage du logo sont dans le <a class="ds-lien-texte" href="logo.html">chapitre Logo</a>.</p>

@@ -642,7 +642,7 @@ function douteHtml() {
     <div class="ds-mesure lg-tete">
       <h2 class="ds-titre">Un doute&nbsp;?</h2>
       <p class="ds-chapeau">Posez-vous une seule question&nbsp;: le logo se reconnaît-il d’un coup d’œil&nbsp;? Si la réponse n’est pas oui, changez de fond ou de version.</p>
-      <p class="body">Les fichiers, dans tous leurs formats, sont réunis dans ${lien('ressources.html', 'Ressources')}.</p>
+      <p class="body">Les fichiers du logo, en SVG et en PNG, sont réunis dans ${lien('ressources.html', 'Ressources')}.</p>
     </div>
   </div>
 </section>`;

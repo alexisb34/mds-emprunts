@@ -950,7 +950,7 @@ test('couleurs.html lit tokens.css depuis le même dossier que le dépôt, et di
   // Le texte du script, pas son comportement : le comportement se regarde dans un navigateur.
   const script = FICHIER.match(/<script type="module">([\s\S]*)<\/script>/)[1];
   assert.match(script, /if \(location\.hash\) \{[\s\S]*getElementById\(decodeURIComponent\(location\.hash\.slice\(1\)\)\)[\s\S]*scrollIntoView\(\)/, 'un lien profond (#dette) doit atteindre sa section une fois la page posée');
-  assert.match(script, /catch \(erreur\) \{\s*const repli = document\.getElementById\('repli'\);\s*repli\.classList\.remove\('ds-message--attente'\);/, 'le repli doit apparaître tout de suite en cas d’échec attrapé');
+  assert.match(script, /catch \(erreur\) \{\s*montrerRepli\(document, erreur, '[^']+'\);/, 'le repli doit apparaître tout de suite en cas d’échec attrapé');
   assert.doesNotMatch(script.slice(script.indexOf('catch (erreur)')), /\bthrow\b/, 'une exception relancée dans le repli laisserait la page sur son attente');
 });
 
@@ -977,18 +977,9 @@ test('le registre des correctifs nomme chaque paire publiée qui échoue, avec s
   assert.ok(REGISTRE.includes(`tomberait à ${ratio(VALEURS['--text-secondary'], VALEURS['--bg-canvas']).toFixed(2).replace('.', ',')}:1`));
 });
 
-test('le registre cite, avec leur ratio, les paires repérées mais non publiées, et dit qu’elles ne sont pas vérifiées dans les vues', () => {
-  // Le registre est écrit en lignes de 100 colonnes : une phrase peut y changer de ligne.
-  const REGISTRE = registre().replace(/\s+/g, ' ');
-  const r = (a, b) => `${ratio(VALEURS[a], VALEURS[b]).toFixed(2).replace('.', ',')}:1`;
-  for (const attendu of [
-    `\`.text-error\` (${r('--feedback-error', '--bg-surface')} sur blanc)`,
-    `\`.text-success\` (${r('--feedback-success', '--bg-surface')})`,
-    `\`--text-disabled\` (${r('--text-disabled', '--bg-surface')} sur blanc`,
-    `\`--text-secondary\` sur \`--bg-canvas\` (${r('--text-secondary', '--bg-canvas')}`,
-  ]) assert.ok(REGISTRE.includes(attendu), `le registre ne dit pas « ${attendu} »`);
-  assert.match(REGISTRE, /pas vérifiées dans les vues/);
-});
+// Les paires que la page ne publie pas (`.text-error`, `.text-success`, le compteur du menu, le texte
+// indicatif des champs, le message d'erreur de champ) sont tenues par tests/ds-registre.test.mjs :
+// celui-ci ne lit que ce que la page publie.
 
 test('le registre propose, pour chaque ligne à aplat, de foncer le fond ou d’employer ce que le kit a déjà', () => {
   const REGISTRE = registre();

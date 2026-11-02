@@ -67,7 +67,7 @@ const regle = (css, selecteur) => {
 const sourcesJs = () => readdirSync(new URL('../js/', import.meta.url), { recursive: true })
   .filter((f) => f.endsWith('.js')).map((f) => ({ fichier: `js/${f}`, source: lire(`js/${f}`) }));
 const SOURCES = sourcesJs();
-const RACINE_HTML = readdirSync(new URL('../', import.meta.url)).filter((f) => f.endsWith('.html') && f !== 'kit.html');
+const RACINE_HTML = readdirSync(new URL('../', import.meta.url)).filter((f) => f.endsWith('.html'));
 const utilise = (motif) => SOURCES.filter((s) => motif.test(s.source)).map((s) => s.fichier)
   .concat(RACINE_HTML.filter((f) => motif.test(lire(f))));
 
@@ -532,15 +532,18 @@ test('formulaires : toutes les variantes de champ du CSS sont montrées', () => 
 
 // ======================= CARTES =======================
 
-test('cartes : seule .card est employée par un écran ; .card--flat n’est écrite nulle part ailleurs, .card--item que dans kit.html', () => {
+test('cartes : seule .card est employée par un écran ; .card--flat et .card--item ne sont écrites que dans la feuille', () => {
   assert.ok(utilise(/class="card[ "]/).length >= 5 || utilise(/class="card\b/).length >= 5 || utilise(/"card"/).length >= 5, '.card n’est plus employée comme la page le dit');
   assert.deepEqual(utilise(/card--flat/), [], 'un écran emploie card--flat : la page doit changer');
   assert.deepEqual(utilise(/card--item/), [], 'un écran emploie card--item : la page doit changer');
-  assert.doesNotMatch(lire('kit.html'), /card--flat/);
-  assert.match(lire('kit.html'), /card--item/);
+  assert.doesNotMatch(`${ADMIN}\n${MOBILE}`, /card--(?:flat|item)/, 'une autre feuille écrit card--flat ou card--item : la page dit « ailleurs que dans components.css »');
+  // Elles existent bien dans la feuille : la page décrit des règles réelles, pas des fantômes.
+  assert.match(COMPONENTS, /\.card--flat\s*\{/);
+  assert.match(COMPONENTS, /\.card--item\s*\{/);
   const t = texte(page('cartes'));
   assert.match(t, /Seule \.card est employée par un écran/);
-  assert.match(t, /la première n’est écrite nulle part hors de la feuille, la seconde seulement dans la planche kit\.html/);
+  assert.match(t, /Ni \.card--flat ni \.card--item n’est écrite ailleurs que dans css\/components\.css/);
+  assert.doesNotMatch(t, /kit\.html|planche/);
 });
 
 test('cartes : .card--flat ne diffère de .card que par l’ombre', () => {
@@ -610,11 +613,14 @@ test('les quatre teintes de carte KPI sont montrées', () => {
   for (const v of ['disponible', 'emprunte', 'retard', 'salle']) assert.match(exemple, new RegExp(`kpi--${v}\\b`));
 });
 
-test('les noms de kpi--brand et kpi--teal sont bien ceux de la planche kit.html', () => {
-  const kit = lire('kit.html');
-  assert.match(kit, /kpi--brand/);
-  assert.match(kit, /kpi--teal/);
-  assert.match(texte(page('kpi')), /kpi--brand et kpi--teal/);
+test('kpi--brand et kpi--teal n’existent nulle part : ni règle, ni écran, et la page le dit', () => {
+  for (const nom of ['kpi--brand', 'kpi--teal']) {
+    assert.doesNotMatch(TOUT_LE_CSS, new RegExp(nom), `une feuille définit ${nom} : la page doit changer`);
+    assert.deepEqual(utilise(new RegExp(nom)), [], `un écran emploie ${nom} : la page doit changer`);
+  }
+  const t = texte(page('kpi'));
+  assert.match(t, /kpi--brand et kpi--teal n’existent pas/);
+  assert.doesNotMatch(t, /kit\.html/);
 });
 
 // ======================= TABLEAU =======================
@@ -1121,7 +1127,7 @@ function avecDocument(options, fn) {
 }
 
 const UI = lire('js/ui.js');
-const ECRANS_ET_RACINES = ['index.html', 'admin.html', 'mobile.html', 'kit.html'];
+const ECRANS_ET_RACINES = ['index.html', 'admin.html', 'mobile.html'];
 
 test('la page Modale documente l’API JS, ses racines et ses manques', () => {
   const html = page('modale');
@@ -1303,7 +1309,6 @@ test('modale : les écrans de l’outil posent les deux racines, vides, après l
     const html = lire(f);
     assert.ok(html.includes('<div id="modal-root"></div>'), `${f} : #modal-root absent ou non vide`);
     assert.ok(html.includes('<div id="toast-root"></div>'), `${f} : #toast-root absent ou non vide`);
-    if (f === 'kit.html') continue;
     assert.ok(html.indexOf('<main') < html.indexOf('id="modal-root"'), `${f} : la modale précède le contenu`);
     assert.ok(html.indexOf('id="toast-root"') < html.indexOf('<script'), `${f} : les racines doivent précéder les scripts`);
   }
@@ -1313,7 +1318,10 @@ test('modale : les écrans de l’outil posent les deux racines, vides, après l
   const t = texte(page('modale'));
   assert.match(t, /#modal-root/);
   assert.match(t, /#toast-root/);
-  assert.match(t, /index\.html, admin\.html et mobile\.html/);
+  // La page nomme exactement les écrans que la boucle ci-dessus vient de vérifier.
+  assert.deepEqual(ECRANS_ET_RACINES, ['index.html', 'admin.html', 'mobile.html']);
+  assert.match(t, /index\.html, admin\.html et mobile\.html posent chacun les deux/);
+  assert.doesNotMatch(t, /kit\.html/);
 });
 
 test('modale : un toast porte role="status", sa variante en classe, et s’efface 300 ms avant son terme', () => {
@@ -1637,7 +1645,7 @@ test('mobile : mobile.css ne définit aucun composant de base, et suppose compon
   assert.match(MOBILE, /\.m-shell \.tabs\s*\{/);
   // Les trois pages d'entrée chargent les sheets dans le même ordre ; seule mobile.html charge mobile.css.
   assert.deepEqual(feuillesDe('mobile.html'), ['css/tokens.css', 'css/base.css', 'css/components.css', 'css/mobile.css']);
-  assert.deepEqual(RACINE_HTML.concat('kit.html').filter((f) => lire(f).includes('css/mobile.css')), ['mobile.html']);
+  assert.deepEqual(RACINE_HTML.filter((f) => lire(f).includes('css/mobile.css')), ['mobile.html']);
   const t = texte(page('mobile'));
   assert.match(t, /seule page qui la charge est mobile\.html/);
   assert.match(t, /css\/components\.css chargée avant elle/);

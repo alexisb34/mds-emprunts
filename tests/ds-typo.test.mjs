@@ -226,8 +226,9 @@ function structure(html, titre) {
   // Les liens internes mènent quelque part.
   const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
   for (const [, cible] of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.has(cible), `#${cible} ne mène nulle part`);
-  // Les cinq chapitres sont liés par l'en-tête de toutes les pages ; ressources.html est écrit à la
-  // tâche suivante, et son existence est tenue par tests/ds-telechargement.test.mjs.
+  // Les cinq chapitres, ressources.html compris, sont liés par l'en-tête de toutes les pages ; leur
+  // existence est tenue par tests/ds-telechargement.test.mjs. Tout autre
+  // lien vers une page de la racine de design-system/ doit mener à un fichier qui existe.
   const chapitres = CHAPITRES.map((c) => c.href);
   for (const [, f] of html.matchAll(/href="([\w-]+\.html)(?:#[^"]*)?"/g)) {
     if (!chapitres.includes(f)) readFileSync(new URL(`../design-system/${f}`, import.meta.url));
@@ -281,10 +282,10 @@ test('typographie.html : l’échelle est montrée, et dit ce qui n’est pas da
 
 test('typographie.html : les styles qu’aucun écran n’emploie sont nommés, et ce sont les bons', () => {
   // On calcule, à la source, quels styles de base.css servent à un écran : une classe posée dans
-  // js/ ou dans une page de la racine (kit.html, la page de vérification visuelle, ne compte pas).
+  // js/ ou dans une page de la racine.
   const fichiers = [
     ...readdirSync(new URL('../js/', import.meta.url), { recursive: true }).filter((f) => f.endsWith('.js')).map((f) => `js/${f}`),
-    ...readdirSync(new URL('../', import.meta.url)).filter((f) => f.endsWith('.html') && f !== 'kit.html'),
+    ...readdirSync(new URL('../', import.meta.url)).filter((f) => f.endsWith('.html')),
   ];
   const source = fichiers.map(lire).join('\n');
   const posees = new Set([...source.matchAll(/class=\\?"([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/)));
@@ -316,10 +317,21 @@ test('typographie.html : le plancher dit est celui de body-tiny, et ce que le pr
     .map((m) => ({ selecteur: m[1].trim(), taille: Number((m[2].match(/(?:^|;)\s*font-size:\s*(\d+)px/) || [])[1]) }))
     .filter((r) => r.taille && r.taille < tiny.taille);
   assert.deepEqual(sous.map((r) => r.selecteur).sort(), ['.m-nav__tab', '.week-grid .slot', '.week-grid th'], 'les endroits de mobile.css sous le plancher ont changé : la page doit suivre');
-  for (const r of sous) assert.match(t, new RegExp(`${r.taille} px`), `la page ne cite pas ${r.taille} px (${r.selecteur})`);
+  // Chaque taille doit être attachée au BON endroit, pas seulement figurer quelque part : « 9 px »
+  // est celui des cases de la grille des créneaux, « 10 px » celui de ses en-têtes et de la barre.
+  // On découpe la phrase en propositions (une par taille) et on regarde laquelle nomme quoi.
+  const MOTS = { '.week-grid .slot': 'cases de la grille des créneaux', '.week-grid th': 'en-têtes', '.m-nav__tab': 'barre de navigation mobile' };
+  const phrase = t.match(/Le prototype descend lui-même[^.]*\./)[0];
+  const propositions = phrase.split(/, (?=\d+ px dans)/);
+  for (const r of sous) {
+    const propo = propositions.find((p) => p.includes(`${r.taille} px dans`));
+    assert.ok(propo, `la page ne cite pas ${r.taille} px (${r.selecteur})`);
+    assert.ok(propo.includes(MOTS[r.selecteur]), `${r.taille} px devrait nommer « ${MOTS[r.selecteur]} » (${r.selecteur}) : « ${propo} »`);
+    for (const autre of sous.filter((o) => o.taille !== r.taille)) {
+      assert.ok(!propo.includes(MOTS[autre.selecteur]), `« ${propo} » attribue à ${r.taille} px ce qui est à ${autre.taille} px (${autre.selecteur})`);
+    }
+  }
   assert.match(t, /par exemple/);
-  assert.match(t, /grille des créneaux/);
-  assert.match(t, /barre de navigation/);
 });
 
 test('typographie.html : ce que la page dit des composants du kit (boutons, titres de champ, en-têtes de tableau) est dans components.css', () => {

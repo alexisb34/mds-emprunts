@@ -20,7 +20,9 @@
 //
 // 1. La page de documentation appelle `cadreHtml({fichier, demo, titre})` et pose le résultat
 //    dans son balisage. Un `<div class="ds-cadre">` qui porte un `<iframe>` vers
-//    `../exemples/<fichier>#<demo>`.
+//    `../exemples/<fichier>#<demo>` depuis une page de `composants/`, ou
+//    `exemples/<fichier>#<demo>` depuis un chapitre à la racine de `design-system/` (option
+//    `depuisRacine`).
 // 2. Elle appelle `brancherCadres(racine)` une fois ses cadres posés.
 // 3. Dans le cadre, `js/cadre-enfant.js` ne laisse voir que la `<section data-demo="…">`
 //    demandée par le fragment, et annonce au parent, par `postMessage` :

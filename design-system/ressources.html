@@ -37,6 +37,7 @@
 
   <script type="module">
     import { enteteHtml, piedHtml } from './js/chrome.js';
+    import { montrerRepli } from './js/repli.js';
     import { preparerSources, brancherExports } from './js/logo.js';
     import { lireTokens } from './js/tokens.js';
     import { brancherCode } from './js/code.js';
@@ -67,9 +68,7 @@
         if (cible) cible.scrollIntoView();
       }
     } catch (erreur) {
-      const repli = document.getElementById('repli');
-      repli.classList.remove('ds-message--attente');
-      document.getElementById('raison').textContent = `Les ressources n’ont pas pu être lues (${erreur.message}). Si vous avez ouvert ce fichier directement, ouvrez plutôt le site depuis un serveur : npm run serve.`;
+      montrerRepli(document, erreur, 'Les ressources n’ont pas pu être lues');
     }
   </script>
 </body>

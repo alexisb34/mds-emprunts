@@ -23,7 +23,7 @@ export const CHAPITRES = [
   { href: 'couleurs.html', titre: 'Couleurs', resume: 'Le turquoise de la marque, le violet du produit, et laquelle sert à quoi. Contrastes mesurés.' },
   { href: 'typographie.html', titre: 'Typographie', resume: 'Bricolage Grotesque pour les titres, Inter pour le reste. L’échelle complète.' },
   { href: 'ton.html', titre: 'Ton', resume: 'Comment on écrit dans les interfaces de l’école : phrases courtes, pas de jargon, erreurs qui disent quoi faire.' },
-  { href: 'ressources.html', titre: 'Ressources', resume: 'Le logo dans tous les formats utiles, la palette à coller, les polices.' },
+  { href: 'ressources.html', titre: 'Ressources', resume: 'Le logo en SVG et en PNG, les couleurs et mesures à coller en variables CSS, les liens des deux polices.' },
 ];
 
 // Étage 2 — la documentation des composants. L'ordre est celui du sommaire latéral :

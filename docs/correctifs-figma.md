@@ -45,6 +45,51 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   Figma où le focus arrive à l’ouverture (le titre, le premier champ, l’action principale) et où il
   retourne, puis à le porter dans `js/ui.js`. La page nomme ces deux manques en attendant.
 
+- **Le clavier n’atteint ni les lignes cliquables ni les en-têtes triables, et rien ne dit le tri
+  à un lecteur d’écran** (2 novembre 2026). Repéré en documentant la page Tableau
+  (`design-system/composants/tableau.html`). `renderTable`, dans `js/admin/table.js`, écrit
+  des `tr[data-href]` pour une ligne qui ouvre une fiche et des `th[data-sortable]` pour un en-tête
+  qui trie ; `bindTable` n’y branche qu’un `click`, sans aucun `keydown`. **Aucun fichier de `js/`, de
+  `css/` ni des pages de la racine ne contient `tabindex`**, et `aria-sort` n’est posé nulle part
+  dans `js/` (recherche faite sur ces trois dossiers) : une ligne et un en-tête ne reçoivent donc
+  jamais le focus, et le tri comme l’ouverture d’une fiche ne s’obtiennent qu’à la souris. Le sens du
+  tri n’est dit que par une flèche écrite dans le libellé (` ↑`, ` ↓`). Même défaut, sans l’en-tête,
+  pour les `.list__item[data-href]` (des `<div>`) du tableau de bord et de la maintenance
+  (`js/admin/views/dashboard.js`, `js/admin/views/maintenance.js`). Un test
+  (`tests/ds-registre.test.mjs`) rejoue la recherche et tombe le jour où l’un de ces manques est
+  comblé. Reste à décider dans Figma : un lien dans la première cellule et un bouton dans l’en-tête,
+  ou `tabindex="0"` avec Entrée et Espace, et `aria-sort` sur la colonne triée.
+
+- **L’interrupteur `.toggle` n’a aucun anneau de focus visible** (2 novembre 2026). Sa vraie case est
+  cachée par `css/components.css` (`.toggle input` : `opacity: 0; width: 0; height: 0`) et aucune
+  règle `:focus` ni `:focus-visible` de `components.css`, `admin.css`, `mobile.css` ou `base.css` ne
+  vise `.toggle` ni `.toggle__track`. Constaté dans Chromium, à la frappe sur Tab : la case a bien le
+  focus (`:focus-visible` vrai, zéro pixel de large, opacité 0) et le rail ne change pas. Ce n’est
+  pas le cas de la case à cocher, qui garde l’anneau du navigateur. Un seul écran l’emploie :
+  « Comptes actifs uniquement », dans `js/admin/views/utilisateurs.js`. Le manque s’ajoute à l’entrée
+  sur l’anneau de focus du kit, plus haut : la forme à reprendre est celle de `.kpi--link`, posée sur
+  le rail (`.toggle input:focus-visible + .toggle__track`), couleur et épaisseur à décider dans Figma.
+
+- **`aria-invalid` ne marque pas `.textarea`** (2 novembre 2026). La règle de `css/components.css`
+  est `.input[aria-invalid="true"], .select[aria-invalid="true"] { border-color:
+  var(--feedback-error) }` : la zone de texte n’y figure pas, alors qu’elle partage `.field` avec les
+  deux autres et reçoit, elle, l’anneau de focus. Aucun écran ne pose `aria-invalid` aujourd’hui
+  (recherche faite dans `js/` et les pages de la racine), donc personne n’est touché : c’est une
+  règle du kit à compléter avant le premier formulaire qui valide ses champs.
+
+- **La barre de navigation mobile ne dit pas l’onglet courant, et son texte est petit**
+  (2 novembre 2026). (1) `js/mobile/layout.js` écrit `class="m-nav__tab m-nav__tab--active"` pour
+  l’onglet courant et **n’écrit pas `aria-current`** : l’onglet ne se distingue que par sa couleur.
+  (2) Le texte des onglets (`.m-nav__tab`, `css/mobile.css`) est à 10 px gras, sous les 11 px de
+  `body-tiny`. **Les cibles de la barre, elles, ne sont pas petites** : 68 × 67 px mesurés dans le shell
+  d’exemple à 360 px de large (98 × 67 à 480). Les cibles de 36 px sont ailleurs : la flèche de
+  retour `.m-header__back` (36 × 36) et le sélecteur `.seg__btn` (36 px de haut), sous les 44 px que
+  recommande WCAG 2.5.5 ; et le texte de 9 px est celui des créneaux de la salle
+  (`.week-grid .slot`), avec `.week-grid th` à 10 px. La page `design-system/composants/mobile.html`
+  les nomme ; le registre les porte pour que le correctif se décide avec la maquette. Reste à
+  décider dans Figma : `aria-current="page"` sur le lien courant, et la taille minimale du texte
+  mobile.
+
 - **Seize paires de couleurs du kit sont sous le seuil de lisibilité de 4,5:1** (constat du
   26 octobre 2026). Mesuré en écrivant le chapitre Couleurs du design system
   (`design-system/couleurs.html`), qui les publie telles quelles, avec leur ratio. La décision
@@ -98,11 +143,32 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   et n’aurait plus de retour : il faut aussi assombrir l’état survolé. Pour le vert de
   `toast--success`, un fond de `#348228` (4,81:1 sous du blanc, calculé).
 
-  **Repérées dans le CSS, pas vérifiées dans les vues**, donc non publiées : `.text-error`
-  (4,28:1 sur blanc), `.text-success` (2,79:1), `--text-disabled` (1,66:1 sur blanc, pour les
-  champs vides et les intitulés de section de la barre latérale), et `--text-secondary` sur
-  `--bg-canvas` (4,13:1) hors des tableaux, par exemple `.page-header__meta`. Elles sont à
-  vérifier, puis à ajouter à la page.
+  **Trois paires de plus, vérifiées dans les vues le 2 novembre 2026, que la page Couleurs ne publie
+  pas.** Chacune est formée par une règle de la feuille et émise par une vue, sauf la dernière, que
+  le kit définit et qu’aucun écran ne pose, comme la carte KPI neutre. Les ratios sont recalculés
+  depuis `css/tokens.css` avec `design-system/js/contraste.js`, sur le rapport exact.
+
+  | Paire | Ratio | Texte sur fond | Taille | Émise par |
+  |---|---|---|---|---|
+  | `.nav-item__count` | 4,13:1 | `--text-secondary` sur `--bg-canvas` | 11 px | `js/admin/layout.js`, le compteur du menu |
+  | `.page-header__meta` | 4,13:1 | `--text-secondary` sur `--bg-canvas` | 14 px | cinq vues de `js/admin/views/` (matériel, fiche, emprunts, utilisateurs, fiche utilisateur) |
+  | `.input::placeholder` | 1,66:1 | `--text-disabled` sur `--bg-surface` | 14 px | les champs de `js/admin/`, par exemple la recherche de `utilisateurs.js` ; `.textarea::placeholder` a la même règle |
+  | `.sidebar__section` | 1,66:1 | `--text-disabled` sur `--bg-surface` | 10 px, gras | `js/admin/layout.js`, l’intitulé « Gestion » |
+  | `.field__error` | 4,28:1 | `--feedback-error` sur `--bg-surface` | 11 px | aucun écran : défini par le kit |
+
+  Le texte indicatif d’un champ (`::placeholder`) est du texte, pas un contrôle désactivé : WCAG
+  1.4.3 s’y applique. Posé sur le gris de l’application (`--bg-canvas`), le rouge de `.field__error`
+  tomberait à 3,88:1. Les corrections se décident dans Figma comme les autres : le ton calculé de
+  `--text-secondary` (`#5f6062`, 5,72:1 sur `--bg-canvas`) règle `.nav-item__count` et
+  `.page-header__meta` en même temps que les six lignes du premier tableau ; `--text-secondary`
+  lui-même (4,55:1 sur blanc, de justesse) ou plus sombre règle `.input::placeholder` et
+  `.sidebar__section`, au prix d’un texte indicatif qui ressemble à un texte discret ; et
+  `--feedback-error-hover` (5,55:1 sur blanc) règle `.field__error`. La variante active du compteur
+  (`--text-brand` sur `--bg-surface`) n’est pas en cause : 9,79:1.
+
+  **Définies par `css/base.css`, posées par aucune vue**, donc non publiées : `.text-error`
+  (4,28:1 sur blanc) et `.text-success` (2,79:1). Un test (`tests/ds-registre.test.mjs`) tombe le
+  jour où une vue les emploie : elles seront alors à publier.
 
 ## Divergences connues, laissées telles quelles
 

@@ -311,11 +311,37 @@ test('ressources.html lit le logo et les tokens, branche les exports et les copi
   assert.match(html, /ds-message/, 'un message de repli est écrit dans le HTML');
   assert.match(html, /npm run serve/);
   const script = html.match(/<script type="module">([\s\S]*)<\/script>/)[1];
-  assert.match(script, /catch \(erreur\) \{\s*const repli = document\.getElementById\('repli'\);\s*repli\.classList\.remove\('ds-message--attente'\);/, 'le repli doit apparaître tout de suite en cas d’échec attrapé');
+  assert.match(script, /catch \(erreur\) \{\s*montrerRepli\(document, erreur, '[^']+'\);/, 'le repli doit apparaître tout de suite en cas d’échec attrapé');
   assert.doesNotMatch(script.slice(script.indexOf('catch (erreur)')), /\bthrow\b/, 'une exception relancée dans le repli laisserait la page sur son attente');
 });
 
 test('les cinq chapitres de l’en-tête existent, y compris Ressources', () => {
   for (const c of CHAPITRES) assert.ok(lire(`design-system/${c.href}`).length > 0, `${c.href} est lié par l’en-tête de toutes les pages`);
   assert.equal(CHAPITRES.length, 5);
+});
+
+// ---- Ce que la page promet, elle le livre ----
+
+test('la page Ressources livre du SVG et du PNG, et ses promesses ne disent pas davantage', () => {
+  // Les formats réellement proposés, lus dans le HTML rendu : un lien `download` et des boutons PNG.
+  const livres = new Set([...PAGE.matchAll(/download="[^"]*\.(\w+)"/g)].map((m) => m[1]));
+  if (/data-export-png/.test(PAGE)) livres.add('png');
+  assert.deepEqual([...livres].sort(), ['png', 'svg'], 'la page propose d’autres formats : les promesses doivent suivre');
+
+  const resume = CHAPITRES.find((c) => c.href === 'ressources.html').resume;
+  assert.match(resume, /SVG/);
+  assert.match(resume, /PNG/);
+  // La carte de l'accueil est le résumé, mot pour mot : elle ne peut pas promettre autre chose.
+  assert.ok(texte(lire('design-system/index.html')).includes(resume), 'la carte de l’accueil ne reprend plus le résumé du chapitre');
+
+  // Aucune des promesses ne parle de « tous » les formats ni de « tout » ce qu'il faut.
+  const promesses = {
+    'le résumé du chapitre': resume,
+    'la page Ressources': texte(PAGE),
+    'le chapitre Logo': texte(pageLogo(SOURCES)),
+    'l’en-tête de telechargement.js': lire('design-system/js/telechargement.js').split('\n')[0],
+  };
+  for (const [ou, t] of Object.entries(promesses)) {
+    assert.doesNotMatch(t, /tous (?:les|leurs|ses) formats|formats utiles|Tout ce qu’il faut/, `${ou} promet plus que du SVG et du PNG`);
+  }
 });

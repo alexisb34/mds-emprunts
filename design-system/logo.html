@@ -36,6 +36,7 @@
 
   <script type="module">
     import { enteteHtml, piedHtml } from './js/chrome.js';
+    import { montrerRepli } from './js/repli.js';
     import { preparerSources, pageHtml, brancherExports } from './js/logo.js';
 
     // Cette page est à la racine de design-system/ : l’adresse passée au chrome est `logo.html`.
@@ -55,9 +56,7 @@
       contenu.innerHTML = pageHtml(sources);
       brancherExports(contenu, sources);
     } catch (erreur) {
-      const repli = document.getElementById('repli');
-      repli.classList.remove('ds-message--attente');
-      document.getElementById('raison').textContent = `Le logo n’a pas pu être lu (${erreur.message}). Si vous avez ouvert ce fichier directement, ouvrez plutôt le site depuis un serveur : npm run serve.`;
+      montrerRepli(document, erreur, 'Le logo n’a pas pu être lu');
     }
   </script>
 </body>

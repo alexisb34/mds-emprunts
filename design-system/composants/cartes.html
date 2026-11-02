@@ -50,7 +50,7 @@
         </ul>
 
         <h3 class="h6">Ce que l’outil en emploie</h3>
-        <p class="body ds-mesure"><strong>Seule <code>.card</code> est employée par un écran.</strong> Ni <code>.card--flat</code> ni <code>.card--item</code> n’apparaît dans le code de l’outil&nbsp;: la première n’est écrite nulle part hors de la feuille, la seconde seulement dans la planche <code>kit.html</code>. Le catalogue mobile dessine sa carte d’objet avec <code>.m-card</code>, de <code>css/mobile.css</code>&nbsp;: la même image 4:3, les mêmes angles, d’autres marges. C’est le même motif écrit deux fois&nbsp;; voir <a href="mobile.html">Mobile</a>.</p>
+        <p class="body ds-mesure"><strong>Seule <code>.card</code> est employée par un écran.</strong> Ni <code>.card--flat</code> ni <code>.card--item</code> n’est écrite ailleurs que dans <code>css/components.css</code>&nbsp;: aucun écran, aucun script ne les pose. Le catalogue mobile dessine sa carte d’objet avec <code>.m-card</code>, de <code>css/mobile.css</code>&nbsp;: la même image 4:3, les mêmes angles, d’autres marges. C’est le même motif écrit deux fois&nbsp;; voir <a href="mobile.html">Mobile</a>.</p>
         <p class="body ds-mesure"><code>.card--item</code> n’a pas la règle qui recadre une photo&nbsp;: dans <code>.m-card__media</code>, une <code>&lt;img&gt;</code> est tirée à la taille de l’image (<code>object-fit: cover</code>), dans <code>.card__media</code> rien ne l’y oblige. L’exemple y met une icône, pas une photo.</p>
 
         <h3 class="h6">Ce qui n’existe pas</h3>
