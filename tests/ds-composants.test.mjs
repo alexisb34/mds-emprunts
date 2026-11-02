@@ -20,7 +20,10 @@ import { badge, avatar, openModal, closeModal, toast, escapeHtml } from '../js/u
 import { LABELS } from '../js/models.js';
 import { renderTable, sortRows, toggleSort, bindTable } from '../js/admin/table.js';
 import { sidebarHtml } from '../js/admin/layout.js';
-import { ICONS } from '../js/mobile/layout.js';
+import { ICONS, headerHtml, bottomNavHtml } from '../js/mobile/layout.js';
+import { reservationCardHtml, empruntsHtml } from '../js/mobile/views/emprunts.js';
+import { resultsHtml } from '../js/mobile/views/login.js';
+import { catalogueHtml, catalogueResultsHtml } from '../js/mobile/views/catalogue.js';
 import { valeursDepuis } from '../design-system/js/tokens.js';
 import { COMPOSANTS } from '../design-system/js/chrome.js';
 import { PAIRES_KIT } from '../design-system/js/dette.js';
@@ -70,10 +73,10 @@ const utilise = (motif) => SOURCES.filter((s) => motif.test(s.source)).map((s) =
 
 const PAGES_10 = ['badge', 'avatar', 'formulaires', 'cartes'];
 const PAGES_11 = ['tableau', 'kpi', 'navigation', 'icones'];
-const PAGES_12_13 = ['modale'];
+const PAGES_12_13 = ['modale', 'mobile'];
 const PAGES = [...PAGES_10, ...PAGES_11, ...PAGES_12_13];
 // Les fichiers de design-system/exemples/ que ces pages montrent (Démarrer a le sien, sans page de composant à lui).
-const EXEMPLES = [...PAGES_10, ...PAGES_11, 'onglets-admin', 'modale'];
+const EXEMPLES = [...PAGES_10, ...PAGES_11, 'onglets-admin', 'modale', 'mobile-shell', 'mobile-listes', 'demarrer'];
 
 // ---- Les tests du brief, mot pour mot ----
 
@@ -1492,4 +1495,442 @@ test('modale : les trois gestes que la page montre en JavaScript sont ceux de l�
   assert.match(t, /toast\(err\.message, 'error'\); return false;/);
   assert.match(t, /sous le nom close/);
   assert.match(t, /openModal\(\{ title: 'Titre', body: '<p class="body-sm">Texte<\/p>' \}\)/);
+});
+
+// ======================= MOBILE ET DÉMARRER (Task 13) =======================
+//
+// Même contrat que plus haut : les phrases de la page Mobile sur `css/mobile.css` sont comparées à
+// `css/mobile.css`, celles sur les écrans à `js/mobile/` et aux trois pages d'entrée ; les exemples sont
+// comparés aux fonctions qui écrivent ce HTML (`headerHtml`, `bottomNavHtml`, `empruntsHtml`,
+// `reservationCardHtml`, `resultsHtml`, `catalogueHtml`). Ces tests NE regardent PAS la page : que la barre
+// du bas reste dans la coquille du cadre, que 360 px soit lisible, cela se voit dans un navigateur.
+
+const BASE = sansCss(lire('css/base.css'));
+const MOBILE_BRUT = lire('css/mobile.css');
+const TOUTES_LES_FEUILLES = `${BASE}\n${TOUT_LE_CSS}`;
+const DEMO_LEA = { prenom: 'Léa', nom: 'Pezzetti' };
+const DATE_MOBILE = new Date(2026, 8, 17, 10, 0);
+const RESERVATION = {
+  loan: { id: 'L-0007', debutPrevu: '2026-09-18T09:00:00', finPrevue: '2026-09-19T17:00:00', statut: 'reservee' },
+  item: { nom: 'Canon R10 + 18-55' },
+  pickupOpen: false,
+  expired: false,
+  window: { end: new Date(2026, 8, 18, 17, 0) },
+};
+const ELEVES = [
+  { id: 'u-lea', prenom: 'Léa', nom: 'Pezzetti', promo: 'Promo 2027' },
+  { id: 'u-yann', prenom: 'Yann', nom: 'Guihard', promo: 'Promo 2026' },
+];
+const GROUPES = [
+  { reference: 'canon-r10', nom: 'Canon R10 + 18-55', categorie: 'Photo', circuit: 'valeur', photoUrl: '', total: 1, disponibles: 0, exemplaires: [{ etat: 'emprunte' }] },
+  { reference: 'multiprise', nom: 'Multiprise', categorie: 'Accessoire', circuit: 'self', photoUrl: '', total: 6, disponibles: 4, exemplaires: [] },
+];
+// Les trois pages d'entrée de l'outil, et ce qu'elles chargent, dans l'ordre.
+const feuillesDe = (fichier) => [...lire(fichier).matchAll(/<link rel="stylesheet" href="(css\/[\w-]+\.css)">/g)].map((m) => m[1]);
+// Les noms de classe qu'un fragment HTML emploie.
+const classesDe = (html) => [...new Set([...html.matchAll(/\bclass="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/)).filter(Boolean))];
+// Les classes qu'une page écrit en `<code>.nom</code>`.
+const classesCodees = (nom) => [...new Set([...sansCommentaires(page(nom)).matchAll(/<code>\.([a-z][\w-]*)<\/code>/g)].map((m) => m[1]))];
+
+// ---- Mobile ----
+
+test('mobile : la page nomme ses classes, les écrans en emploient chacune, et chacune existe', () => {
+  const noms = classesCodees('mobile');
+  assert.ok(noms.length >= 25, `${noms.length} classes lues : le détecteur ne voit plus la page`);
+  for (const c of noms) assert.match(TOUTES_LES_FEUILLES, new RegExp(`\\.${c}(?![\\w-])`), `mobile : « .${c} » n’existe dans aucune feuille`);
+  for (const c of ['m-shell', 'm-header', 'm-main', 'm-nav', 'm-nav__tab', 'm-nav__scan', 'm-list', 'm-item', 'm-item--button', 'm-item--stacked', 'm-item--pickup', 'm-item__body', 'm-item__row', 'm-grid', 'm-card', 'm-card__media', 'm-card__body', 'm-card__meta', 'chips', 'is-login']) {
+    assert.ok(noms.includes(c), `la page ne nomme pas .${c}`);
+  }
+});
+
+test('mobile : le shell est tel que la page le dit', () => {
+  const t = texte(page('mobile'));
+  const shell = regle(MOBILE, '.m-shell');
+  assert.match(shell, /max-width:\s*480px/);
+  assert.match(shell, /margin:\s*0 auto/);
+  assert.match(shell, /min-height:\s*100vh/);
+  assert.match(shell, /flex-direction:\s*column/);
+  const header = regle(MOBILE, '.m-header');
+  assert.match(header, /position:\s*sticky/);
+  assert.match(header, /top:\s*0/);
+  assert.match(header, /height:\s*calc\(56px \+ env\(safe-area-inset-top\)\)/);
+  assert.match(regle(MOBILE, '.m-main'), /padding:[^;]*calc\(96px \+ env\(safe-area-inset-bottom\)\)/);
+  const nav = regle(MOBILE, '.m-nav');
+  assert.match(nav, /position:\s*fixed/);
+  assert.match(nav, /bottom:\s*0/);
+  assert.match(nav, /width:\s*min\(480px, 100%\)/);
+  assert.match(nav, /height:\s*calc\(72px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(nav, /grid-template-columns:\s*1fr 1fr 72px 1fr 1fr/);
+  const scan = regle(MOBILE, '.m-nav__scan');
+  assert.match(scan, /width:\s*60px;\s*height:\s*60px/);
+  assert.match(scan, /margin-top:\s*-28px/);
+  for (const phrase of ['480 px', '56 px', '72 px', '96 px', '60 px', '−28 px', 'position: fixed', 'position: sticky']) assert.ok(t.includes(phrase), `la page ne dit pas « ${phrase} »`);
+  // Le bouton central est centré dans la barre, puis remonté par sa marge haute : le débord n'est PAS la marge.
+  // Débord = −(haut de la boîte) = −((barre − (hauteur + marge)) / 2 + marge), tout en pixels lus dans la feuille.
+  const px = (css, propriete) => Number(css.match(new RegExp(`(?:^|[\\s;])${propriete}:\\s*(-?\\d+)px`))[1]);
+  const barre = Number(nav.match(/height:\s*calc\((\d+)px/)[1]);
+  const debord = -((barre - (px(scan, 'height') + px(scan, 'margin-top'))) / 2 + px(scan, 'margin-top'));
+  assert.equal(debord, 8, 'le bouton central ne déborde plus de 8 px : mesuré à 7,5 px dans le navigateur, la page doit changer');
+  assert.ok(t.includes(`déborder de ${debord} px au-dessus de la barre`), `le débord du bouton central est de ${debord} px`);
+  assert.match(t, /1fr 1fr 72px 1fr 1fr/);
+});
+
+test('mobile : .is-login cache l’en-tête et la barre, et c’est app.js qui la pose sur le body', () => {
+  assert.match(MOBILE, /\.is-login \.m-header, \.is-login \.m-nav\s*\{\s*display:\s*none/);
+  assert.match(lire('js/mobile/app.js'), /document\.body\.classList\.add\('is-login'\)/);
+  assert.match(lire('js/mobile/app.js'), /document\.body\.classList\.remove\('is-login'\)/);
+  const t = texte(page('mobile'));
+  assert.match(t, /is-login/);
+  assert.match(t, /app\.js/);
+});
+
+test('mobile : la distance de 88 px des barres collantes est écrite dans trois règles, et 96 px dans une', () => {
+  const regles = (valeur) => [...MOBILE.matchAll(/(?:^|\n)([^{}\n]+)\{([^}]*)\}/g)].filter((m) => m[2].includes(valeur)).map((m) => m[1].trim()).sort();
+  assert.deepEqual(regles('88px'), ['#toast-root', '.m-cta', '.selection-bar']);
+  assert.deepEqual(regles('96px'), ['.m-main']);
+  const t = texte(page('mobile'));
+  assert.match(t, /88 px, écrits à la main dans trois règles/);
+  assert.match(t, /\.selection-bar/);
+  assert.match(t, /\.m-cta/);
+});
+
+test('mobile : aucune règle ne s’adapte à la largeur — la colonne s’arrête à 480 px', () => {
+  assert.deepEqual([...MOBILE_BRUT.matchAll(/@media[^{]*/g)].map((m) => m[0].trim()), ['@media (prefers-reduced-motion: reduce)']);
+  assert.match(regle(MOBILE, '.m-grid'), /grid-template-columns:\s*repeat\(2, 1fr\)/);
+  assert.match(texte(page('mobile')), /aucune règle de largeur/i);
+});
+
+test('mobile : les listes et les cartes sont telles que la page le dit', () => {
+  assert.match(regle(MOBILE, '.m-list'), /flex-direction:\s*column/);
+  assert.match(regle(MOBILE, '.m-item'), /background:\s*var\(--bg-surface\)/);
+  assert.match(regle(MOBILE, '.m-item--stacked'), /flex-direction:\s*column/);
+  assert.match(regle(MOBILE, '.m-item--pickup'), /border:[^;]*var\(--border-brand\)/);
+  assert.match(regle(MOBILE, '.m-item--button:hover'), /background:\s*var\(--brand-primary-subtle\)/);
+  assert.match(regle(MOBILE, '.m-card__media'), /aspect-ratio:\s*4 \/ 3/);
+  assert.match(regle(MOBILE, '.m-card__body strong'), /-webkit-line-clamp:\s*2/);
+  assert.match(regle(MOBILE, '.m-item__body strong'), /text-overflow:\s*ellipsis/);
+  assert.match(regle(MOBILE, '.chips'), /overflow-x:\s*auto/);
+  // Les écrans emploient ces variantes comme la page le dit.
+  assert.ok(utilise(/<a class="m-item" href=/).includes('js/mobile/views/accueil.js'));
+  assert.ok(utilise(/class="m-item m-item--button"/).includes('js/mobile/views/login.js'));
+  assert.ok(utilise(/class="m-item m-item--stacked"/).includes('js/mobile/views/emprunts.js'));
+  assert.ok(utilise(/m-item--pickup/).includes('js/mobile/views/emprunts.js'));
+  assert.ok(utilise(/class="m-card"/).includes('js/mobile/views/catalogue.js'));
+  const t = texte(page('mobile'));
+  for (const phrase of ['4 / 3', 'deux lignes', 'une seule ligne']) assert.ok(t.includes(phrase), `la page ne dit pas « ${phrase} »`);
+});
+
+test('mobile : mobile.css ne définit aucun composant de base, et suppose components.css avant elle', () => {
+  for (const c of ['.btn', '.card', '.badge', '.chip', '.avatar', '.tab', '.modal']) {
+    assert.ok(regle(COMPONENTS, c), `${c} n’est plus dans components.css`);
+    assert.equal(regle(MOBILE, c), null, `mobile.css définit ${c} : la page doit changer`);
+  }
+  assert.doesNotMatch(MOBILE, /\.(?:input|select|textarea)\b/);
+  assert.match(MOBILE, /\.btn > svg\s*\{/);
+  assert.match(MOBILE, /\.m-shell \.tabs\s*\{/);
+  // Les trois pages d'entrée chargent les sheets dans le même ordre ; seule mobile.html charge mobile.css.
+  assert.deepEqual(feuillesDe('mobile.html'), ['css/tokens.css', 'css/base.css', 'css/components.css', 'css/mobile.css']);
+  assert.deepEqual(RACINE_HTML.concat('kit.html').filter((f) => lire(f).includes('css/mobile.css')), ['mobile.html']);
+  const t = texte(page('mobile'));
+  assert.match(t, /seule page qui la charge est mobile\.html/);
+  assert.match(t, /css\/components\.css chargée avant elle/);
+});
+
+test('mobile : les trois choses que mobile.css redéfinit sont celles que la page nomme, avec leurs écarts', () => {
+  // L'intersection de mobile.css avec chaque autre feuille, calculée, pas écrite.
+  const selecteurs = (css) => new Set([...css.matchAll(/(?:^|\})\s*([^{}@][^{}]*)\{/g)].flatMap((m) => m[1].split(',')).map((s) => s.trim().replace(/\s+/g, ' ')));
+  const doublons = (autre) => [...selecteurs(MOBILE)].filter((s) => selecteurs(autre).has(s));
+  assert.deepEqual(doublons(BASE), []);
+  const communs = [...new Set([...doublons(COMPONENTS), ...doublons(ADMIN)].map((s) => s.match(/^[#.][\w-]+/)[0]))].sort();
+  assert.deepEqual(communs, ['#toast-root', '.error-card', '.week-grid']);
+  const noms = classesCodees('mobile');
+  assert.ok(noms.includes('week-grid') && noms.includes('error-card'));
+  assert.match(texte(page('mobile')), /#toast-root/);
+  // .error-card est identique des deux côtés ; .week-grid ne l'est pas ; #toast-root ne change que `bottom`.
+  assert.equal(regle(MOBILE, '.error-card'), regle(ADMIN, '.error-card'));
+  assert.notEqual(regle(MOBILE, '.week-grid'), regle(ADMIN, '.week-grid'));
+  assert.match(regle(MOBILE, '.week-grid'), /border-spacing:\s*2px/);
+  assert.match(regle(ADMIN, '.week-grid'), /border-spacing:\s*3px/);
+  assert.match(regle(MOBILE, '.week-grid .slot'), /height:\s*30px/);
+  assert.match(regle(ADMIN, '.week-grid .slot'), /height:\s*34px/);
+  assert.doesNotMatch(regle(MOBILE, '#toast-root'), /position|left|transform/);
+  const t = texte(page('mobile'));
+  assert.match(t, /cellules de 30 px contre 34 px/);
+  assert.match(t, /écart de 2 px contre 3 px/);
+  assert.match(t, /identique des deux côtés/);
+});
+
+test('mobile : l’exemple « shell » est ce que headerHtml(), empruntsHtml() et bottomNavHtml() écrivent', () => {
+  const section = demo('mobile-shell', 'shell');
+  const entete = headerHtml({ title: 'Mes emprunts', user: DEMO_LEA });
+  const contenu = empruntsHtml({ tab: 'reservations', data: { enCours: [null, null], reservations: [RESERVATION], historique: new Array(14).fill(null) }, date: DATE_MOBILE });
+  const barre = bottomNavHtml('/emprunts');
+  const attendu = `<div class="m-shell"><header id="header" class="m-header">${entete}</header><main id="view" class="m-main">${contenu}</main><nav id="nav" class="m-nav" aria-label="Navigation">${barre}</nav></div>`;
+  assert.equal(compact(section), compact(attendu));
+  // Les trois balises d'ouverture sont celles de mobile.html.
+  const mobile = lire('mobile.html');
+  for (const ouverture of ['<div class="m-shell">', '<header id="header" class="m-header">', '<main id="view" class="m-main">', '<nav id="nav" class="m-nav" aria-label="Navigation">']) assert.ok(mobile.includes(ouverture), `mobile.html n’a plus ${ouverture}`);
+});
+
+test('mobile : l’exemple « shell » retient la barre fixe dans la coquille, et la page le dit', () => {
+  const html = exemple('mobile-shell');
+  const style = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(style, /\.m-shell\s*\{[^}]*min-height:\s*0/);
+  assert.match(style, /\.m-shell\s*\{[^}]*transform:\s*translateZ\(0\)/);
+  assert.match(style, /\.m-shell\s*\{[^}]*height:\s*\d+(?:\.\d+)?rem/);
+  const t = texte(page('mobile'));
+  assert.match(t, /L’exemple retient la barre dans la coquille/);
+  assert.match(t, /transform/);
+});
+
+test('mobile : l’exemple « liste » est ce que resultsHtml() et reservationCardHtml() écrivent', () => {
+  const groupes = [{ role: 'eleve', label: 'Élèves', users: ELEVES }];
+  const boutons = resultsHtml(groupes).match(/<div class="m-list">[\s\S]*<\/div>(?=\s*<\/section>)/)[0];
+  const attendu = `${boutons}<div class="m-list">${reservationCardHtml(RESERVATION, DATE_MOBILE)}</div>`;
+  assert.equal(compact(demo('mobile-listes', 'liste')), compact(attendu));
+});
+
+test('mobile : l’exemple « cartes » est ce que catalogueHtml() et catalogueResultsHtml() écrivent', () => {
+  const filtres = { q: '', categorie: '' };
+  const puces = catalogueHtml({ groups: GROUPES, filters: filtres, categories: ['Photo', 'Audio', 'Vidéo'] }).match(/<div class="chips">[\s\S]*?<\/div>/)[0];
+  assert.equal(compact(demo('mobile-listes', 'cartes')), compact(`${puces}${catalogueResultsHtml(GROUPES)}`));
+});
+
+test('mobile : seuls les exemples mobiles chargent mobile.css, après components.css, et leurs cadres sont étroits', () => {
+  for (const f of ['mobile-shell', 'mobile-listes']) {
+    assert.deepEqual([...exemple(f).matchAll(/href="\.\.\/\.\.\/(css\/[\w-]+\.css)"/g)].map((m) => m[1]), ['css/tokens.css', 'css/base.css', 'css/components.css', 'css/mobile.css'], f);
+  }
+  const autres = readdirSync(new URL('../design-system/exemples/', import.meta.url)).filter((f) => f.endsWith('.html') && !f.startsWith('mobile-'));
+  for (const f of autres) assert.doesNotMatch(lire(`design-system/exemples/${f}`), /mobile\.css/, `${f} charge mobile.css`);
+  // Chaque cadre qui montre un exemple mobile est un cadre étroit (390 px), et aucun autre ne l'est.
+  const html = page('mobile');
+  const appels = [...html.matchAll(/cadreHtml\(\{([^}]*)\}\)/g)].map((m) => m[1]);
+  assert.equal(appels.length, 3);
+  for (const a of appels) {
+    assert.match(a, /fichier: 'mobile-(?:shell|listes)\.html'/);
+    assert.match(a, /etroit: true/);
+  }
+  assert.match(sansCss(lire('design-system/css/site.css')), /\.ds-cadre--etroit\s*\{\s*max-width:\s*var\(--ds-cadre-telephone\)/);
+  assert.match(lire('design-system/css/site.css'), /--ds-cadre-telephone:\s*390px/);
+  assert.match(texte(page('mobile')), /390 px/);
+});
+
+test('mobile : les cadres de la page visent des démonstrations qui existent, code compris', () => {
+  const html = page('mobile');
+  for (const [f, d] of [['mobile-shell', 'shell'], ['mobile-listes', 'liste'], ['mobile-listes', 'cartes']]) {
+    assert.match(html, new RegExp(`cadreHtml\\(\\{ fichier: '${f}\\.html', demo: '${d}'`));
+    assert.match(html, new RegExp(`codeHtml\\(\\{ fichier: '${f}\\.html', demo: '${d}'`));
+    demo(f, d);
+  }
+});
+
+test('mobile : le viewport, les repères et la barre sont tels que la page le dit', () => {
+  const mobile = lire('mobile.html');
+  assert.match(mobile, /<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">/);
+  assert.doesNotMatch(mobile, /user-scalable|maximum-scale/);
+  assert.match(mobile, /<header id="header"[^>]*>[\s\S]*<main id="view"[^>]*>[\s\S]*<nav id="nav"/);
+  assert.match(headerHtml({ title: 'T', user: null }), /<h1 class="m-header__title">T<\/h1>/);
+  assert.doesNotMatch(bottomNavHtml('/emprunts'), /aria-current/);
+  assert.equal((bottomNavHtml('/emprunts').match(/m-nav__tab--active/g) || []).length, 1);
+  assert.match(MOBILE, /\.m-header__back\s*\{[^}]*width:\s*36px;\s*height:\s*36px/);
+  assert.match(MOBILE, /\.seg__btn\s*\{[^}]*height:\s*36px/);
+  assert.match(MOBILE, /\.m-nav__tab\s*\{[^}]*font-size:\s*10px/);
+  const t = texte(page('mobile'));
+  for (const phrase of ['viewport-fit=cover', 'safe-area-inset', 'aria-current="page"', '36 px', '10 px', 'ne bloque pas le zoom', 'un h1']) assert.ok(t.includes(phrase), `la page ne dit pas « ${phrase} »`);
+});
+
+test('mobile : la page mesure les deux paires de la barre et le texte de 11 px des lignes', () => {
+  const html = page('mobile');
+  assert.match(html, /mesureTexte\(valeurs, '--text-secondary', '--bg-surface', 10, true\)/);
+  assert.match(html, /mesureTexte\(valeurs, '--text-brand', '--bg-surface', 10, true\)/);
+  assert.match(html, /mesureTexte\(valeurs, '--text-secondary', '--bg-surface', 11\)/);
+  assert.match(regle(MOBILE, '.m-nav'), /background:\s*var\(--bg-surface\)/);
+  assert.match(regle(MOBILE, '.m-nav__tab'), /color:\s*var\(--text-secondary\)/);
+  assert.match(regle(MOBILE, '.m-nav__tab--active'), /color:\s*var\(--text-brand\)/);
+  assert.match(lire('js/mobile/views/emprunts.js'), /body-tiny text-secondary/);
+});
+
+// ---- Démarrer ----
+
+test('Démarrer donne l’ordre exact des feuilles et les racines à poser', () => {
+  const html = page('demarrer');
+  const ordre = ['tokens.css', 'base.css', 'components.css'];
+  let position = -1;
+  for (const f of ordre) { const i = html.indexOf(f); assert.ok(i > position, `${f} est annoncé hors ordre`); position = i; }
+  assert.match(html, /modal-root/);
+  assert.match(html, /toast-root/);
+});
+
+test('Démarrer : la liste des feuilles est l’ordre que les trois pages d’entrée suivent', () => {
+  const html = page('demarrer');
+  const liste = html.match(/<ol id="feuilles"[^>]*>([\s\S]*?)<\/ol>/);
+  assert.ok(liste, 'la liste ordonnée #feuilles manque');
+  const annoncees = [...liste[1].matchAll(/<code>(css\/[\w-]+\.css)<\/code>/g)].map((m) => m[1]);
+  assert.deepEqual(annoncees, ['css/tokens.css', 'css/base.css', 'css/components.css']);
+  for (const f of ['index.html', 'admin.html', 'mobile.html']) {
+    assert.deepEqual(feuillesDe(f).slice(0, 3), annoncees, `${f} ne charge plus les trois feuilles dans cet ordre`);
+    assert.ok(lire(f).indexOf('fonts.googleapis.com/css2') < lire(f).indexOf('css/tokens.css'), `${f} : les polices passent avant les feuilles`);
+  }
+  // Une feuille d'écran vient après, et jamais les deux.
+  assert.deepEqual(feuillesDe('admin.html').slice(3), ['css/admin.css']);
+  assert.deepEqual(feuillesDe('mobile.html').slice(3), ['css/mobile.css']);
+  assert.deepEqual(feuillesDe('index.html').slice(3), []);
+  // La liste annonce un ordre : le site lui garde ses numéros, que `.ds-liste` retirerait (list-style: disc).
+  assert.match(sansCss(lire('design-system/css/site.css')), /ol\.ds-liste\s*\{\s*list-style:\s*decimal/);
+  const t = texte(html);
+  assert.match(t, /css\/admin\.css ou css\/mobile\.css, jamais les deux/);
+  // tokens.css ne contient que des variables, dans un seul :root ; les trois pages posent des chemins relatifs.
+  assert.match(sansCss(lire('css/tokens.css')), /^\s*:root\s*\{[^{}]*\}\s*$/);
+  assert.match(t, /tokens\.css : toutes les valeurs de base, sous forme de variables, dans un seul :root\. Elle ne contient que des variables/);
+  for (const f of ['index.html', 'admin.html', 'mobile.html']) assert.doesNotMatch(lire(f), /(?:src|href)="\/[^/]/, `${f} : chemin absolu`);
+  assert.match(t, /Les chemins sont relatifs, sans barre oblique au début/);
+  assert.match(t, /les polices d’abord/);
+  // Les polices de l'outil, telles que les trois pages les demandent.
+  assert.ok(lire('mobile.html').includes('family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap'));
+  assert.match(t, /Inter/);
+  assert.match(t, /Bricolage Grotesque/);
+});
+
+test('Démarrer : les racines vont après le contenu et avant les scripts, vides, comme les trois pages', () => {
+  const html = page('demarrer');
+  assert.match(texte(html), /<div id="modal-root"><\/div>/);
+  assert.match(texte(html), /<div id="toast-root"><\/div>/);
+  assert.match(texte(html), /avant les scripts/);
+  for (const f of ['index.html', 'admin.html', 'mobile.html']) {
+    const h = lire(f);
+    assert.ok(h.indexOf('id="modal-root"') < h.indexOf('<script'), f);
+  }
+  // Sans elles, openModal et toast lèvent : la page renvoie à Modale, qui le démontre.
+  assert.match(html, /href="modale\.html"/);
+});
+
+test('Démarrer : les quatre utilitaires sont ceux de components.css, avec leurs valeurs', () => {
+  const t = texte(page('demarrer'));
+  assert.match(t, /Quatre classes de components\.css, et deux variantes de \.row/);
+  assert.match(regle(COMPONENTS, '.stack'), /flex-direction:\s*column;\s*gap:\s*var\(--space-lg\)/);
+  assert.match(regle(COMPONENTS, '.row'), /align-items:\s*center;\s*gap:\s*var\(--space-md\)/);
+  assert.match(regle(COMPONENTS, '.row--between'), /justify-content:\s*space-between/);
+  assert.match(regle(COMPONENTS, '.row--wrap'), /flex-wrap:\s*wrap/);
+  assert.match(regle(COMPONENTS, '.grid-2'), /repeat\(2, 1fr\);\s*gap:\s*var\(--space-lg\)/);
+  assert.match(regle(COMPONENTS, '.grid-4'), /repeat\(4, 1fr\);\s*gap:\s*var\(--space-lg\)/);
+  assert.match(COMPONENTS, /@media \(max-width: 900px\) \{ \.grid-4 \{ grid-template-columns: repeat\(2, 1fr\); \} \}/);
+  assert.match(COMPONENTS, /@media \(max-width: 600px\) \{ \.grid-2, \.grid-4 \{ grid-template-columns: 1fr; \} \}/);
+  // Définis une seule fois, dans components.css : ni admin.css ni mobile.css ne les redéfinissent.
+  for (const c of ['.stack', '.row', '.grid-2', '.grid-4']) { assert.equal(regle(ADMIN, c), null); assert.equal(regle(MOBILE, c), null); assert.equal(regle(BASE, c), null); }
+  for (const phrase of ['.stack', '.row', '.row--between', '.row--wrap', '.grid-2', '.grid-4', '900 px', '600 px', 'une colonne', 'deux colonnes']) assert.ok(t.includes(phrase), `Démarrer ne dit pas « ${phrase} »`);
+});
+
+test('Démarrer : l’exemple « ecran » n’emploie que des classes du dépôt, aucun style en ligne, aucune couleur', () => {
+  const section = demo('demarrer', 'ecran');
+  assert.doesNotMatch(section, /\bstyle=|#[0-9a-fA-F]{3,8}\b|rgba?\(/, 'une valeur en dur dans la démonstration');
+  const classes = classesDe(section);
+  for (const c of classes) assert.match(TOUTES_LES_FEUILLES, new RegExp(`\\.${c}(?![\\w-])`), `« ${c} » n’existe dans aucune feuille`);
+  for (const c of ['stack', 'row', 'row--between', 'grid-2', 'card']) assert.ok(classes.includes(c), `l’exemple n’emploie pas .${c}`);
+  assert.ok(compact(section).includes(compact(badge('loan', 'en_cours'))), 'le badge n’est pas celui de badge()');
+  // L'exemple charge les trois feuilles, et seulement elles.
+  assert.deepEqual([...exemple('demarrer').matchAll(/href="\.\.\/\.\.\/(css\/[\w-]+\.css)"/g)].map((m) => m[1]), ['css/tokens.css', 'css/base.css', 'css/components.css']);
+  assert.match(page('demarrer'), /fichier: 'demarrer\.html', demo: 'ecran'/);
+  assert.match(page('demarrer'), /codeHtml\(\{ fichier: 'demarrer\.html', demo: 'ecran'/);
+});
+
+test('Démarrer : tout token écrit dans une page existe dans tokens.css, et les feuilles n’écrivent aucune couleur en dur', () => {
+  let vus = 0;
+  for (const nom of ['demarrer', 'mobile', 'modale']) {
+    for (const [, dedans] of sansCommentaires(page(nom)).replace(/<script[\s\S]*?<\/script>/g, '').matchAll(/<code>([^<]*)<\/code>/g)) {
+      for (const [jeton] of decode(dedans).matchAll(/(?<![\w-])--[a-z][\w-]*/g)) {
+        vus += 1;
+        // `--token` est le mot que la page emploie pour dire « n'importe quel token ».
+        assert.ok(jeton in TOKENS || jeton === '--token', `${nom} : « ${jeton} » n’est pas un token de tokens.css`);
+      }
+    }
+  }
+  assert.ok(vus >= 8, `${vus} token(s) lu(s) : le détecteur ne voit plus les pages`);
+  // La règle de Démarrer : aucune couleur en dur hors de tokens.css, sauf la loupe recopiée dans une image.
+  for (const [nom, css] of [['base', BASE], ['components', COMPONENTS], ['admin', ADMIN], ['mobile', MOBILE]]) {
+    assert.doesNotMatch(css.replace(/url\("[^"]*"\)/g, ''), /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/, `${nom}.css écrit une couleur en dur : Démarrer ne peut plus le dire`);
+  }
+  assert.match(COMPONENTS, /%23757678/);
+  const t = texte(page('demarrer'));
+  assert.match(t, /var\(--token\)/);
+  assert.match(t, /aucune feuille de l’outil n’écrit une couleur en dur/);
+  assert.match(t, /la loupe du champ de recherche/);
+});
+
+test('Démarrer mène à toutes les pages de composants, et les liens se résolvent depuis composants/', () => {
+  const html = sansCommentaires(page('demarrer'));
+  // Le test du brief cherchait `href="composants/…"` ; depuis composants/demarrer.html cette adresse
+  // viserait composants/composants/… : le lien correct est le nom du fichier voisin.
+  for (const c of COMPOSANTS) {
+    const voisin = c.href.replace(/^composants\//, '');
+    if (voisin === 'demarrer.html') continue;
+    assert.match(html, new RegExp(`href="${voisin.replace('.', '\\.')}"`), `Démarrer ne mène pas à ${voisin}`);
+    assert.ok(existsSync(new URL(voisin, DOSSIER_COMPOSANTS)), `${voisin} n’existe pas`);
+  }
+  assert.match(html, /href="\.\.\/couleurs\.html"/);
+  assert.match(html, /href="\.\.\/typographie\.html"/);
+  assert.match(html, /href="bouton\.html#accessibilite"/);
+});
+
+test('Démarrer : Démarrer et Fondations sont dispensées des six ancres, mais pas des repères communs', () => {
+  const html = page('demarrer');
+  assert.equal((html.match(/<h1\b/g) || []).length, 1);
+  assert.match(html, /id="contenu"/);
+  assert.match(html, /enteteHtml\('composants\/demarrer\.html'\)/);
+  assert.match(html, /sommaireHtml\('composants\/demarrer\.html'\)/);
+  assert.match(html, /piedHtml\('composants\/demarrer\.html'\)/);
+  assert.match(html, /brancherSommaire\(\)/);
+  assert.match(html, /brancherCadres\(/);
+  assert.doesNotMatch(html, /<link[^>]*(?:components|admin|mobile)\.css/);
+  assert.match(html, /<!--[^>]*dispensée de la trame des six ancres/, 'la dispense doit être déclarée dans un commentaire, comme Fondations');
+});
+
+test('Démarrer : les classes écrites en code existent, et chaque point du contrôle final renvoie à une page', () => {
+  const noms = classesCodees('demarrer');
+  assert.deepEqual([...noms].sort(), ['grid-2', 'grid-4', 'row', 'row--between', 'row--wrap', 'stack'], 'Démarrer nomme les quatre utilitaires et les deux variantes de .row, et eux seuls');
+  for (const c of noms) assert.match(TOUTES_LES_FEUILLES, new RegExp(`\\.${c}(?![\\w-])`), `demarrer : « .${c} » n’existe dans aucune feuille`);
+  const html = sansCommentaires(page('demarrer'));
+  const section = html.slice(html.indexOf('id="avant-de-livrer"'));
+  assert.ok(section.length > 100, 'la section « avant de livrer » manque');
+  const puces = [...section.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => m[1]);
+  assert.ok(puces.length >= 4);
+  for (const li of puces) assert.match(li, /<a href=/, `« ${texte(li).slice(0, 50)}… » ne renvoie à aucune page`);
+});
+
+test('Démarrer : le contrôle final dit les limites du kit pour le clavier et pour 360 px', () => {
+  const t = texte(page('demarrer'));
+  assert.match(t, /anneau de focus/);
+  assert.match(t, /docs\/correctifs-figma\.md/);
+  assert.match(t, /360 px/);
+  // Une page qui invite à tabuler dit ce que fait Safari (tests/ds-code.test.mjs tient la règle sur toutes les pages).
+  assert.match(t, /Option\+Tab/);
+  // Les deux limites que la page nomme sont vraies : le tableau n'a aucun repli, et les grilles se replient à 600 px.
+  assert.match(t, /le tableau ne se replie pas/);
+  assert.doesNotMatch(`${COMPONENTS}${ADMIN}`, /overflow-x|\.table-wrap|\.table-responsive/, 'un repli du tableau existe : Démarrer doit changer');
+  assert.match(COMPONENTS, /@media \(max-width: 600px\)/);
+});
+
+test('mobile : les textes sous 11 px et le survol des lignes sont ceux de la feuille, et Typographie les nomme', () => {
+  assert.match(regle(MOBILE, '.m-nav__tab'), /font-size:\s*10px/);
+  assert.match(regle(MOBILE, '.week-grid .slot'), /font-size:\s*9px/);
+  assert.match(regle(BASE, '.body-tiny'), /font-size:\s*11px/);
+  assert.doesNotMatch(regle(MOBILE, '.m-item--button:hover'), /\bcolor\s*:/);
+  assert.match(MOBILE_BRUT, /@media \(prefers-reduced-motion: reduce\) \{ \.spinner \{ animation: none/);
+  const typo = lire('design-system/typographie.html');
+  assert.ok(typo.includes('9&nbsp;px dans les cases de la grille des créneaux, 10&nbsp;px dans ses en-têtes et dans la barre de navigation mobile'));
+  assert.ok(typo.includes('ils ne sont pas à imiter'));
+  const t = texte(page('mobile'));
+  assert.match(t, /sous les 11 px de body-tiny/);
+  assert.match(t, /dit de ne pas les imiter/);
+  assert.match(t, /le survol d’une ligne-bouton change son fond et pas son texte/i);
+  assert.match(t, /prefers-reduced-motion/);
+});
+
+test('mobile : les fonctions de layout.js que la page nomme existent, et le shell s’y accroche par trois identifiants', () => {
+  const layout = lire('js/mobile/layout.js');
+  for (const f of ['headerHtml', 'bottomNavHtml', 'mountNav', 'setHeader']) assert.match(layout, new RegExp(`export function ${f}\\(`));
+  assert.match(layout, /export const TABS = \[/);
+  assert.match(layout, /getElementById\('header'\)/);
+  assert.match(lire('js/mobile/app.js'), /getElementById\('nav'\)[\s\S]*getElementById\('view'\)/);
+  const t = texte(page('mobile'));
+  for (const phrase of ['#header', '#view', '#nav', 'headerHtml({ title, user, back })', 'bottomNavHtml(currentPath)', 'setHeader', 'mountNav', 'TABS']) assert.ok(t.includes(phrase), `la page ne nomme pas « ${phrase} »`);
 });

@@ -410,6 +410,8 @@ summary:focus-visible,
   list-style: disc;
   max-width: var(--ds-mesure);
 }
+/* Une liste ordonnée dit un ordre : elle garde ses numéros (Démarrer, les feuilles à charger). */
+ol.ds-liste { list-style: decimal; }
 
 .ds-jetons { display: grid; border-top: var(--stroke-thin) solid var(--ds-filet); }
 .ds-jeton {

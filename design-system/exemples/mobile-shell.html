@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mobile : le shell — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="La coquille de l’interface mobile (en-tête, contenu, barre du bas), rendue par le CSS de l’outil d’emprunt. Elle se regarde dans un cadre de la largeur d’un téléphone.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les exemples mobiles sont les SEULS à charger `css/mobile.css`, et après `css/components.css` :
+       elle suppose les composants de base. Ils se regardent dans un cadre étroit. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <link rel="stylesheet" href="../../css/mobile.css">
+  <style>
+    /* La coquille de l'outil prend la hauteur de la fenêtre (`min-height: 100vh`) et pose sa barre du bas
+       en `position: fixed`, ancrée au bas de la fenêtre. Dans un cadre dont la hauteur vient du contenu,
+       ni l'un ni l'autre ne tient : la hauteur se poursuivrait avec celle du cadre, et la barre, qui ne
+       compte pas dans la hauteur du contenu, sortirait du cadre. Ici la coquille a donc une hauteur à
+       elle et un `transform`, qui fait d'elle le repère de ses descendants fixes : la barre se pose en
+       bas de la coquille. Ces trois lignes sont à l'exemple, pas à l'outil. */
+    .m-shell { min-height: 0; height: 30rem; transform: translateZ(0); }
+  </style>
+</head>
+<body>
+  <!-- Le shell de mobile.html : un en-tête, la zone de contenu, la barre du bas. L'en-tête, le contenu
+       et la barre sont ce que headerHtml(), empruntsHtml() et bottomNavHtml() écrivent ; un test appelle
+       les trois fonctions et compare. Les trois identifiants sont ceux auxquels l'application s'accroche. -->
+  <section data-demo="shell">
+    <div class="m-shell">
+      <header id="header" class="m-header"><h1 class="m-header__title">Mes emprunts</h1><a class="m-header__avatar" href="#/profil" aria-label="Mon profil"><span class="avatar avatar--sm" title="Léa Pezzetti">LP</span></a></header>
+      <main id="view" class="m-main"><div class="card"><div class="tabs"><button type="button" class="tab" data-tab="enCours">En cours <span class="tab__count">2</span></button><button type="button" class="tab tab--active" data-tab="reservations">Réservations <span class="tab__count">1</span></button><button type="button" class="tab" data-tab="historique">Historique <span class="tab__count">14</span></button></div><div class="stack" data-role="list"><div class="m-list">
+      <div class="m-item m-item--stacked">
+        <div class="m-item__row"><span class="m-item__body"><strong>Canon R10 + 18-55</strong><span class="body-tiny text-secondary">Retrait demain à 09h00 · retour le 19 sept. 2026</span></span><span class="badge badge--reserved">Réservé</span></div>
+        <p class="body-tiny text-secondary">Votre code de retrait s’affichera à l’heure prévue.</p>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="cancel" data-loan="L-0007">Annuler la réservation</button>
+      </div></div></div></div></main>
+      <nav id="nav" class="m-nav" aria-label="Navigation">
+    <a class="m-nav__tab" href="#/accueil"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span>Accueil</span></a><a class="m-nav__tab" href="#/catalogue"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span>Catalogue</span></a>
+    <a class="m-nav__scan" href="#/scan" aria-label="Scanner un QR code"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg></a>
+    <a class="m-nav__tab" href="#/salle"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>Salle photo</span></a><a class="m-nav__tab m-nav__tab--active" href="#/emprunts"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg><span>Emprunts</span></a></nav>
+    </div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

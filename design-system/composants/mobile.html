@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mobile — Design system MyDigitalSchool</title>
+  <meta name="description" content="Le shell de l’interface du téléphone (en-tête, contenu, barre du bas fixe), ses listes et ses cartes, et pourquoi la feuille css/mobile.css ne se charge que dans mobile.html.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/mobile.css` ni `css/components.css` : ses démonstrations sont
+       rendues dans des cadres isolés, chacun avec ses propres feuilles. C'est le sujet de la page. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Mobile</h1>
+        <p class="ds-chapeau ds-mesure">L’écran du téléphone a sa propre coquille et sa propre feuille. Ni l’une ni l’autre ne se mélangent au reste du kit.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure"><code>css/mobile.css</code> habille l’interface des emprunteurs, <code>mobile.html</code>&nbsp;: une colonne centrée, <code>.m-shell</code>, qui empile un en-tête, une zone de contenu et une barre de navigation collée en bas. Elle y ajoute des lignes de liste, des cartes de catalogue et quelques écrans propres au scan.</p>
+        <p class="body ds-mesure">Les boutons, badges, champs, onglets et la modale restent ceux de <code>css/components.css</code>&nbsp;: <code>mobile.css</code> vient par-dessus, elle ne les redéfinit pas.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <p class="body ds-mesure">Les trois cadres ont la largeur d’un téléphone, 390&nbsp;px. Plus large, le shell mobile ne ressemble plus à rien.</p>
+        <h3 class="h6">Le shell</h3>
+        <div id="cadre-shell"></div>
+        <h3 class="h6">Les lignes de liste</h3>
+        <div id="cadre-liste"></div>
+        <h3 class="h6">Les cartes du catalogue</h3>
+        <div id="cadre-cartes"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Le shell</h3>
+        <ul class="ds-liste body">
+          <li><code>.m-shell</code>&nbsp;: une colonne de 480&nbsp;px au plus, centrée, au moins aussi haute que la fenêtre (<code>min-height: 100vh</code>), sur le fond de l’application.</li>
+          <li><code>.m-header</code>&nbsp;: <code>position: sticky</code> en haut, 56&nbsp;px de haut plus la zone sûre du haut, fond blanc et un filet dessous. <code>.m-header__title</code> est le titre de la vue, tronqué sur une seule ligne&nbsp;; <code>.m-header__back</code> est la flèche de retour, de 36&nbsp;px&nbsp;; <code>.m-header__avatar</code> porte l’avatar de la personne connectée.</li>
+          <li><code>.m-main</code>&nbsp;: la zone de contenu, une colonne dont les blocs sont écartés de <code>--space-lg</code>. Son bas est dégagé de 96&nbsp;px plus la zone sûre, pour que la barre ne cache pas le dernier bloc.</li>
+          <li><code>.m-nav</code>&nbsp;: <code>position: fixed</code>, collée au bas de la fenêtre, 72&nbsp;px de haut plus la zone sûre, sur <code>min(480px, 100%)</code> de large. Cinq colonnes, <code>1fr 1fr 72px 1fr 1fr</code>&nbsp;: quatre onglets <code>.m-nav__tab</code> et, au milieu, le bouton <code>.m-nav__scan</code>, rond, de 60&nbsp;px, que sa marge haute de −28&nbsp;px fait déborder de 8&nbsp;px au-dessus de la barre. L’onglet courant est <code>.m-nav__tab--active</code>.</li>
+          <li><code>.is-login</code>, posée sur un ancêtre (<code>js/mobile/app.js</code> la pose sur le <code>body</code> pour l’écran de connexion), cache l’en-tête et la barre.</li>
+        </ul>
+        <p class="body ds-mesure">Les décalages sont écrits à la main, et ils dépendent les uns des autres. La barre fait 72&nbsp;px&nbsp;; les barres collantes qui doivent passer au-dessus, <code>.selection-bar</code> et <code>.m-cta</code>, ainsi que <code>#toast-root</code>, se posent à 88&nbsp;px, écrits à la main dans trois règles, et <code>.m-main</code> réserve 96&nbsp;px dans une quatrième. Changer la hauteur de la barre, c’est changer ces quatre règles.</p>
+        <p class="body ds-mesure"><strong>L’exemple retient la barre dans la coquille.</strong> Dans l’application, <code>.m-shell</code> prend la hauteur de la fenêtre et <code>.m-nav</code> se colle au bas de la fenêtre. Dans un cadre dont la hauteur vient du contenu, aucune des deux ne tient. L’exemple donne donc à la coquille une hauteur et un <code>transform</code>, qui fait d’elle le repère de la barre fixe&nbsp;: ces trois lignes sont à l’exemple, pas à l’outil, et le code montré plus bas ne les contient pas.</p>
+
+        <h3 class="h6">Les listes</h3>
+        <ul class="ds-liste body">
+          <li><code>.m-list</code>&nbsp;: une colonne de lignes, écartées de <code>--space-sm</code>.</li>
+          <li><code>.m-item</code>&nbsp;: une ligne blanche avec un filet, un rayon et une ombre. Posée sur un lien (<code>&lt;a class="m-item"&gt;</code>, comme l’accueil), elle mène quelque part. <code>.m-item__body</code> range le texte en colonne&nbsp;; son premier <code>strong</code> est tronqué sur une seule ligne.</li>
+          <li><code>.m-item--button</code>&nbsp;: la ligne est un bouton, et son fond devient violet très clair au survol (la liste de connexion).</li>
+          <li><code>.m-item--stacked</code>&nbsp;: la ligne devient une colonne&nbsp;: une rangée <code>.m-item__row</code> avec son badge, puis ce qu’on veut dessous, par exemple des photos (<code>.m-item__photos</code>) ou un bouton.</li>
+          <li><code>.m-item--pickup</code>&nbsp;: la même ligne, cernée d’un filet violet, pour la réservation dont le code est à montrer.</li>
+        </ul>
+
+        <h3 class="h6">Les cartes du catalogue</h3>
+        <ul class="ds-liste body">
+          <li><code>.m-grid</code>&nbsp;: deux colonnes égales, toujours. Aucune règle de largeur ne la replie&nbsp;; sur 360&nbsp;px, chaque carte garde environ la moitié de l’écran.</li>
+          <li><code>.m-card</code>&nbsp;: la carte, un lien. <code>.m-card__media</code> est la zone d’image, en proportion 4 / 3, avec l’initiale du nom en violet quand il n’y a pas de photo&nbsp;; <code>.m-card__body</code> porte le texte, dont le nom est limité à deux lignes&nbsp;; <code>.m-card__meta</code> range les badges.</li>
+          <li><code>.chips</code>&nbsp;: la rangée de puces de catégorie, qui défile à l’horizontale sans barre visible. Elle range les <code>.chip</code> de <a href="badge.html">Badge et étiquette</a>.</li>
+        </ul>
+        <p class="body ds-mesure">Aucune règle de largeur n’existe dans <code>mobile.css</code>, hors celle du mouvement réduit&nbsp;: la colonne s’arrête à 480&nbsp;px, et le reste de l’écran reste vide.</p>
+
+        <h3 class="h6">Pourquoi cette feuille ne se charge que dans mobile.html</h3>
+        <p class="body ds-mesure"><code>mobile.css</code> pose de la mise en page d’écran, pas des composants. <strong>La seule page qui la charge est mobile.html.</strong> Elle suppose <code>css/components.css</code> chargée avant elle&nbsp;: elle ne définit aucun bouton, badge, carte, onglet ni champ. Les exemples de cette page sont les seuls du site à la charger, chacun dans un cadre. Ce qui arrive quand on la charge ailleurs, vérifié dans les feuilles&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li><code>#toast-root</code>&nbsp;: <code>components.css</code> le pose à <code>bottom: var(--space-2xl)</code>&nbsp;; <code>mobile.css</code> ne change que <code>bottom</code>, à 88&nbsp;px plus la zone sûre. Sur toute page qui la charge, les toasts remontent d’une hauteur faite pour une barre qui n’y est pas.</li>
+          <li><code>.week-grid</code>, la grille de la salle photo&nbsp;: <code>admin.css</code> et <code>mobile.css</code> la définissent chacune, avec des cellules de 30&nbsp;px contre 34&nbsp;px et un écart de 2&nbsp;px contre 3&nbsp;px. Charger les deux, c’est obtenir un mélange&nbsp;: la dernière feuille écrase les propriétés que les deux écrivent et laisse celles que seule l’autre écrit.</li>
+          <li><code>.error-card</code>&nbsp;: identique des deux côtés, sans conséquence.</li>
+          <li><code>.btn &gt; svg</code>&nbsp;: une règle sans classe de l’écran mobile, qui force à 20&nbsp;px toute icône posée directement dans un bouton. Voir <a href="icones.html">Icônes</a>.</li>
+        </ul>
+        <p class="body ds-mesure">Les onglets sont l’exception qui n’en est pas une&nbsp;: <code>mobile.css</code> les fait défiler, mais seulement sous <code>.m-shell</code>. Leur double définition est expliquée dans <a href="navigation.html">Navigation</a>.</p>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+        <p class="body ds-mesure">Le shell est écrit une fois, dans <code>mobile.html</code>, avec trois points d’accroche&nbsp;: <code>#header</code>, <code>#view</code> et <code>#nav</code>. <code>headerHtml({ title, user, back })</code> et <code>bottomNavHtml(currentPath)</code>, de <code>js/mobile/layout.js</code>, écrivent leur contenu&nbsp;; <code>setHeader</code> et <code>mountNav</code> le posent. Une vue remplit <code>#view</code> avec une chaîne. Pour ajouter un onglet, on l’ajoute à <code>TABS</code>.</p>
+
+        <h3 class="h6">Le shell</h3>
+        <div id="code-shell"></div>
+
+        <h3 class="h6">Les lignes de liste</h3>
+        <div id="code-liste"></div>
+
+        <h3 class="h6">Les cartes du catalogue</h3>
+        <div id="code-cartes"></div>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour l’administration, même ouverte sur un téléphone.</strong> Elle a son propre shell, <code>.admin-shell</code>, dans <code>css/admin.css</code>&nbsp;: <a href="navigation.html">Navigation</a>.</li>
+          <li><strong>Pour charger <code>mobile.css</code> dans une autre page.</strong> Montrez le motif dans un cadre isolé, comme <code>exemples/mobile-shell.html</code>, plutôt que de laisser la feuille réécrire la page.</li>
+          <li><strong>Pour un tableau de données.</strong> Le tableau n’a aucun repli pour un écran étroit&nbsp;: <a href="tableau.html">Tableau</a>. Sur le téléphone, employez une liste de <code>.m-item</code>.</li>
+          <li><strong>Pour un bouton, un badge, un champ ou une modale propres au téléphone.</strong> Il n’y en a pas&nbsp;: employez ceux du kit, <a href="bouton.html">Bouton</a>, <a href="badge.html">Badge et étiquette</a>, <a href="formulaires.html">Formulaires</a> et <a href="modale.html">Modale et retours</a>.</li>
+          <li><strong>Pour un écran plus large que 480&nbsp;px.</strong> La colonne reste centrée et le reste est vide. Une page large se construit avec les utilitaires de <a href="demarrer.html">Démarrer</a>.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Le viewport et les zones sûres</h3>
+        <p class="body ds-mesure"><code>mobile.html</code> déclare <code>viewport-fit=cover</code>, ce qui active les zones sûres (<code>env(safe-area-inset-top)</code> et <code>env(safe-area-inset-bottom)</code>) que l’en-tête, la barre et <code>.m-main</code> prennent en compte, pour ne pas passer sous une encoche. Le viewport ne bloque pas le zoom&nbsp;: ni <code>user-scalable</code> ni <code>maximum-scale</code>.</p>
+
+        <h3 class="h6">Les repères et la page courante</h3>
+        <p class="body ds-mesure">Le shell est fait d’un <code>header</code>, d’un <code>main</code> et d’un <code>nav</code> qui porte <code>aria-label="Navigation"</code>. <code>headerHtml</code> écrit un <code>h1</code>, le titre de la vue. L’onglet courant ne se distingue que par sa couleur&nbsp;: ajoutez <code>aria-current="page"</code> sur le lien de la page courante, que la barre n’écrit pas.</p>
+
+        <h3 class="h6">Contraste, mesuré</h3>
+        <p class="body ds-mesure">Les paires de la barre et des lignes, mesurées dans <code>css/tokens.css</code> au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>onglet de la barre, 10&nbsp;px en gras, texte discret sur blanc&nbsp;: <strong id="mesure-m-nav">à mesurer depuis un serveur</strong></li>
+          <li>onglet courant, 10&nbsp;px en gras, violet sur blanc&nbsp;: <strong id="mesure-m-nav-active">à mesurer depuis un serveur</strong></li>
+          <li>texte secondaire d’une ligne, 11&nbsp;px, sur blanc&nbsp;: <strong id="mesure-m-tiny">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Le texte de la barre fait 10&nbsp;px et celui des créneaux de la salle 9&nbsp;px, sous les 11&nbsp;px de <code>body-tiny</code>, le plus petit texte du kit&nbsp;: <a href="../typographie.html">Typographie</a> dit de ne pas les imiter. Le survol d’une ligne-bouton change son fond et pas son texte.</p>
+
+        <h3 class="h6">Taille de cible</h3>
+        <p class="body ds-mesure">La barre fait 72&nbsp;px de haut. Mais la flèche de retour de l’en-tête et les boutons du sélecteur <code>.seg__btn</code> mesurent 36&nbsp;px, sous les 44&nbsp;px que recommande WCAG 2.5.5&nbsp;; la croix de la modale en fait 32 (<a href="modale.html">Modale et retours</a>).</p>
+
+        <h3 class="h6">Mouvement et focus</h3>
+        <p class="body ds-mesure">La roue d’attente <code>.spinner</code> s’arrête pour qui a demandé moins d’animations (<code>prefers-reduced-motion</code>). Aucun anneau de focus n’est dessiné pour les onglets de la barre ni pour les lignes&nbsp;: celui du navigateur reste, voir <a href="bouton.html#accessibilite">Bouton</a>.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesureTexte } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/mobile.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/mobile.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/mobile.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair, et ÉTROIT : un motif mobile se
+    // regarde à la largeur d'un téléphone. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux.
+    document.getElementById('cadre-shell').outerHTML = cadreHtml({ fichier: 'mobile-shell.html', demo: 'shell', titre: 'Le shell du téléphone : en-tête, contenu, barre du bas', etroit: true });
+    document.getElementById('cadre-liste').outerHTML = cadreHtml({ fichier: 'mobile-listes.html', demo: 'liste', titre: 'Des lignes de liste : deux comptes à choisir, une réservation', etroit: true });
+    document.getElementById('cadre-cartes').outerHTML = cadreHtml({ fichier: 'mobile-listes.html', demo: 'cartes', titre: 'Les puces de catégorie et deux cartes de catalogue', etroit: true });
+    document.getElementById('code-shell').outerHTML = codeHtml({ fichier: 'mobile-shell.html', demo: 'shell', titre: 'Le shell du téléphone : en-tête, contenu, barre du bas' });
+    document.getElementById('code-liste').outerHTML = codeHtml({ fichier: 'mobile-listes.html', demo: 'liste', titre: 'Des lignes de liste : deux comptes à choisir, une réservation' });
+    document.getElementById('code-cartes').outerHTML = codeHtml({ fichier: 'mobile-listes.html', demo: 'cartes', titre: 'Les puces de catégorie et deux cartes de catalogue' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes sont MESURÉS dans `css/tokens.css`, jamais écrits dans la page. Sur un fichier
+    // local, le navigateur refuse de lire les règles de la feuille et la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-m-nav': mesureTexte(valeurs, '--text-secondary', '--bg-surface', 10, true),
+        'mesure-m-nav-active': mesureTexte(valeurs, '--text-brand', '--bg-surface', 10, true),
+        'mesure-m-tiny': mesureTexte(valeurs, '--text-secondary', '--bg-surface', 11),
+      });
+    }
+  </script>
+</body>
+</html>
