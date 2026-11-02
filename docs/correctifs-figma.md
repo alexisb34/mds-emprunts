@@ -143,7 +143,7 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   et n’aurait plus de retour : il faut aussi assombrir l’état survolé. Pour le vert de
   `toast--success`, un fond de `#348228` (4,81:1 sous du blanc, calculé).
 
-  **Trois paires de plus, vérifiées dans les vues le 2 novembre 2026, que la page Couleurs ne publie
+  **Cinq paires de plus, vérifiées dans les vues le 2 novembre 2026, que la page Couleurs ne publie
   pas.** Chacune est formée par une règle de la feuille et émise par une vue, sauf la dernière, que
   le kit définit et qu’aucun écran ne pose, comme la carte KPI neutre. Les ratios sont recalculés
   depuis `css/tokens.css` avec `design-system/js/contraste.js`, sur le rapport exact.

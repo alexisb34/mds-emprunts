@@ -123,7 +123,8 @@ export function brancherSommaire(doc = document, fenetre = window) {
   const etroit = fenetre.matchMedia(`(max-width: ${RUPTURE_ETROITE}px)`);
   const ajuster = () => { sommaire.open = !etroit.matches; };
   ajuster();
-  etroit.addEventListener('change', ajuster);
+  // Safari < 14 : une MediaQueryList sans addEventListener. Lever ici tuerait le module avant la pose des cadres.
+  if (etroit.addEventListener) etroit.addEventListener('change', ajuster);
 }
 
 // Le pied, identique partout. Il dit d'où vient ce que le site affiche, et ce que ce site

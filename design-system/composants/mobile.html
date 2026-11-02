@@ -29,7 +29,7 @@
       <section id="a-quoi" class="ds-groupe">
         <h2 class="h5">À quoi ça sert</h2>
         <p class="body ds-mesure"><code>css/mobile.css</code> habille l’interface des emprunteurs, <code>mobile.html</code>&nbsp;: une colonne centrée, <code>.m-shell</code>, qui empile un en-tête, une zone de contenu et une barre de navigation collée en bas. Elle y ajoute des lignes de liste, des cartes de catalogue et quelques écrans propres au scan.</p>
-        <p class="body ds-mesure">Les boutons, badges, champs, onglets et la modale restent ceux de <code>css/components.css</code>&nbsp;: <code>mobile.css</code> vient par-dessus, elle ne les redéfinit pas.</p>
+        <p class="body ds-mesure">Les boutons, badges, champs, onglets et la modale restent ceux de <code>css/components.css</code>&nbsp;: <code>mobile.css</code> vient par-dessus. Elle ne redéfinit aucune de leurs règles de base&nbsp;; elle y ajoute deux retouches propres à l’écran mobile, nommées plus bas&nbsp;: <code>.btn &gt; svg</code>, la taille d’une icône dans un bouton, et <code>.m-shell .tab</code>, les onglets sous le shell.</p>
       </section>
 
       <section id="exemple" class="ds-groupe">
@@ -68,14 +68,14 @@
 
         <h3 class="h6">Les cartes du catalogue</h3>
         <ul class="ds-liste body">
-          <li><code>.m-grid</code>&nbsp;: deux colonnes égales, toujours. Aucune règle de largeur ne la replie&nbsp;; sur 360&nbsp;px, chaque carte garde environ la moitié de l’écran.</li>
+          <li><code>.m-grid</code>&nbsp;: deux colonnes égales, toujours. Aucune requête de largeur ne la replie&nbsp;; sur 360&nbsp;px, chaque carte garde environ la moitié de l’écran.</li>
           <li><code>.m-card</code>&nbsp;: la carte, un lien. <code>.m-card__media</code> est la zone d’image, en proportion 4 / 3, avec l’initiale du nom en violet quand il n’y a pas de photo&nbsp;; <code>.m-card__body</code> porte le texte, dont le nom est limité à deux lignes&nbsp;; <code>.m-card__meta</code> range les badges.</li>
           <li><code>.chips</code>&nbsp;: la rangée de puces de catégorie, qui défile à l’horizontale sans barre visible. Elle range les <code>.chip</code> de <a href="badge.html">Badge et étiquette</a>.</li>
         </ul>
-        <p class="body ds-mesure">Aucune règle de largeur n’existe dans <code>mobile.css</code>, hors celle du mouvement réduit&nbsp;: la colonne s’arrête à 480&nbsp;px, et le reste de l’écran reste vide.</p>
+        <p class="body ds-mesure">Aucune requête de largeur (<code>@media (max-width: …)</code>) n’existe dans <code>mobile.css</code>&nbsp;; sa seule <code>@media</code> est celle du mouvement réduit, qui ne parle pas de largeur. La colonne s’arrête à 480&nbsp;px, et le reste de l’écran reste vide.</p>
 
         <h3 class="h6">Pourquoi cette feuille ne se charge que dans mobile.html</h3>
-        <p class="body ds-mesure"><code>mobile.css</code> pose de la mise en page d’écran, pas des composants. <strong>La seule page qui la charge est mobile.html.</strong> Elle suppose <code>css/components.css</code> chargée avant elle&nbsp;: elle ne définit aucun bouton, badge, carte, onglet ni champ. Les exemples de cette page sont les seuls du site à la charger, chacun dans un cadre. Ce qui arrive quand on la charge ailleurs, vérifié dans les feuilles&nbsp;:</p>
+        <p class="body ds-mesure"><code>mobile.css</code> pose de la mise en page d’écran, pas des composants. <strong>La seule page qui la charge est mobile.html.</strong> Elle suppose <code>css/components.css</code> chargée avant elle&nbsp;: elle ne définit ni <code>.btn</code>, ni <code>.badge</code>, ni <code>.card</code>, ni <code>.tab</code>, ni les champs. Elle ajoute ses propres éléments d’écran, dont deux boutons, <code>.seg__btn</code> et <code>.m-nav__scan</code>, et une ligne qui se comporte en bouton, <code>.m-item--button</code>. Les exemples de cette page sont les seuls du site à la charger, chacun dans un cadre. Ce qui arrive quand on la charge ailleurs, vérifié dans les feuilles&nbsp;:</p>
         <ul class="ds-liste body">
           <li><code>#toast-root</code>&nbsp;: <code>components.css</code> le pose à <code>bottom: var(--space-2xl)</code>&nbsp;; <code>mobile.css</code> ne change que <code>bottom</code>, à 88&nbsp;px plus la zone sûre. Sur toute page qui la charge, les toasts remontent d’une hauteur faite pour une barre qui n’y est pas.</li>
           <li><code>.week-grid</code>, la grille de la salle photo&nbsp;: <code>mobile.css</code> et <code>admin.css</code> la définissent chacune, avec des cellules de 30&nbsp;px contre 34&nbsp;px et un écart de 2&nbsp;px contre 3&nbsp;px. Charger les deux, c’est obtenir un mélange&nbsp;: la dernière feuille écrase les propriétés que les deux écrivent et laisse celles que seule l’autre écrit.</li>

@@ -19,7 +19,7 @@ import { enteteHtml } from '../design-system/js/chrome.js';
 import { COULEURS } from '../design-system/js/logo.js';
 import { LABELS } from '../js/models.js';
 import {
-  PAIRES_KIT, tableauDetteHtml, jugerPaire, tonConseille, fondConseille, tonCommun, repereCorrection, syntheseDette, ancrePaire, DATE_CONSTAT, CIBLE_CONSEIL, MARGE_CONSEIL,
+  PAIRES_KIT, enLettres, tableauDetteHtml, jugerPaire, tonConseille, fondConseille, tonCommun, repereCorrection, syntheseDette, ancrePaire, DATE_CONSTAT, CIBLE_CONSEIL, MARGE_CONSEIL,
 } from '../design-system/js/dette.js';
 import { pageHtml, palette, familleDe, FAMILLES, SEMANTIQUES, NON_EMPLOYES } from '../design-system/js/couleurs.js';
 
@@ -851,8 +851,15 @@ test('la section de dette porte sa date, son périmètre, la décision, et le re
   assert.match(brut, /n’est pas l’inventaire complet du kit/);
   const perimetre = texte(dette.match(/<p class="body-sm">Ce tableau n’est pas[\s\S]*?<\/p>/)[0]);
   for (const nom of ['badges de statut', 'cartes KPI', 'tableaux', 'alertes', 'bouton de danger', 'notifications']) assert.ok(perimetre.includes(nom), `le périmètre ne nomme pas « ${nom} » parmi ce qu’il couvre`);
-  for (const nom of ['texte d’erreur', 'texte de succès', 'texte désactivé', 'texte discret']) assert.ok(perimetre.includes(nom), `le périmètre ne nomme pas « ${nom} » parmi ce qui reste`);
-  assert.match(perimetre, /pas encore vérifiées dans les vues/);
+  // Ce qui reste hors du tableau se lit dans le registre, pas dans cette phrase : chaque sélecteur
+  // qu'elle cite y figure, chaque paire du registre y est citée, et le compte est celui du registre.
+  const registre = readFileSync(new URL('../docs/correctifs-figma.md', import.meta.url), 'utf8');
+  const duRegistre = [...registre.matchAll(/^\s*\| `(\.[^`]+)` \|/gm)].map((m) => m[1]).concat(['.text-error', '.text-success']);
+  const citees = [...dette.match(/<p class="body-sm">Ce tableau n’est pas[\s\S]*?<\/p>/)[0].matchAll(/<code>(\.[^<]+)<\/code>/g)].map((m) => m[1]);
+  assert.deepEqual([...citees].sort(), [...duRegistre].sort(), 'le périmètre ne cite pas exactement les paires que le registre dit vérifiées');
+  for (const sel of citees) assert.ok(registre.includes(`\`${sel}\``), `${sel} ne figure pas au registre`);
+  assert.ok(perimetre.toLowerCase().includes(`${enLettres(duRegistre.length)} autres paires`), 'le compte du périmètre n’est pas celui du registre');
+  assert.doesNotMatch(perimetre, /pas encore vérifiées/, 'le registre a vérifié ces paires : la page ne peut plus dire le contraire');
   // Le total de la phrase d'ouverture est celui de la synthèse.
   const s = syntheseDette(PAIRES_KIT, VALEURS);
   assert.ok(brut.includes(`${s.echouent} des ${s.mesurees} paires`), 'la phrase d’ouverture ne reprend pas la synthèse');

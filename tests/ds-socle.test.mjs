@@ -246,10 +246,12 @@ test('le sommaire est un <details> rendu ouvert, avec un résumé et sa navigati
 });
 
 // Un faux document et une fausse fenêtre : `brancherSommaire` ne doit rien exiger d'autre.
-function decor(etroit) {
+// `ancien` : une MediaQueryList de Safari < 14, qui n'a pas d'addEventListener.
+function decor(etroit, ancien = false) {
   const sommaire = { open: true };
   const ecouteurs = [];
-  const requete = { matches: etroit, addEventListener: (type, f) => ecouteurs.push([type, f]) };
+  const requete = { matches: etroit };
+  if (!ancien) requete.addEventListener = (type, f) => ecouteurs.push([type, f]);
   const requetes = [];
   return {
     sommaire, requete, ecouteurs, requetes,
@@ -277,6 +279,12 @@ test('brancherSommaire suit la fenêtre quand elle change de taille ou de zoom',
   d.requete.matches = false;
   d.ecouteurs[0][1]();
   assert.equal(d.sommaire.open, true, 'elle s’élargit : il se rouvre');
+});
+
+test('brancherSommaire ne lève pas devant une MediaQueryList sans addEventListener', () => {
+  const d = decor(true, true);
+  assert.doesNotThrow(() => brancherSommaire(d.doc, d.fenetre));
+  assert.equal(d.sommaire.open, false, 'l’état initial est posé quand même');
 });
 
 test('brancherSommaire ne casse rien sans sommaire ni matchMedia', () => {

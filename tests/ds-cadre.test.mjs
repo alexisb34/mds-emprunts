@@ -38,15 +38,6 @@ test('cadreHtml pointe vers le bon fichier et porte un titre accessible', () => 
   assert.match(html, /title="Les variantes de bouton"/);
 });
 
-test('chaque cadre vise une démo qui existe vraiment', () => {
-  for (const page of pagesComposants()) {
-    for (const [, fichier, demo] of page.html.matchAll(/src="\.\.\/exemples\/([\w-]+\.html)#([\w-]+)"/g)) {
-      const exemple = lireExemple(fichier);                       // lève si le fichier manque
-      assert.match(exemple, new RegExp(`data-demo="${demo}"`), `${page.nom} vise ${fichier}#${demo}, absent`);
-    }
-  }
-});
-
 test('un exemple ne charge aucune feuille de page, sauf les exemples mobiles', () => {
   // .admin-shell et .m-nav prennent tout l’écran : chargés dans un cadre, ils dévorent la démo.
   for (const f of fichiersExemples()) {

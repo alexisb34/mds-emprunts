@@ -109,9 +109,9 @@ test('registre : la barre mobile n’écrit pas aria-current, et ses tailles son
   }
 });
 
-// ---- Trois paires de contraste que la page Couleurs ne publie pas ----
+// ---- Cinq paires de contraste que la page Couleurs ne publie pas ----
 
-test('registre : les trois paires vérifiées dans les vues, avec leur ratio recalculé et leur émetteur', () => {
+test('registre : les cinq paires vérifiées dans les vues, avec leur ratio recalculé et leur émetteur', () => {
   // [sélecteur de la feuille, fichier de la feuille, texte, fond, taille, où la vue l'émet]
   const paires = [
     ['.nav-item__count', COMPONENTS, '--text-secondary', '--bg-canvas', 11, ['js/admin/layout.js']],
@@ -148,7 +148,7 @@ test('registre : les trois paires vérifiées dans les vues, avec leur ratio rec
   // `.field__error` : aucun écran ne le pose. C'est le kit qui le définit, et le registre le dit.
   assert.deepEqual(contenant(/field__error/).filter((f) => !f.startsWith('css/')), []);
   assert.match(LIGNES.find((l) => l.includes('`.field__error`')), /aucun écran/);
-  // Les trois paires sont bien sous le seuil : c'est le sens du registre.
+  // Les paires sont bien sous le seuil : c'est le sens du registre.
   for (const [t, f] of [['--text-secondary', '--bg-canvas'], ['--text-disabled', '--bg-surface'], ['--feedback-error', '--bg-surface']]) {
     assert.ok(ratio(VALEURS[t], VALEURS[f]) < 4.5, `${t} sur ${f} passe maintenant 4,5:1 : le registre doit changer`);
   }

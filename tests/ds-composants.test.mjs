@@ -1054,9 +1054,14 @@ test('icônes : la loupe a la couleur de --text-secondary, recopiée dans l’im
 
 test('icônes : les caractères et l’emoji cités sont ceux que l’outil écrit', () => {
   const tout = SOURCES.filter((s) => !s.fichier.endsWith('seed.js')).map((s) => s.source).join('\n');
-  for (const g of ['← Matériel', 'Tout voir →', "' ↓' : ' ↑'", '&times;', "'✓'", 'Aucun retard. 🎉', 'Bonjour ${escapeHtml(user.prenom)} 👋']) assert.ok(tout.includes(g), `« ${g} » n’est plus dans le code`);
+  for (const g of ['← Matériel', 'Tout voir →', "' ↓' : ' ↑'", '&times;', "'✓'", '✕</div>', 'Aucun retard. 🎉', 'Bonjour ${escapeHtml(user.prenom)} 👋']) assert.ok(tout.includes(g), `« ${g} » n’est plus dans le code`);
   const glyphes = demo('icones', 'glyphes');
-  for (const g of ['←', '→', '↑', '↓', '×', '✓', '🎉', '👋']) assert.ok(glyphes.includes(g), `${g} manque à l’exemple`);
+  for (const g of ['←', '→', '↑', '↓', '×', '✓', '✕', '🎉', '👋']) assert.ok(glyphes.includes(g), `${g} manque à l’exemple`);
+  // L'autre sens : aucun caractère-icône du code (flèches, dingbats, croix) ne manque à la page.
+  const duCode = [...new Set(tout.replace(/&times;/g, '×').match(/[\u2190-\u21FF\u2700-\u27BF\u00D7]/g))].sort();
+  assert.deepEqual(duCode, ['←', '→', '↑', '↓', '×', '✓', '✕'].sort(), 'le code écrit un caractère-icône que ce test ne connaît pas : la page doit le dire');
+  const prose = texte(page('icones'));
+  for (const g of duCode) assert.ok(prose.includes(g), `l’inventaire de la page oublie ${g}, que le code écrit`);
   assert.deepEqual([...new Set(tout.match(/\p{Extended_Pictographic}/gu))].sort(), ['🎉', '👋'], 'les emoji de l’outil ont changé : la page doit changer');
 });
 
@@ -1612,7 +1617,7 @@ test('mobile : la distance de 88 px des barres collantes est écrite dans trois 
 test('mobile : aucune règle ne s’adapte à la largeur — la colonne s’arrête à 480 px', () => {
   assert.deepEqual([...MOBILE_BRUT.matchAll(/@media[^{]*/g)].map((m) => m[0].trim()), ['@media (prefers-reduced-motion: reduce)']);
   assert.match(regle(MOBILE, '.m-grid'), /grid-template-columns:\s*repeat\(2, 1fr\)/);
-  assert.match(texte(page('mobile')), /aucune règle de largeur/i);
+  assert.match(texte(page('mobile')), /aucune requête de largeur \(@media \(max-width: …\)\) n’existe dans mobile\.css ; sa seule @media est celle du mouvement réduit, qui ne parle pas de largeur/i);
 });
 
 test('mobile : les listes et les cartes sont telles que la page le dit', () => {
@@ -1649,6 +1654,12 @@ test('mobile : mobile.css ne définit aucun composant de base, et suppose compon
   const t = texte(page('mobile'));
   assert.match(t, /seule page qui la charge est mobile\.html/);
   assert.match(t, /css\/components\.css chargée avant elle/);
+  // Les exceptions que les deux phrases générales nomment existent bel et bien dans mobile.css.
+  for (const c of ['.btn > svg', '.m-shell .tab', '.seg__btn', '.m-nav__scan', '.m-item--button']) {
+    assert.ok(regle(MOBILE, c), `mobile.css n’a plus de règle ${c}`);
+    assert.ok(t.includes(c), `la page mobile ne nomme pas ${c}`);
+  }
+  assert.doesNotMatch(t, /ne les redéfinit pas|aucun bouton, badge/, 'une phrase absolue est revenue');
 });
 
 test('mobile : les trois choses que mobile.css redéfinit sont celles que la page nomme, avec leurs écarts', () => {
@@ -1834,8 +1845,13 @@ test('Démarrer : les quatre utilitaires sont ceux de components.css, avec leurs
   assert.match(regle(COMPONENTS, '.grid-4'), /repeat\(4, 1fr\);\s*gap:\s*var\(--space-lg\)/);
   assert.match(COMPONENTS, /@media \(max-width: 900px\) \{ \.grid-4 \{ grid-template-columns: repeat\(2, 1fr\); \} \}/);
   assert.match(COMPONENTS, /@media \(max-width: 600px\) \{ \.grid-2, \.grid-4 \{ grid-template-columns: 1fr; \} \}/);
-  // Définis une seule fois, dans components.css : ni admin.css ni mobile.css ne les redéfinissent.
-  for (const c of ['.stack', '.row', '.grid-2', '.grid-4']) { assert.equal(regle(ADMIN, c), null); assert.equal(regle(MOBILE, c), null); assert.equal(regle(BASE, c), null); }
+  // Définis une seule fois dans components.css, à une exception près : aucune autre occurrence, dans
+  // aucun sélecteur, d'une autre feuille (pas seulement une règle dont la liste vaudrait `.stack`).
+  const occurrences = (css) => css.split('\n').map((l) => l.trim()).filter((l) => /\.(?:stack|row|grid-2|grid-4)(?![\w-])/.test(l));
+  assert.deepEqual(occurrences(ADMIN), ['.detail-grid > .stack { min-width: 0; }'], 'admin.css parle des utilitaires ailleurs que dans l’exception que la page nomme');
+  assert.deepEqual(occurrences(MOBILE), []);
+  assert.deepEqual(occurrences(BASE), []);
+  assert.ok(t.includes('min-width: 0') && t.includes('.detail-grid'), 'Démarrer ne nomme pas l’exception d’admin.css');
   for (const phrase of ['.stack', '.row', '.row--between', '.row--wrap', '.grid-2', '.grid-4', '900 px', '600 px', 'une colonne', 'deux colonnes']) assert.ok(t.includes(phrase), `Démarrer ne dit pas « ${phrase} »`);
 });
 
@@ -1911,7 +1927,7 @@ test('Démarrer : Démarrer et Fondations sont dispensées des six ancres, mais 
 
 test('Démarrer : les classes écrites en code existent, et chaque point du contrôle final renvoie à une page', () => {
   const noms = classesCodees('demarrer');
-  assert.deepEqual([...noms].sort(), ['grid-2', 'grid-4', 'row', 'row--between', 'row--wrap', 'stack'], 'Démarrer nomme les quatre utilitaires et les deux variantes de .row, et eux seuls');
+  assert.deepEqual([...noms].sort(), ['detail-grid', 'grid-2', 'grid-4', 'row', 'row--between', 'row--wrap', 'stack'], 'Démarrer nomme les quatre utilitaires, les deux variantes de .row, et .detail-grid de l’exception d’admin.css, et eux seuls');
   for (const c of noms) assert.match(TOUTES_LES_FEUILLES, new RegExp(`\\.${c}(?![\\w-])`), `demarrer : « .${c} » n’existe dans aucune feuille`);
   const html = sansCommentaires(page('demarrer'));
   const section = html.slice(html.indexOf('id="avant-de-livrer"'));

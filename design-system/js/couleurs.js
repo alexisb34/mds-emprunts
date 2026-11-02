@@ -315,7 +315,7 @@ function detteHtml(valeurs) {
     <aside class="ds-message dt-decision">
       <h3 class="h6">Pourquoi elles sont publiées</h3>
       <p class="body-sm">Le ${DATE_CONSTAT.texte}, la décision a été prise de publier ces chiffres plutôt que de les taire, ou de changer la palette d’un prototype qui tourne. Corriger la palette revient à l’école&nbsp;: ce guide ne la modifie pas. Les correctifs sont notés dans <code>docs/correctifs-figma.md</code>, un fichier du dépôt du projet, qui n’est pas une page de ce site. Figma fait foi, et le code suit.</p>
-      <p class="body-sm">Ce tableau n’est pas l’inventaire complet du kit. Il couvre les badges de statut, les cartes KPI, les tableaux, les alertes, le bouton de danger et les notifications. Il reste des paires repérées dans le CSS, pas encore vérifiées dans les vues, donc non publiées&nbsp;: le texte d’erreur et le texte de succès (${code('.text-error')}, ${code('.text-success')}), le texte désactivé, et le texte discret posé directement sur le fond de l’application, hors des tableaux.</p>
+      <p class="body-sm">Ce tableau n’est pas l’inventaire complet du kit. Il couvre les badges de statut, les cartes KPI, les tableaux, les alertes, le bouton de danger et les notifications. Sept autres paires, vérifiées dans les vues mais non publiées ici, sont au registre avec leur ratio et l’écran qui les émet&nbsp;: ${['.nav-item__count', '.page-header__meta', '.input::placeholder', '.sidebar__section', '.field__error'].map(code).join(', ')}, puis ${code('.text-error')} et ${code('.text-success')}, que le kit définit et qu’aucune vue ne pose.</p>
     </aside>
     <nav class="ds-groupes" aria-label="Dans cette section">
       <ul class="ds-groupes__liste">

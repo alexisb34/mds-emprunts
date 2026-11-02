@@ -45,7 +45,7 @@
 
       <section id="etape-mise-en-page" class="ds-groupe">
         <h2 class="h5">3. La mise en page, avec ce qui existe déjà</h2>
-        <p class="body ds-mesure">Quatre classes de <code>components.css</code>, et deux variantes de <code>.row</code>, suffisent à assembler un écran. Ni <code>admin.css</code> ni <code>mobile.css</code> ne les redéfinissent&nbsp;:</p>
+        <p class="body ds-mesure">Quatre classes de <code>components.css</code>, et deux variantes de <code>.row</code>, suffisent à assembler un écran. Ni <code>admin.css</code> ni <code>mobile.css</code> ne les redéfinissent, sauf une ligne d’<code>admin.css</code>, qui ajoute <code>min-width: 0</code> à <code>.stack</code> quand elle est l’enfant direct de <code>.detail-grid</code>&nbsp;:</p>
         <ul class="ds-liste body">
           <li><code>.stack</code>&nbsp;: une colonne, dont les blocs sont écartés de <code>--space-lg</code>.</li>
           <li><code>.row</code>&nbsp;: une rangée alignée au centre, écartée de <code>--space-md</code>. <code>.row--between</code> envoie le premier élément à gauche et le dernier à droite&nbsp;; <code>.row--wrap</code> autorise le retour à la ligne.</li>

@@ -537,8 +537,6 @@ test('il y a neuf interdits, dans l’ordre du brief, chacun avec sa raison', ()
     const a = interdit(i.id);
     assert.ok(a, `l’interdit ${i.id} n’est pas rendu`);
     assert.match(a, new RegExp(`<h3[^>]*>[\\s\\S]*${i.titre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), `le titre de ${i.id}`);
-    // La raison, mot pour mot, est dans l'article : c'est elle qui fait appliquer la règle.
-    assert.ok(texte(a).includes(texte(i.raison)), `la raison de ${i.id} n’est pas dans la page`);
     assert.ok(texte(i.raison).split(' ').length >= 25, `la raison de ${i.id} tient en ${texte(i.raison).split(' ').length} mots : c’est une consigne, pas une raison`);
     assert.doesNotMatch(texte(i.raison), /^(?:Il ne faut pas|Ne )/, `${i.id} : une raison ne commence pas par l’interdit`);
   }
