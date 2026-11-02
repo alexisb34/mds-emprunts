@@ -98,7 +98,7 @@
         <h2 class="h5">Accessibilité</h2>
 
         <h3 class="h6">Au clavier</h3>
-        <p class="body ds-mesure">Le tri, et l’ouverture d’une fiche par sa ligne, ne s’obtiennent aujourd’hui qu’à la souris, pour deux raisons mesurées sur l’outil&nbsp;: la ligne et l’en-tête ne sont pas focalisables (leur <code>tabIndex</code> vaut −1), et rien ne dit le sens du tri sauf la flèche écrite dans le libellé. Ce qu’il faudrait&nbsp;: un lien dans la première cellule, un <code>&lt;button&gt;</code> dans chaque en-tête triable, et <code>aria-sort</code> sur la colonne triée.</p>
+        <p class="body ds-mesure">Le tri, et l’ouverture d’une fiche par sa ligne, ne s’obtiennent aujourd’hui qu’à la souris, pour deux raisons mesurées sur l’outil&nbsp;: la ligne et l’en-tête ne sont pas focalisables (leur <code>tabIndex</code> vaut −1, la valeur d’un élément que rien ne rend focalisable (aucun attribut <code>tabindex</code> n’est posé)), et rien ne dit le sens du tri sauf la flèche écrite dans le libellé. Ce qu’il faudrait&nbsp;: un lien dans la première cellule, un <code>&lt;button&gt;</code> dans chaque en-tête triable, et <code>aria-sort</code> sur la colonne triée.</p>
 
         <h3 class="h6">En-têtes</h3>
         <p class="body ds-mesure"><code>renderTable()</code> écrit des <code>&lt;th&gt;</code> sans <code>scope</code>. Une colonne dont le libellé est vide, comme la colonne d’actions de l’exemple, a un en-tête sans nom.</p>

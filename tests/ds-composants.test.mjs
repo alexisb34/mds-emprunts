@@ -122,7 +122,7 @@ test('chaque page des tâches 10 et 11 existe avec son exemple, son h1 et son ch
 });
 
 test('chaque page a un fichier d’exemple, et les exemples des tâches 10 et 11 sont ceux qu’on attend', () => {
-  for (const nom of [...PAGES, ...(PAGES_11.length ? ['onglets-admin'] : [])]) assert.ok(existsSync(new URL(`../design-system/exemples/${nom}.html`, import.meta.url)), `exemples/${nom}.html manque`);
+  for (const nom of [...PAGES, 'onglets-admin']) assert.ok(existsSync(new URL(`../design-system/exemples/${nom}.html`, import.meta.url)), `exemples/${nom}.html manque`);
 });
 
 test('aucune page n’écrit de valeur de couleur en dur dans sa prose', () => {
@@ -461,6 +461,9 @@ test('formulaires : l’interrupteur cache sa case et la feuille ne dessine rien
   const t = texte(page('formulaires'));
   assert.match(t, /opacity: 0, zéro pixel de côté/);
   assert.match(t, /Cases et interrupteurs n’ont pas ce contour/);
+  // « dessiné » : aucune feuille ne supprime l'anneau du navigateur, qui reste pour la case.
+  assert.doesNotMatch(TOUT_LE_CSS, /outline\s*:\s*(?:none|0)\b/);
+  assert.match(t, /Aucun anneau de focus dessiné pour la case et l’interrupteur\. Celui du navigateur reste pour la case/);
 });
 
 test('formulaires : les tailles que la page écrit sont celles de la feuille', () => {
@@ -587,8 +590,6 @@ test('cartes : toutes les formes de carte du CSS sont montrées', () => {
   for (const v of variantes) assert.match(exemple('cartes'), new RegExp(`card--${v}\\b`));
 });
 
-// >>> TÂCHE 11 : tout ce qui suit disparaît de la version du premier commit
-
 // ---- Les tests du brief de la tâche 11, mot pour mot ----
 
 test('les deux versions d’onglets sont documentées et distinguées', () => {
@@ -650,7 +651,8 @@ test('tableau : ni l’en-tête ni la ligne ne sont focalisables, et aria-sort n
   assert.match(t, /Aucun anneau de focus dessiné sur la ligne cliquable\. Et la ligne ne peut même pas recevoir le focus/);
   assert.match(t, /aria-sort/);
   assert.match(t, /tabindex/);
-  assert.match(t, /leur tabIndex vaut −1/);
+  assert.match(t, /leur tabIndex vaut −1, la valeur d’un élément que rien ne rend focalisable \(aucun attribut tabindex n’est posé\)/);
+  assert.doesNotMatch(lire('js/admin/views/dashboard.js'), /tabindex/i, 'un attribut tabindex est posé : la phrase de la page doit changer');
 });
 
 test('tableau : la table des retards du tableau de bord ne contient ni lien ni bouton', () => {
@@ -869,6 +871,22 @@ test('navigation : la version admin ne retire pas le filet de .tabs, comme la pa
   assert.match(texte(page('navigation')), /les pastilles reposent sur le filet de bas de \.tabs/);
 });
 
+test('navigation : admin.css ne parle d’onglets que dans les cinq règles recopiées', () => {
+  // Une règle de contexte ajoutée plus tard (`.card .tabs`, une règle sous @media…) changerait le rendu
+  // sans que la copie le sache : toute occurrence de plus fait tomber le test.
+  const css = lire('css/admin.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const occurrences = css.split('\n').filter((l) => /\.tabs?\b|\.tab__/.test(l)).map((l) => l.trim());
+  assert.deepEqual(occurrences, reglesOnglets(css), 'admin.css parle d’onglets ailleurs que dans les cinq règles recopiées par l’exemple');
+  assert.equal(occurrences.length, 5);
+});
+
+test('navigation : au survol, une entrée de menu change son fond et la couleur de son texte', () => {
+  const r = regle(COMPONENTS, '.nav-item:hover');
+  assert.match(r, /background:\s*var\(--bg-canvas\)/);
+  assert.match(r, /color:\s*var\(--text-primary\)/);
+  assert.match(texte(page('navigation')), /Au survol, un fond gris clair et le texte qui fonce/);
+});
+
 test('navigation : la version admin ne défile ni ne passe à la ligne, comme la page le dit', () => {
   assert.doesNotMatch(regle(COMPONENTS, '.tabs'), /overflow|flex-wrap/);
   assert.doesNotMatch(regle(ADMIN, '.tabs'), /overflow|flex-wrap/);
@@ -891,6 +909,15 @@ test('navigation : le compteur n’est écrit que si le nombre dépasse zéro', 
   const avec = sidebarHtml({ currentPath: '/', counts: { emprunts: 3, maintenance: 0 }, user: null });
   assert.equal((avec.match(/nav-item__count/g) || []).length, 1);
   assert.match(texte(page('navigation')), /Il n’est écrit que si le nombre dépasse zéro/);
+  // Les deux états de la pastille : grise au repos, blanche à texte violet sur l'entrée active.
+  assert.match(regle(COMPONENTS, '.nav-item__count'), /background:\s*var\(--bg-canvas\)/);
+  assert.match(regle(COMPONENTS, '.nav-item--active .nav-item__count'), /background:\s*var\(--bg-surface\)/);
+  assert.match(regle(COMPONENTS, '.nav-item--active .nav-item__count'), /color:\s*var\(--text-brand\)/);
+  assert.match(texte(page('navigation')), /grise au repos, blanche à texte violet sur l’entrée active/);
+  assert.doesNotMatch(texte(page('navigation')), /jamais colorée\b/);
+  assert.match(page('navigation'), /mesureTexte\(valeurs, '--text-brand', '--bg-surface', 11\)/);
+  // Et l'exemple montre bien les deux : une entrée active avec son compteur.
+  assert.match(compact(demo('navigation', 'menu')), /nav-item nav-item--active" href="#\/emprunts">Emprunts<span class="nav-item__count">3<\/span>/);
 });
 
 test('navigation : la page courante ne se dit que par une classe — aucun aria-current dans l’outil', () => {

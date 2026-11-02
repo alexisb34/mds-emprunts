@@ -50,7 +50,7 @@
         <ul class="ds-liste body">
           <li><code>.nav-item</code>&nbsp;: un lien de 44&nbsp;px de haut, texte discret en gras. Au survol, un fond gris clair et le texte qui fonce.</li>
           <li><code>.nav-item--active</code>&nbsp;: la page courante, sur un fond violet très clair, en violet.</li>
-          <li><code>.nav-item__count</code>&nbsp;: un compteur, collé à droite. <strong>Il compte, il n’alerte pas</strong>&nbsp;: sa pastille est grise, jamais colorée. Il n’est écrit que si le nombre dépasse zéro.</li>
+          <li><code>.nav-item__count</code>&nbsp;: un compteur, collé à droite. <strong>Il compte, il n’alerte pas</strong>&nbsp;: sa pastille est grise au repos, blanche à texte violet sur l’entrée active, et jamais d’une teinte d’état. Il n’est écrit que si le nombre dépasse zéro.</li>
         </ul>
         <p class="body ds-mesure">Dans l’outil, les liens sont rangés dans un <code>&lt;nav class="sidebar__nav"&gt;</code> de <code>css/admin.css</code>, qui les empile avec un petit écart. L’exemple en reproduit la mise en page sur sa section&nbsp;; le code montré est celui des liens.</p>
 
@@ -120,7 +120,8 @@
         <ul class="ds-liste body">
           <li>entrée du menu, 14&nbsp;px en gras, texte discret sur blanc&nbsp;: <strong id="mesure-nav">à mesurer depuis un serveur</strong></li>
           <li>entrée active, violet sur violet très clair&nbsp;: <strong id="mesure-nav-active">à mesurer depuis un serveur</strong></li>
-          <li>compteur, 11&nbsp;px, texte discret sur la pastille grise&nbsp;: <strong id="mesure-nav-count">à mesurer depuis un serveur</strong></li>
+          <li>compteur au repos, 11&nbsp;px, texte discret sur la pastille grise&nbsp;: <strong id="mesure-nav-count">à mesurer depuis un serveur</strong></li>
+          <li>compteur de l’entrée active, 11&nbsp;px, violet sur la pastille blanche&nbsp;: <strong id="mesure-nav-count-active">à mesurer depuis un serveur</strong></li>
         </ul>
         <p class="body ds-mesure">Le compteur est employé par l’outil dès qu’un nombre dépasse zéro, mais le chapitre <a href="../couleurs.html#dette">Couleurs</a> ne publie pas encore cette paire&nbsp;: elle y est à ajouter. Le survol de l’entrée, lui, change le fond <em>et</em> la couleur du texte.</p>
 
@@ -165,6 +166,7 @@
         'mesure-nav': mesureTexte(valeurs, '--text-secondary', '--bg-surface', 14, true),
         'mesure-nav-active': mesureTexte(valeurs, '--text-brand', '--brand-primary-subtle', 14, true),
         'mesure-nav-count': mesureTexte(valeurs, '--text-secondary', '--bg-canvas', 11),
+        'mesure-nav-count-active': mesureTexte(valeurs, '--text-brand', '--bg-surface', 11),
       });
     }
   </script>
