@@ -1456,6 +1456,9 @@ test('modale : les dimensions que la page écrit sont celles de la feuille', () 
   assert.match(t, /90 % de la hauteur/);
   assert.match(t, /32 px/);
   assert.match(t, /88 px/);
+  // mobile.css POSE #toast-root à 88 px, il ne le remonte pas : components.css le pose déjà ailleurs.
+  assert.match(t, /css\/mobile\.css pose #toast-root à 88 px du bas, plus la zone sûre/);
+  assert.doesNotMatch(t, /remonte #toast-root de 88/);
 });
 
 test('modale : la page mesure les paires des retours, les quatre que le kit publie et trois autres', () => {
@@ -1484,6 +1487,10 @@ test('modale : le manque d’Échap et de piège de focus est dans le registre, 
   assert.match(aFaire, /Échap/);
   assert.match(aFaire, /piège de focus/);
   assert.match(aFaire, /js\/ui\.js/);
+  // « le focus reste sur le bouton » n'est vrai qu'au clavier, et dans un seul navigateur : le registre le dit.
+  assert.match(aFaire, /Au clavier, le focus reste sur le bouton/);
+  assert.match(aFaire, /dans un seul navigateur/);
+  assert.match(texte(page('modale')), /Constaté au clavier, dans un seul navigateur/);
   assert.match(texte(page('modale')), /docs\/correctifs-figma\.md/);
 });
 
@@ -1571,7 +1578,7 @@ test('mobile : le shell est tel que la page le dit', () => {
   const barre = Number(nav.match(/height:\s*calc\((\d+)px/)[1]);
   const debord = -((barre - (px(scan, 'height') + px(scan, 'margin-top'))) / 2 + px(scan, 'margin-top'));
   assert.equal(debord, 8, 'le bouton central ne déborde plus de 8 px : mesuré à 7,5 px dans le navigateur, la page doit changer');
-  assert.ok(t.includes(`déborder de ${debord} px au-dessus de la barre`), `le débord du bouton central est de ${debord} px`);
+  assert.ok(t.includes(`déborder d’environ ${debord} px au-dessus de la barre`), `le débord du bouton central est d’environ ${debord} px (7,5 mesuré dans le navigateur : la bordure d’un pixel n’est pas dans le calcul)`);
   assert.match(t, /1fr 1fr 72px 1fr 1fr/);
 });
 
@@ -1655,8 +1662,12 @@ test('mobile : les trois choses que mobile.css redéfinit sont celles que la pag
   assert.match(regle(ADMIN, '.week-grid .slot'), /height:\s*34px/);
   assert.doesNotMatch(regle(MOBILE, '#toast-root'), /position|left|transform/);
   const t = texte(page('mobile'));
-  assert.match(t, /cellules de 30 px contre 34 px/);
-  assert.match(t, /écart de 2 px contre 3 px/);
+  // À qui appartient chaque chiffre : mobile d'abord, admin ensuite, comme la phrase les nomme.
+  const nombre = (css, selecteur, propriete) => Number(regle(css, selecteur).match(new RegExp(`${propriete}:\\s*(\\d+)px`))[1]);
+  const cellules = [nombre(MOBILE, '.week-grid .slot', 'height'), nombre(ADMIN, '.week-grid .slot', 'height')];
+  const ecarts = [nombre(MOBILE, '.week-grid', 'border-spacing'), nombre(ADMIN, '.week-grid', 'border-spacing')];
+  assert.deepEqual([cellules, ecarts], [[30, 34], [2, 3]]);
+  assert.ok(t.includes(`mobile.css et admin.css la définissent chacune, avec des cellules de ${cellules[0]} px contre ${cellules[1]} px et un écart de ${ecarts[0]} px contre ${ecarts[1]} px`), 'les chiffres de .week-grid sont attribués à la mauvaise feuille');
   assert.match(t, /identique des deux côtés/);
 });
 
@@ -1853,6 +1864,12 @@ test('Démarrer : tout token écrit dans une page existe dans tokens.css, et les
   const t = texte(page('demarrer'));
   assert.match(t, /var\(--token\)/);
   assert.match(t, /aucune feuille de l’outil n’écrit une couleur en dur/);
+  // Seule la couleur est tenue : les espacements en pixels que la page cite sont dans les feuilles, et la page ne dit pas « la règle est tenue ».
+  assert.match(regle(MOBILE, '.m-nav__tab'), /gap:\s*2px/);
+  assert.match(regle(COMPONENTS, '.nav-item__count'), /padding:\s*0 6px/);
+  assert.match(t, /Seule la couleur est tenue à la lettre/);
+  assert.match(t, /l’écart de 2 px de la barre du bas ou la marge de 6 px du compteur du menu/);
+  assert.doesNotMatch(t, /La règle est tenue/);
   assert.match(t, /la loupe du champ de recherche/);
 });
 
@@ -1933,4 +1950,23 @@ test('mobile : les fonctions de layout.js que la page nomme existent, et le shel
   assert.match(lire('js/mobile/app.js'), /getElementById\('nav'\)[\s\S]*getElementById\('view'\)/);
   const t = texte(page('mobile'));
   for (const phrase of ['#header', '#view', '#nav', 'headerHtml({ title, user, back })', 'bottomNavHtml(currentPath)', 'setHeader', 'mountNav', 'TABS']) assert.ok(t.includes(phrase), `la page ne nomme pas « ${phrase} »`);
+});
+
+test('mobile : le téléphone a deux boutons propres, .seg__btn et .m-nav__scan, et la page les nomme', () => {
+  // Les boutons que mobile.css définit : toute classe de bouton (`__btn`) ou de lancement (`__scan`), hors l'icône de `.btn > svg`.
+  const propres = [...new Set([...MOBILE.matchAll(/(?:^|\n)\.([a-z][\w-]*?(?:__btn|__scan))\b/g)].map((m) => m[1]))].sort();
+  assert.deepEqual(propres, ['m-nav__scan', 'seg__btn'], 'mobile.css définit d’autres boutons : la page doit changer');
+  for (const c of propres) {
+    assert.ok(regle(MOBILE, `.${c}`), `${c} n’a plus de règle de base dans mobile.css`);
+    assert.equal(new RegExp(`\\.${c}\\b`).test(COMPONENTS), false, `${c} est aussi dans components.css`);
+  }
+  // Les écrans les emploient.
+  assert.ok(utilise(/class="seg__btn/).includes('js/mobile/views/salle.js'));
+  assert.ok(utilise(/class="m-nav__scan"/).includes('js/mobile/layout.js'));
+  // Ni badge, ni champ, ni modale propres au téléphone.
+  assert.doesNotMatch(MOBILE, /\.(?:badge|input|select|textarea|modal)\b/);
+  const t = texte(page('mobile'));
+  assert.match(t, /Le téléphone n’a que deux boutons propres, \.seg__btn .*? et \.m-nav__scan/);
+  assert.match(t, /Pas de badge, de champ ni de modale propres/);
+  assert.doesNotMatch(t, /Il n’y en a pas/);
 });

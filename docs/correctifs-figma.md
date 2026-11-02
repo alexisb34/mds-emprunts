@@ -37,8 +37,9 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   ou `closeModal()`. (1) **Aucune fermeture par Échap** : ni `js/ui.js` ni aucun autre fichier de
   `js/` n’écoute le clavier pour une modale ; le seul `keydown` du dépôt est la recherche globale
   de l’administration. (2) **Aucun piège de focus** : `openModal` ne déplace pas le focus à
-  l’ouverture, ne le rend pas à la fermeture et ne rend rien d’autre inerte. Le focus reste sur le
-  bouton qui a ouvert la modale, derrière le fond, et `#modal-root` vient après le contenu dans
+  l’ouverture, ne le rend pas à la fermeture et ne rend rien d’autre inerte. Au clavier, le focus reste
+  sur le bouton qui a ouvert la modale, derrière le fond (constaté dans un seul navigateur, à l’activation
+  au clavier ; le clic à la souris n’a pas été essayé), et `#modal-root` vient après le contenu dans
   l’ordre du balisage : un utilisateur du clavier atteint la modale en dernier. La seule modale qui
   déplace le focus est celle du scan (`js/scanModal.js`), dans son champ. Reste à décider dans
   Figma où le focus arrive à l’ouverture (le titre, le premier champ, l’action principale) et où il

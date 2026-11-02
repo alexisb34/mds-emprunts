@@ -84,7 +84,7 @@
           <li><code>#toast-root</code> est habillé par <code>css/components.css</code>&nbsp;: fixe, en bas au centre, en pile.</li>
           <li><code>#modal-root</code> n’a aucune règle. Le fond est <code>.modal-backdrop</code>, de la même feuille.</li>
           <li>Pendant qu’une modale est ouverte, <code>openModal</code> pose <code>has-modal</code> sur le <code>body</code> et <code>closeModal</code> la retire. La classe bloque le défilement de la page (<code>overflow: hidden</code>)&nbsp;: ne la posez jamais à la main.</li>
-          <li>Sur l’écran du téléphone, <code>css/mobile.css</code> remonte <code>#toast-root</code> de 88&nbsp;px, plus la zone sûre, pour passer au-dessus de la barre du bas&nbsp;: <a href="mobile.html">Mobile</a>.</li>
+          <li>Sur l’écran du téléphone, <code>css/mobile.css</code> pose <code>#toast-root</code> à 88&nbsp;px du bas, plus la zone sûre, pour passer au-dessus de la barre du bas&nbsp;: <a href="mobile.html">Mobile</a>.</li>
         </ul>
 
         <h3 class="h6">Les dimensions</h3>
@@ -129,7 +129,7 @@
 
         <h3 class="h6">Ce qui manque</h3>
         <p class="body ds-mesure"><strong>Aucune fermeture par Échap.</strong> <code>js/ui.js</code> n’écoute aucune touche, et aucun autre fichier de <code>js/</code> ne le fait pour une modale&nbsp;: le seul écouteur de clavier du dépôt est la recherche globale de l’administration. La croix, le fond et les boutons d’action sont les seules sorties.</p>
-        <p class="body ds-mesure"><strong>Aucun piège de focus.</strong> À l’ouverture, <code>js/ui.js</code> ne déplace pas le focus&nbsp;: il n’appelle ni <code>focus()</code>, ni <code>inert</code>, ni <code>tabindex</code>. La seule exception est la modale de scan, <code>js/scanModal.js</code>, qui met le focus dans son propre champ. Dans l’ordre du balisage, <code>#modal-root</code> vient après le contenu&nbsp;: la modale est donc la dernière que Tab atteint, derrière toute la page. À la fermeture, rien ne rend le focus.</p>
+        <p class="body ds-mesure"><strong>Aucun piège de focus.</strong> À l’ouverture, <code>js/ui.js</code> ne déplace pas le focus&nbsp;: il n’appelle ni <code>focus()</code>, ni <code>inert</code>, ni <code>tabindex</code>. La seule exception est la modale de scan, <code>js/scanModal.js</code>, qui met le focus dans son propre champ. Dans l’ordre du balisage, <code>#modal-root</code> vient après le contenu&nbsp;: la modale est donc la dernière que Tab atteint, derrière toute la page. À la fermeture, rien ne rend le focus. Constaté au clavier, dans un seul navigateur.</p>
         <p class="body ds-mesure">Ces deux manques sont reportés dans <code>docs/correctifs-figma.md</code>, à trancher avec la maquette avant de les coder.</p>
 
         <h3 class="h6">Les retours qui s’effacent, et ceux qui restent</h3>
