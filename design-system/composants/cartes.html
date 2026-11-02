@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cartes — Design system MyDigitalSchool</title>
+  <meta name="description" content="La carte de l’outil d’emprunt : .card, sa version sans ombre, la carte d’objet, ce que l’outil en emploie vraiment, et le HTML à copier.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Cartes</h1>
+        <p class="ds-chapeau ds-mesure">Une carte regroupe ce qui va ensemble&nbsp;: un titre, son contenu, parfois un lien. Trois formes existent&nbsp;; l’outil n’en emploie qu’une.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">Une carte détache un ensemble du fond de la page&nbsp;: les retards du jour, une fiche, un formulaire. Elle a un fond blanc, un filet et des angles arrondis, et elle porte souvent un titre et un lien.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <h3 class="h6">La carte de base et sa version plate</h3>
+        <div id="cadre-surfaces"></div>
+        <h3 class="h6">La carte d’un objet</h3>
+        <div id="cadre-materiel"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Les trois formes</h3>
+        <ul class="ds-liste body">
+          <li><code>.card</code>&nbsp;: fond blanc, filet, angles arrondis (<code>--radius-xl</code>), ombre légère (<code>--shadow-card</code>) et 24&nbsp;px de marge intérieure. Elle se compose d’une barre (<code>.card__header</code>, le titre à gauche et le lien à droite) et de son contenu. Le titre est <code>.card__title</code>.</li>
+          <li><code>.card--flat</code>&nbsp;: la même carte sans ombre. Le filet est le même&nbsp;; <strong>l’ombre est la seule différence</strong>, et elle est assez légère pour que, sur le gris de l’application, les deux se ressemblent presque.</li>
+          <li><code>.card--item</code>&nbsp;: la carte d’un objet. Sans marge intérieure, elle porte une image au format 4:3 (<code>.card__media</code>, sur un fond violet très clair) et un corps de 16&nbsp;px de marge (<code>.card__body</code>).</li>
+        </ul>
+
+        <h3 class="h6">Ce que l’outil en emploie</h3>
+        <p class="body ds-mesure"><strong>Seule <code>.card</code> est employée par un écran.</strong> Ni <code>.card--flat</code> ni <code>.card--item</code> n’est écrite ailleurs que dans <code>css/components.css</code>&nbsp;: aucun écran, aucun script ne les pose. Le catalogue mobile dessine sa carte d’objet avec <code>.m-card</code>, de <code>css/mobile.css</code>&nbsp;: la même image 4:3, les mêmes angles, d’autres marges. C’est le même motif écrit deux fois&nbsp;; voir <a href="mobile.html">Mobile</a>.</p>
+        <p class="body ds-mesure"><code>.card--item</code> n’a pas la règle qui recadre une photo&nbsp;: dans <code>.m-card__media</code>, une <code>&lt;img&gt;</code> est tirée à la taille de l’image (<code>object-fit: cover</code>), dans <code>.card__media</code> rien ne l’y oblige. L’exemple y met une icône, pas une photo.</p>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <ul class="ds-liste body">
+          <li><strong>Aucune carte cliquable.</strong> <code>.card</code> ne réagit ni au survol ni au clavier. Le seul motif de carte-lien du kit est <code>.kpi--link</code>&nbsp;: voir <a href="kpi.html">Carte KPI</a>.</li>
+          <li><strong>Aucun état de chargement,</strong> ni carte vide autre que <code>.empty-state</code>, qui se pose dans une carte.</li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+
+        <h3 class="h6">La carte de base</h3>
+        <p class="body ds-mesure">Le niveau du titre, <code>h2</code> ou <code>h3</code>, suit celui de la page. L’outil emploie <code>h2</code> sur le tableau de bord et <code>h3</code> sur l’accueil mobile.</p>
+        <div id="code-surfaces"></div>
+
+        <h3 class="h6">La carte d’un objet</h3>
+        <div id="code-materiel"></div>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour un chiffre qui compte quelque chose.</strong> C’est une carte KPI, avec sa teinte&nbsp;: <a href="kpi.html">Carte KPI</a>.</li>
+          <li><strong>Pour une carte entière qu’on clique.</strong> Elle n’aurait ni survol ni anneau de focus. Mettez le lien ou le bouton dans la carte, comme «&nbsp;Tout voir&nbsp;» dans la barre, ou employez le motif de <code>.kpi--link</code>.</li>
+          <li><strong>Pour un message.</strong> Une consigne ou une erreur est une alerte&nbsp;: <a href="modale.html">Modale et retours</a>.</li>
+          <li><strong>Pour le catalogue sur mobile.</strong> L’écran emploie <code>.m-card</code>, voir <a href="mobile.html">Mobile</a>.</li>
+          <li><strong>Pour envelopper une carte dans une carte.</strong> Un filet de plus ne dit rien de plus&nbsp;: regroupez par titres.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Titres</h3>
+        <p class="body ds-mesure">Une carte est un <code>&lt;div&gt;</code>&nbsp;: elle ne s’annonce pas. C’est son titre qui la nomme, et <code>.card__title</code> n’est qu’une classe, qui ne choisit pas le niveau. Prenez celui qui suit le titre de la page, sans sauter de niveau.</p>
+
+        <h3 class="h6">Liens répétés</h3>
+        <p class="body ds-mesure">Le tableau de bord pose «&nbsp;Tout voir →&nbsp;» sur deux cartes. Sorti de sa carte, un lien qui dit «&nbsp;Tout voir&nbsp;» ne dit pas quoi. Un <code>aria-label</code> qui reprend le titre de la carte («&nbsp;Voir tous les retards&nbsp;») lève l’ambiguïté, comme l’exige WCAG 2.4.4.</p>
+
+        <h3 class="h6">Image</h3>
+        <p class="body ds-mesure">L’image d’une carte d’objet est décorative quand le nom est écrit dessous&nbsp;: l’icône de l’exemple porte <code>aria-hidden="true"</code>. Une photo prend un <code>alt</code> qui décrit l’objet.</p>
+
+        <h3 class="h6">Contraste, mesuré</h3>
+        <p class="body ds-mesure">Le texte discret d’une carte (références, sous-titres) fait 11 à 14&nbsp;px, sur le blanc de la carte, mesuré dans <code>css/tokens.css</code> au chargement de cette page&nbsp;: <strong id="mesure-discret">à mesurer depuis un serveur</strong>. Posé sur le gris de l’application et non dans une carte, ce même texte tomberait sous le seuil&nbsp;: c’est ce que le chapitre <a href="../couleurs.html#dette">Couleurs</a> mesure pour les lignes de tableau survolées.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesureTexte } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/cartes.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/cartes.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/cartes.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
+    // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
+    document.getElementById('cadre-surfaces').outerHTML = cadreHtml({ fichier: 'cartes.html', demo: 'surfaces', titre: 'La carte de base et la carte sans ombre, côte à côte' });
+    document.getElementById('cadre-materiel').outerHTML = cadreHtml({ fichier: 'cartes.html', demo: 'materiel', titre: 'Deux cartes d’objet du catalogue' });
+    document.getElementById('code-surfaces').outerHTML = codeHtml({ fichier: 'cartes.html', demo: 'surfaces', titre: 'La carte de base et la carte sans ombre' });
+    document.getElementById('code-materiel').outerHTML = codeHtml({ fichier: 'cartes.html', demo: 'materiel', titre: 'Deux cartes d’objet du catalogue' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais écrits
+    // dans la page. Sur un fichier local, le navigateur refuse de lire les règles de la feuille et
+    // la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-discret': mesureTexte(valeurs, '--text-secondary', '--bg-surface', 11),
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fondations — Design system MyDigitalSchool</title>
+  <meta name="description" content="Les tokens de l’outil d’emprunt : couleurs, espacements, rayons, ombres et typographie, avec leur nom, leur valeur et un aperçu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les feuilles du dépôt d’abord, la feuille du site ensuite. tokens.css est celle que la page lit. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <!-- Fondations montre des tokens, pas un composant : elle est dispensée de la trame des six ancres. -->
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Fondations</h1>
+        <p class="ds-chapeau ds-mesure">Les valeurs de base de l’outil d’emprunt&nbsp;: couleurs, espacements, rayons, ombres, polices. Chaque ligne donne le nom du token, sa valeur et un aperçu.</p>
+        <p class="body ds-mesure">Dans votre CSS, écrivez <code>var(--brand-primary)</code> plutôt que la valeur de la couleur écrite en dur&nbsp;: la valeur change à un seul endroit, et tout le reste suit. Le bouton «&nbsp;Copier&nbsp;» met <code>var(--nom)</code> dans le presse-papiers.</p>
+        <p class="body ds-mesure">Cette page lit <code>css/tokens.css</code> au lieu de le recopier. Si un token change ou s’ajoute, elle change avec lui.</p>
+      </header>
+
+      <!-- Le tableau se construit ici. Ce message est celui d’une page qui n’a pas pu le faire, quelle que
+           soit la raison : un module en 404, une exception… Sur un fichier ouvert directement, le
+           navigateur refuse aussi les modules, et ce HTML est alors tout ce qu’on voit. Le module le
+           remplace dès qu’il a lu les tokens ; `ds-message--attente` ne le fait apparaître qu’après
+           un délai, pour qu’il ne clignote pas sur un site qui marche. Le premier paragraphe est
+           neutre ; le second dit la cause du fichier local, mot pour mot comme `tokens.js`. -->
+      <div id="tokens" class="ds-corps">
+        <div class="ds-message ds-message--attente">
+          <p class="body">Le tableau n’a pas pu s’afficher. Si vous avez ouvert ce fichier directement, voici la raison.</p>
+          <p class="body" id="raison">Cette page lit les tokens depuis la feuille de style, ce qu’un navigateur refuse sur un fichier local. Ouvrez le site depuis un serveur&nbsp;: <code>npm run serve</code>.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { lireTokensDepuisDocument, tableauTokensHtml, sommaireGroupesHtml, messageHtml } from '../js/tokens.js';
+    import { copier, raccourciCopie, consigneCopie } from '../js/code.js';
+
+    // L’adresse de cette page est toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/fondations.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/fondations.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/fondations.html');
+    brancherSommaire();
+
+    // Pas d’attente de la feuille : un script de module est différé et ne s’exécute qu’après les
+    // feuilles qui bloquent le rendu. Si `tokens.css` a échoué (404, mauvais chemin), elle est
+    // simplement absente de `document.styleSheets`, et `lireTokensDepuisDocument` le dit.
+    const cible = document.getElementById('tokens');
+    const lecture = lireTokensDepuisDocument(document);
+    if (lecture.ok) {
+      cible.innerHTML = sommaireGroupesHtml(lecture.groupes) + tableauTokensHtml(lecture.groupes);
+    } else {
+      cible.innerHTML = `<div class="ds-message"><p class="body">${messageHtml(lecture.message)}</p></div>`;
+    }
+
+    // Le bouton « Copier » de chaque token. `copier` écrit dans le presse-papiers, ou, quand le
+    // navigateur le refuse (origine non sécurisée, permission), sélectionne le nom du token : la
+    // personne finit le geste avec le raccourci de son système, et le bouton le lui dit.
+    cible.addEventListener('click', async (evenement) => {
+      const bouton = evenement.target.closest('.ds-copier');
+      if (!bouton) return;
+      const ligne = bouton.closest('.ds-jeton');
+      ligne.querySelector('[role="status"]')?.remove();
+      let resultat;
+      try {
+        resultat = await copier(bouton.dataset.copie, ligne.querySelector('.ds-jeton__nom'));
+      } catch {
+        resultat = 'echec';
+      }
+      bouton.textContent = { 'presse-papiers': 'Copié', selection: 'Sélectionné' }[resultat] || 'Copie impossible';
+      if (resultat !== 'presse-papiers') {
+        const aide = document.createElement('p');
+        aide.className = 'body-sm ds-mention';
+        aide.setAttribute('role', 'status');
+        aide.textContent = resultat === 'selection'
+          ? `Le navigateur refuse la copie ici. Le nom est sélectionné : ${consigneCopie(raccourciCopie())}, puis écrivez-le dans var( ).`
+          : 'La copie a échoué. Recopiez le nom à la main, dans var( ).';
+        ligne.querySelector('.ds-jeton__id').append(aide);
+      }
+      setTimeout(() => { bouton.textContent = 'Copier'; }, 2000);
+    });
+  </script>
+</body>
+</html>

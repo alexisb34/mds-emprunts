@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Onglets de l’administration — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les démonstrations des onglets de l’administration, rendues par le CSS de l’outil d’emprunt. Chaque section est montrée dans un cadre de la page Onglets de l’administration.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les seules feuilles dont ce composant a besoin : celles de l’application, rien de plus. Voir
+       l’exemple du bouton pour le détail. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    body { padding: var(--space-lg); }
+    /* Les cinq règles d’onglets de la feuille de l’interface d’administration, recopiées telles
+       quelles, APRÈS la feuille des composants : c’est l’ordre où l’interface les charge, donc
+       c’est le même résultat. L’exemple ne charge pas cette feuille, parce qu’elle pose de la mise
+       en page plein écran. Un test vérifie que la copie reste identique à l’original. */
+    .tabs { display: flex; gap: var(--space-xs); }
+    .tab { border: var(--stroke-thin) solid var(--border-default); background: var(--bg-surface); border-radius: var(--radius-pill); padding: var(--space-xs) var(--space-md); font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    .tab:hover { border-color: var(--border-brand); }
+    .tab.is-active { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--text-on-brand); }
+    .tab__count { opacity: 0.7; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <!-- Les onglets de l’écran « Emprunts » de l’administration : en pastilles. -->
+  <section data-demo="onglets-admin">
+    <div class="card">
+      <div class="tabs">
+        <button type="button" class="tab is-active">En cours <span class="tab__count">2</span></button>
+        <button type="button" class="tab">Réservés <span class="tab__count">1</span></button>
+        <button type="button" class="tab">En retard <span class="tab__count">1</span></button>
+        <button type="button" class="tab">Historique <span class="tab__count">14</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

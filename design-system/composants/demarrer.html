@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Démarrer — Design system MyDigitalSchool</title>
+  <meta name="description" content="Le chemin le plus court entre « ajoutez un écran » et « mon écran ressemble au reste » : les feuilles dans l’ordre, les deux conteneurs à poser, les classes de mise en page, la règle des tokens.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les feuilles du dépôt d’abord, la feuille du site ensuite. Cette page ne charge pas la feuille
+       des composants : sa démonstration est rendue dans un cadre isolé. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <!-- Démarrer est une marche à suivre, pas un composant : elle est dispensée de la trame des six ancres. -->
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Démarrer</h1>
+        <p class="ds-chapeau ds-mesure">On vous a demandé d’ajouter un écran. Voici le chemin le plus court pour qu’il ressemble au reste&nbsp;: quatre gestes, dans cet ordre.</p>
+      </header>
+
+      <section id="etape-feuilles" class="ds-groupe">
+        <h2 class="h5">1. Les feuilles, dans l’ordre</h2>
+        <p class="body ds-mesure">Dans le <code>&lt;head&gt;</code> de la page, chargez les polices d’abord, Inter et Bricolage Grotesque depuis Google Fonts, comme le font <code>index.html</code>, <code>admin.html</code> et <code>mobile.html</code>. Puis les trois feuilles, dans cet ordre&nbsp;:</p>
+        <ol id="feuilles" class="ds-liste body">
+          <li><code>css/tokens.css</code>&nbsp;: toutes les valeurs de base, sous forme de variables, dans un seul <code>:root</code>. Elle ne contient que des variables.</li>
+          <li><code>css/base.css</code>&nbsp;: la remise à zéro, le corps de texte, l’échelle typographique et les classes de texte.</li>
+          <li><code>css/components.css</code>&nbsp;: les composants et les classes de mise en page.</li>
+        </ol>
+        <p class="body ds-mesure">Un écran d’administration ou de téléphone ajoute ensuite <code>css/admin.css</code> ou <code>css/mobile.css</code>, jamais les deux&nbsp;: ce sont des feuilles d’écran, qui posent chacune la mise en page plein écran de leur interface. Voir <a href="navigation.html">Navigation</a> et <a href="mobile.html">Mobile</a>. Les chemins sont relatifs, sans barre oblique au début.</p>
+      </section>
+
+      <section id="etape-racines" class="ds-groupe">
+        <h2 class="h5">2. Les deux conteneurs</h2>
+        <p class="body ds-mesure">Posez deux conteneurs vides, après le contenu et avant les scripts&nbsp;: <code>&lt;div id="modal-root"&gt;&lt;/div&gt;</code> et <code>&lt;div id="toast-root"&gt;&lt;/div&gt;</code>. Sans eux, <code>openModal()</code> et <code>toast()</code> lèvent une exception. Personne n’écrit de modale à la main&nbsp;: <a href="modale.html">Modale et retours</a>.</p>
+      </section>
+
+      <section id="etape-mise-en-page" class="ds-groupe">
+        <h2 class="h5">3. La mise en page, avec ce qui existe déjà</h2>
+        <p class="body ds-mesure">Quatre classes de <code>components.css</code>, et deux variantes de <code>.row</code>, suffisent à assembler un écran. Ni <code>admin.css</code> ni <code>mobile.css</code> ne les redéfinissent, sauf une ligne d’<code>admin.css</code>, qui ajoute <code>min-width: 0</code> à <code>.stack</code> quand elle est l’enfant direct de <code>.detail-grid</code>&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li><code>.stack</code>&nbsp;: une colonne, dont les blocs sont écartés de <code>--space-lg</code>.</li>
+          <li><code>.row</code>&nbsp;: une rangée alignée au centre, écartée de <code>--space-md</code>. <code>.row--between</code> envoie le premier élément à gauche et le dernier à droite&nbsp;; <code>.row--wrap</code> autorise le retour à la ligne.</li>
+          <li><code>.grid-2</code> et <code>.grid-4</code>&nbsp;: deux et quatre colonnes égales, écartées de <code>--space-lg</code>. Sous 900&nbsp;px, <code>.grid-4</code> passe à deux colonnes&nbsp;; sous 600&nbsp;px, <code>.grid-2</code> et <code>.grid-4</code> passent à une colonne.</li>
+        </ul>
+        <p class="body ds-mesure">Cet écran n’emploie que ces classes et des composants du kit&nbsp;: la rangée d’en-tête, l’alerte, les deux cartes.</p>
+        <div id="cadre-ecran"></div>
+        <div id="code-ecran"></div>
+      </section>
+
+      <section id="etape-tokens" class="ds-groupe">
+        <h2 class="h5">4. Les valeurs viennent des tokens</h2>
+        <p class="body ds-mesure">Pour une couleur, un espacement, un rayon ou une ombre, écrivez <code>var(--token)</code>, jamais la valeur&nbsp;: <code>var(--brand-primary)</code>, <code>var(--space-lg)</code>, <code>var(--radius-lg)</code>, <code>var(--shadow-card)</code>. La valeur change à un seul endroit, et tout le reste suit. Les noms et les aperçus sont dans <a href="fondations.html">Fondations</a>, <a href="../couleurs.html">Couleurs</a> et <a href="../typographie.html">Typographie</a>.</p>
+        <p class="body ds-mesure">Seule la couleur est tenue à la lettre&nbsp;: aucune feuille de l’outil n’écrit une couleur en dur. Une seule est recopiée, dans une image&nbsp;: la loupe du champ de recherche, qui a la couleur de <code>--text-secondary</code>. Pour les espacements, les feuilles écrivent encore des pixels, comme l’écart de 2&nbsp;px de la barre du bas ou la marge de 6&nbsp;px du compteur du menu&nbsp;: la règle vaut pour votre code, elle n’est pas déjà atteinte, et ces valeurs ne sont pas à imiter. Si aucun token ne convient, n’inventez pas de valeur&nbsp;: notez le besoin dans <code>docs/correctifs-figma.md</code>.</p>
+      </section>
+
+      <section id="etape-composants" class="ds-groupe">
+        <h2 class="h5">Avant d’écrire du HTML, cherchez le composant</h2>
+        <ul class="ds-liste body">
+          <li><a href="fondations.html">Fondations</a>&nbsp;: les tokens.</li>
+          <li><a href="icones.html">Icônes</a>&nbsp;: les dessins que l’outil emploie.</li>
+          <li><a href="bouton.html">Bouton</a>&nbsp;: une action.</li>
+          <li><a href="badge.html">Badge et étiquette</a>&nbsp;: un état, une catégorie.</li>
+          <li><a href="avatar.html">Avatar</a>&nbsp;: une personne, en initiales.</li>
+          <li><a href="formulaires.html">Formulaires</a>&nbsp;: les champs.</li>
+          <li><a href="tableau.html">Tableau</a>&nbsp;: des lignes à trier.</li>
+          <li><a href="kpi.html">Carte KPI</a>&nbsp;: un chiffre à surveiller.</li>
+          <li><a href="cartes.html">Cartes</a>&nbsp;: un ensemble détaché du fond.</li>
+          <li><a href="navigation.html">Navigation</a>&nbsp;: le menu et les onglets.</li>
+          <li><a href="modale.html">Modale et retours</a>&nbsp;: une décision à prendre, un message à lire.</li>
+          <li><a href="mobile.html">Mobile</a>&nbsp;: l’écran du téléphone.</li>
+        </ul>
+      </section>
+
+      <section id="avant-de-livrer" class="ds-groupe">
+        <h2 class="h5">Avant de dire que c’est fini</h2>
+        <ul class="ds-liste body">
+          <li><strong>Aucune valeur en dur.</strong> Ni couleur, ni espacement, ni rayon, ni ombre écrits à la main&nbsp;: <a href="fondations.html">Fondations</a>.</li>
+          <li><strong>Aucune modale ni aucun toast écrits à la main.</strong> <a href="modale.html">Modale et retours</a>.</li>
+          <li><strong>Le clavier.</strong> Tabulez dans l’écran entier. Safari saute les boutons avec Tab par défaut&nbsp;: utilisez Option+Tab, ou activez la navigation par Tab dans les réglages avancés de Safari. Le kit ne dessine pas d’anneau de focus&nbsp;: c’est celui du navigateur qui s’affiche, et rien ne garantit qu’il se lise sur un aplat violet ou rouge. <a href="bouton.html#accessibilite">Bouton</a>, et <code>docs/correctifs-figma.md</code>.</li>
+          <li><strong>La largeur.</strong> Regardez l’écran à 360&nbsp;px. Les grilles se replient&nbsp;; le tableau ne se replie pas&nbsp;: <a href="tableau.html">Tableau</a>.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/demarrer.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/demarrer.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/demarrer.html');
+    brancherSommaire();
+
+    // Le bloc de code est posé AVANT de brancher, et rien n'est attendu (`await`) entre les deux.
+    document.getElementById('cadre-ecran').outerHTML = cadreHtml({ fichier: 'demarrer.html', demo: 'ecran', titre: 'Un écran fait de classes de mise en page et de composants du kit' });
+    document.getElementById('code-ecran').outerHTML = codeHtml({ fichier: 'demarrer.html', demo: 'ecran', titre: 'Un écran fait de classes de mise en page et de composants du kit' });
+    brancherCadres(document.getElementById('contenu'));
+  </script>
+</body>
+</html>

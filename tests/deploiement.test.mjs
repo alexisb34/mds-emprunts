@@ -5,10 +5,25 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { posix } from 'node:path';
+import { CHAPITRES, COMPOSANTS } from '../design-system/js/chrome.js';
 
 const RACINE = new URL('../', import.meta.url);
 const pages = readdirSync(RACINE).filter((f) => f.endsWith('.html'));
 const lire = (f) => readFileSync(new URL(f, RACINE), 'utf8');
+
+// Les pages du design system, par dossier. Elles obéissent aux mêmes règles de publication que
+// celles de la racine : le site est servi depuis un sous-répertoire, et `exemples/` est chargé
+// en cadre, donc une référence cassée y est invisible depuis la page qui l'enveloppe.
+const DOSSIERS_DS = ['design-system', 'design-system/composants', 'design-system/exemples'];
+const pagesDS = DOSSIERS_DS.flatMap((dossier) => readdirSync(new URL(`${dossier}/`, RACINE))
+  .filter((f) => f.endsWith('.html')).map((f) => ({ dossier, nom: f, chemin: `${dossier}/${f}` })));
+const pagesRacine = pages.map((nom) => ({ dossier: '', nom, chemin: nom }));
+const TOUTES = [...pagesRacine, ...pagesDS];
+
+// Une page de documentation montre du code : `import { badge } from './ui.js'` dans un `<code>`
+// est une phrase, pas un import. Le balisage montré y est échappé (`&lt;`), donc rien de réel
+// ne se cache dans un `<code>` ou un `<pre>` : on les retire avant de chercher des références.
+const sansCode = (html) => html.replace(/<(code|pre)\b[^>]*>[\s\S]*?<\/\1>/g, '');
 
 // Toutes les références de ressources d’une page : attributs (guillemets simples ou
 // doubles), imports de modules en ligne (statiques et dynamiques) et `url(…)`.
@@ -16,8 +31,10 @@ function references(html) {
   const motifs = [
     // `i` : un attribut en capitales compte autant. La seconde alternative couvre une
     // valeur sans guillemets, que HTML tolère et qu’un motif à guillemets ne verrait pas.
-    /\b(?:src|href|srcset)\s*=\s*(["'])(.*?)\1/gi,
-    /\b(?:src|href)\s*=\s*(?!["'])([^\s>]+)/gi,
+    // `(?<![\w-])` : `data-href="/materiel/MDS-0014"` est une route de l'application (le routeur
+    // la lit), pas une adresse que le navigateur résout ; `\b` seul la prenait pour un `href`.
+    /(?<![\w-])(?:src|href|srcset)\s*=\s*(["'])(.*?)\1/gi,
+    /(?<![\w-])(?:src|href)\s*=\s*(?!["'])([^\s>]+)/gi,
     /\bimport\s*(?:[^'"()]*?\bfrom\s*)?(["'])(.*?)\1/g,
     /\bimport\s*\(\s*(["'])(.*?)\1\s*\)/g,
     /\burl\(\s*(["']?)(.*?)\1\s*\)/g,
@@ -76,13 +93,46 @@ function problemes(html, dossier = '') {
 }
 
 test('les pages du dépôt sont bien celles qu’on croit', () => {
-  assert.deepEqual([...pages].sort(), ['admin.html', 'etiquettes.html', 'index.html', 'kit.html', 'mobile.html']);
+  assert.deepEqual([...pages].sort(), ['admin.html', 'etiquettes.html', 'index.html', 'mobile.html']);
+});
+
+test('les pages du design system sont celles que son chrome annonce, plus les exemples des cadres', () => {
+  const de = (dossier) => pagesDS.filter((p) => p.dossier === dossier).map((p) => p.nom).sort();
+  assert.deepEqual(de('design-system'), ['index.html', ...CHAPITRES.map((c) => c.href)].sort());
+  assert.deepEqual(de('design-system/composants'), COMPOSANTS.map((c) => c.href.replace('composants/', '')).sort());
+  // Un exemple est une page isolée sans entrée dans le chrome : on vérifie seulement qu'il y en a,
+  // pour qu'un dossier vidé ou renommé ne laisse pas la boucle de publication tourner à vide.
+  assert.ok(de('design-system/exemples').length >= 10, 'design-system/exemples a perdu ses pages');
+});
+
+test('kit.html est parti, sans redirection : il montrait des classes qui n’existent plus', () => {
+  assert.equal(existsSync(new URL('kit.html', RACINE)), false);
+  // Aucune page publiée, aucun script de la racine ne le désigne encore.
+  for (const { chemin } of TOUTES) assert.doesNotMatch(lire(chemin), /kit\.html/, `${chemin} désigne kit.html`);
 });
 
 test('aucune page ne référence une ressource absente ou par un chemin absolu', () => {
-  for (const page of pages) {
-    assert.deepEqual(problemes(lire(page)), [], `${page} a des références qui casseraient une fois publiées`);
+  for (const { chemin, dossier } of TOUTES) {
+    assert.deepEqual(problemes(sansCode(lire(chemin)), dossier), [], `${chemin} a des références qui casseraient une fois publiées`);
   }
+});
+
+test('sansCode retire le code montré, jamais un script réel posé à côté', () => {
+  const html = `<p><code>import { badge } from './ui.js'</code></p><pre>&lt;a href="/x"&gt;</pre><script type="module">import { a } from '/js/a.js';</script>`;
+  assert.deepEqual(problemes(sansCode(html), 'design-system/composants'), ['/js/a.js : chemin absolu, hors du site une fois publié']);
+  // Sans le retrait, la phrase serait prise pour une référence cassée.
+  assert.match(problemes(html, 'design-system/composants').join('\n'), /\.\/ui\.js/);
+});
+
+test('le détecteur juge une page du design system depuis son dossier, pas depuis la racine', () => {
+  // Depuis `composants/`, deux crans mènent à la racine du dépôt : `../css/` ne mène nulle part.
+  assert.deepEqual(problemes('<link href="../../css/tokens.css">', 'design-system/composants'), []);
+  assert.deepEqual(problemes('<link href="../css/tokens.css">', 'design-system/composants'), ['../css/tokens.css : « tokens.css » n’existe pas (casse comprise)']);
+  assert.deepEqual(problemes('<script src="../js/cadre.js"></script>', 'design-system/composants'), []);
+  assert.deepEqual(problemes('<script src="../../../x.js"></script>', 'design-system/composants'), ['../../../x.js : remonte au-dessus de la racine du site']);
+  // Et la même adresse, jugée comme si la page était à la racine, serait fausse : c'est
+  // pourquoi la boucle passe le dossier.
+  assert.deepEqual(problemes('<link href="../../css/tokens.css">'), ['../../css/tokens.css : remonte au-dessus de la racine du site']);
 });
 
 test('le détecteur voit un import de module en ligne rendu absolu', () => {
@@ -131,11 +181,17 @@ test('.nojekyll existe : GitHub Pages sert le dépôt sans passer par Jekyll', (
   assert.ok(existsSync(new URL('.nojekyll', RACINE)));
 });
 
-test('la page d’accueil mène aux quatre interfaces', () => {
+test('la page d’accueil mène aux trois interfaces et au design system', () => {
   const html = lire('index.html');
-  for (const cible of ['admin.html', 'mobile.html', 'etiquettes.html', 'kit.html']) {
+  for (const cible of ['admin.html', 'mobile.html', 'etiquettes.html', 'design-system/index.html']) {
     assert.match(html, new RegExp(`href="${cible}"`), `index.html ne mène pas à ${cible}`);
   }
+});
+
+test('le détecteur ne prend pas data-href pour un href : c’est une route, pas une adresse', () => {
+  assert.deepEqual(problemes('<tr data-href="/materiel/MDS-0014"><td>x</td></tr><img data-src=/x.png>'), []);
+  // Un vrai href à côté reste jugé.
+  assert.deepEqual(problemes('<tr data-href="/materiel/MDS-0014"><a href="/materiel/MDS-0014">x</a></tr>'), ['/materiel/MDS-0014 : chemin absolu, hors du site une fois publié']);
 });
 
 test('le détecteur juge le chemin absolu avant le gabarit', () => {
@@ -181,13 +237,18 @@ test('les polices se chargent en parallèle : <link> dans chaque page, avant nos
   // d’affilée ; sur un wifi d’école, c’est un écran blanc.
   assert.doesNotMatch(lire('css/base.css'), /@import/);
   const famille = /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2\?family=Inter[^"]*display=swap">/;
-  for (const page of pages) {
-    const html = lire(page);
+  // Toutes les pages publiées, celles de la racine comme celles du design system : « nos feuilles »
+  // est la première `<link rel="stylesheet">` dont l'adresse est locale, où que la page se trouve.
+  const premiereFeuilleLocale = /<link rel="stylesheet" href="(?![a-z][a-z0-9+.-]*:|\/\/)[^"]+">/;
+  for (const { chemin } of TOUTES) {
+    const html = lire(chemin);
     const police = html.search(famille);
-    assert.ok(police >= 0, `${page} ne charge pas les polices par <link>`);
-    assert.ok(html.indexOf('<link rel="preconnect" href="https://fonts.googleapis.com">') >= 0, `${page} : preconnect googleapis`);
-    assert.ok(html.indexOf('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>') >= 0, `${page} : preconnect gstatic`);
-    assert.ok(police < html.indexOf('href="css/tokens.css"'), `${page} : les polices passent avant nos feuilles`);
+    assert.ok(police >= 0, `${chemin} ne charge pas les polices par <link>`);
+    assert.ok(html.indexOf('<link rel="preconnect" href="https://fonts.googleapis.com">') >= 0, `${chemin} : preconnect googleapis`);
+    assert.ok(html.indexOf('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>') >= 0, `${chemin} : preconnect gstatic`);
+    const feuille = html.search(premiereFeuilleLocale);
+    assert.ok(feuille >= 0, `${chemin} ne charge aucune feuille locale : le test ne juge plus rien`);
+    assert.ok(police < feuille, `${chemin} : les polices passent avant nos feuilles`);
   }
 });
 

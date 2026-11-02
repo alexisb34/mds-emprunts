@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tableau — Design system MyDigitalSchool</title>
+  <meta name="description" content="Le tableau de l’administration : tri par en-tête, lignes cliquables, la fonction renderTable(), et ce que le clavier ne peut pas faire.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Tableau</h1>
+        <p class="ds-chapeau ds-mesure">Des lignes, des colonnes, un tri par clic sur l’en-tête et des lignes qu’on clique. Une fonction le fabrique&nbsp;: <code>renderTable()</code>.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">Un tableau liste des choses de même nature, une par ligne&nbsp;: les emprunts, le matériel, les utilisateurs. La feuille <code>.table</code> le met en forme&nbsp;; <code>js/admin/table.js</code> le fabrique, le trie et branche ses clics. On n’écrit pas un tableau à la main&nbsp;: on décrit ses colonnes.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <p class="body ds-mesure">Trois emprunts, triés sur «&nbsp;Retour prévu&nbsp;», comme l’écran Emprunts de l’administration les affiche. Le cadre est figé&nbsp;: dans l’outil, un clic sur un en-tête trie, un clic sur une ligne ouvre la fiche.</p>
+        <div id="cadre-trie"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Le tri</h3>
+        <p class="body ds-mesure">Un en-tête <code>th[data-sortable]</code> se clique&nbsp;: le curseur change et le texte ne se sélectionne plus. <code>data-key</code> dit quelle colonne il trie. La colonne triée porte une flèche écrite dans son libellé, <code>↑</code> pour le croissant, <code>↓</code> pour le décroissant&nbsp;: c’est du texte, pas une icône. Un second clic sur la même colonne inverse le sens.</p>
+
+        <h3 class="h6">Les lignes cliquables</h3>
+        <p class="body ds-mesure">Une ligne <code>tr[data-href]</code> porte la route de sa fiche&nbsp;: le curseur change, et un clic sur la ligne ouvre cette route. Un clic qui tombe sur un bouton, un lien, un champ, un libellé ou une liste est laissé à celui-ci&nbsp;: les boutons d’une ligne gardent leur rôle.</p>
+        <p class="body ds-mesure"><strong>Le survol colore toutes les lignes, cliquables ou non.</strong> La règle vise <code>.table tbody tr:hover</code>, pas <code>tr[data-href]:hover</code>&nbsp;: une ligne qui ne mène nulle part se souligne comme les autres, et promet un clic qui n’existe pas.</p>
+
+        <h3 class="h6">Les actions d’une ligne</h3>
+        <p class="body ds-mesure"><code>.table__actions</code> range des boutons <code>btn--sm</code> à droite de la ligne. Dans l’exemple, la colonne est alignée à droite par un <code>style</code> que <code>renderTable()</code> écrit lui-même (<code>align: 'right'</code>).</p>
+
+        <h3 class="h6">L’état vide</h3>
+        <p class="body ds-mesure">Sans aucune ligne, <code>renderTable()</code> garde l’en-tête et pose dessous un <code>.empty-state</code>, avec le texte qu’on lui donne (<code>emptyText</code>, «&nbsp;Aucun résultat.&nbsp;» par défaut).</p>
+        <div id="cadre-vide"></div>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <ul class="ds-liste body">
+          <li><strong>Aucun anneau de focus dessiné sur la ligne cliquable. Et la ligne ne peut même pas recevoir le focus.</strong> Un <code>&lt;tr data-href&gt;</code> n’a ni <code>tabindex</code> ni lien&nbsp;: l’anneau du navigateur, qui reste affiché ailleurs dans le kit, n’a rien à entourer. Au clavier, seuls les boutons et les liens que la ligne contient s’atteignent. Sur la table des retards du tableau de bord, la ligne ne contient ni l’un ni l’autre&nbsp;: la fiche s’ouvre à la souris, et par aucune autre voie depuis cette table.</li>
+          <li><strong>Aucun tri au clavier.</strong> Un <code>&lt;th&gt;</code> ne reçoit pas le focus, et l’attribut <code>aria-sort</code> n’est posé nulle part.</li>
+          <li><strong>Aucun repli pour un écran étroit.</strong> <code>.table</code> prend la largeur de sa carte, sans défilement prévu. À 800&nbsp;px de large, le tableau Emprunts de l’administration dépasse de sa carte&nbsp;; sur un téléphone, l’exemple ci-dessus déborde de la sienne et son cadre défile à l’horizontale.</li>
+          <li><strong>Aucune pagination, aucun pied de tableau.</strong></li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+
+        <h3 class="h6">On décrit les colonnes, <code>renderTable()</code> écrit le HTML</h3>
+        <p class="body ds-mesure"><code>renderTable({ columns, rows, sort, rowHref, emptyText })</code> rend le tableau. Chaque colonne est un objet&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li><code>key</code>, <code>label</code>&nbsp;: la clé de la colonne et son en-tête. Le libellé est échappé.</li>
+          <li><code>sortable</code>&nbsp;: pose <code>data-sortable</code> et <code>data-key</code> sur l’en-tête. <code>sortValue(ligne)</code> dit la valeur à comparer quand elle diffère de <code>ligne[key]</code>.</li>
+          <li><code>render(ligne)</code>&nbsp;: rend le HTML de la cellule. <strong>Il n’est pas échappé</strong>&nbsp;: c’est à la colonne d’échapper ce qui vient de l’utilisateur. Sans <code>render</code>, la valeur est échappée pour vous.</li>
+          <li><code>align</code>&nbsp;: <code>'right'</code> ou <code>'center'</code>, écrit en <code>style</code> sur l’en-tête et les cellules.</li>
+        </ul>
+        <p class="body ds-mesure"><code>rowHref(ligne)</code> rend la route d’une ligne, ou rien&nbsp;: la ligne n’est alors pas cliquable. <code>sort</code> est <code>{ key, dir }</code>, <code>dir</code> valant <code>'asc'</code> ou <code>'desc'</code>.</p>
+        <p class="body ds-mesure">Trois fonctions l’accompagnent. <code>sortRows(rows, sort, columns)</code> trie une copie&nbsp;: les nombres se comparent comme des nombres, le texte en français avec les chiffres compris, et une valeur absente passe à la fin. <code>toggleSort(sort, key)</code> rend le tri suivant. <code>bindTable(root, { onSort, onRow })</code> branche les clics, sans jamais capter celui d’un bouton ou d’un lien.</p>
+        <p class="body ds-mesure">Ce que <code>renderTable()</code> rend pour les trois lignes de l’exemple&nbsp;:</p>
+        <div id="code-trie"></div>
+
+        <h3 class="h6">Sans aucune ligne</h3>
+        <div id="code-vide"></div>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour une ligne qu’on ne peut ouvrir qu’en cliquant.</strong> Mettez un lien dans la première cellule&nbsp;: <code>&lt;a href="#/materiel/MDS-0029"&gt;</code>. La ligne reste cliquable pour la souris, et le clavier a sa voie.</li>
+          <li><strong>Pour une seule information par ligne.</strong> Une liste suffit&nbsp;: c’est <code>.list</code>, de <code>css/admin.css</code>, qu’emploient les remises du jour.</li>
+          <li><strong>Pour mettre un chiffre en avant.</strong> C’est une carte KPI&nbsp;: <a href="kpi.html">Carte KPI</a>.</li>
+          <li><strong>Pour une grille de créneaux.</strong> La grille de la semaine, <code>.week-grid</code>, est un autre composant, défini deux fois (<code>css/admin.css</code> et <code>css/mobile.css</code>)&nbsp;: voir <a href="mobile.html">Mobile</a>.</li>
+          <li><strong>Pour un écran de téléphone.</strong> La table n’a pas de repli&nbsp;; le mobile emploie des listes de cartes, décrites dans <a href="mobile.html">Mobile</a>.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Au clavier</h3>
+        <p class="body ds-mesure">Le tri, et l’ouverture d’une fiche par sa ligne, ne s’obtiennent aujourd’hui qu’à la souris, pour deux raisons mesurées sur l’outil&nbsp;: la ligne et l’en-tête ne sont pas focalisables (leur <code>tabIndex</code> vaut −1, la valeur d’un élément que rien ne rend focalisable (aucun attribut <code>tabindex</code> n’est posé)), et rien ne dit le sens du tri sauf la flèche écrite dans le libellé. Ce qu’il faudrait&nbsp;: un lien dans la première cellule, un <code>&lt;button&gt;</code> dans chaque en-tête triable, et <code>aria-sort</code> sur la colonne triée.</p>
+
+        <h3 class="h6">En-têtes</h3>
+        <p class="body ds-mesure"><code>renderTable()</code> écrit des <code>&lt;th&gt;</code> sans <code>scope</code>. Une colonne dont le libellé est vide, comme la colonne d’actions de l’exemple, a un en-tête sans nom.</p>
+
+        <h3 class="h6">Contraste, mesuré</h3>
+        <p class="body ds-mesure">Deux paires du tableau, mesurées dans <code>css/tokens.css</code> au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>en-tête de colonne, 11&nbsp;px en gras, texte discret sur le blanc d’une carte&nbsp;: <strong id="mesure-th">à mesurer depuis un serveur</strong></li>
+          <li>texte discret de 11&nbsp;px sur une ligne survolée&nbsp;: <strong id="mesure-survol">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">La première tient de justesse, parce que le tableau est posé dans une carte blanche. La seconde existe dès qu’une cellule contient un texte discret, comme la référence sous le nom du matériel. Le chapitre <a href="../couleurs.html#dette">Couleurs</a> publie ces deux paires avec ce qu’il faudrait faire.</p>
+
+        <h3 class="h6">Taille de cible</h3>
+        <p class="body ds-mesure">Les boutons d’une ligne sont des <code>btn--sm</code>&nbsp;: <strong id="mesure-haut-sm">à mesurer depuis un serveur</strong> de haut (<code>--size-control-sm</code>), sous les 44&nbsp;px recommandés par WCAG 2.5.5 et au-dessus des 24&nbsp;px minimaux de WCAG 2.5.8.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesurePaire } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/tableau.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/tableau.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/tableau.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
+    // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
+    document.getElementById('cadre-trie').outerHTML = cadreHtml({ fichier: 'tableau.html', demo: 'trie', titre: 'Trois emprunts dans un tableau trié sur la date de retour prévue' });
+    document.getElementById('cadre-vide').outerHTML = cadreHtml({ fichier: 'tableau.html', demo: 'vide', titre: 'Le même tableau sans aucune ligne, avec son état vide' });
+    document.getElementById('code-trie').outerHTML = codeHtml({ fichier: 'tableau.html', demo: 'trie', titre: 'Le HTML que renderTable() rend pour les trois emprunts' });
+    document.getElementById('code-vide').outerHTML = codeHtml({ fichier: 'tableau.html', demo: 'vide', titre: 'Le HTML que renderTable() rend sans aucune ligne' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais écrits
+    // dans la page. Sur un fichier local, le navigateur refuse de lire les règles de la feuille et
+    // la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-th': mesurePaire(valeurs, 'table th'),
+        'mesure-survol': mesurePaire(valeurs, 'table tr:hover'),
+        'mesure-haut-sm': valeurs['--size-control-sm'],
+      });
+    }
+  </script>
+</body>
+</html>

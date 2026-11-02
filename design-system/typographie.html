@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Typographie — Guide de marque MyDigitalSchool</title>
+  <meta name="description" content="Bricolage Grotesque pour les titres, Inter pour le reste : les deux polices, l’échelle complète de l’outil d’emprunt, et deux interdits.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les feuilles du dépôt d’abord, la feuille du site ensuite : c’est elle qui passe le fond en blanc. -->
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <!-- Le texte est écrit ici, lisible dans le fichier. Les démonstrations sont des cadres vers
+       `exemples/typographie.html`, posés par le script : une seule définition du cadre pour tout le site. -->
+  <main id="contenu">
+    <section class="ds-bande">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h1 class="ds-titre-page">La typographie</h1>
+          <p class="ds-chapeau ds-mesure">Deux polices. Bricolage Grotesque pour les titres, Inter pour tout le reste.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-bande" id="polices">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h2 class="ds-titre">Deux polices</h2>
+          <p class="body ds-mesure">Bricolage Grotesque, en ExtraBold, pour les titres et les gros chiffres. Inter, en Regular et en Bold, pour le texte, les boutons et les étiquettes.</p>
+        </div>
+        <div id="cadre-familles"></div>
+        <p class="body-sm ds-oeil ds-mesure">Ces trois graisses sont les seules que l’outil d’emprunt charge. Pour installer les polices, voyez <a class="ds-lien-texte" href="ressources.html">Ressources</a>.</p>
+      </div>
+    </section>
+
+    <section class="ds-bande ds-bande--doux" id="echelle">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h2 class="ds-titre">L’échelle</h2>
+          <p class="body ds-mesure">Chaque style a un nom. C’est ce nom qu’on écrit dans le HTML&nbsp;: <code>class="h5"</code>.</p>
+        </div>
+        <div id="cadre-echelle"></div>
+        <div class="ds-groupe">
+          <h3 class="h6">Quand utiliser lequel</h3>
+          <ul class="ds-liste body">
+            <li><code>.h5</code> pour le titre d’un écran ou d’une fiche, <code>.h6</code> pour celui d’une carte, d’une liste ou d’une fenêtre.</li>
+            <li><code>.kpi-number</code> pour un chiffre clé, seul.</li>
+            <li><code>.body</code> pour le texte à lire, <code>.body-sm</code> dans un tableau, une liste ou une carte.</li>
+            <li><code>.body-tiny</code> pour une mention&nbsp;: un code, une date, une aide.</li>
+            <li><code>.label-lg</code> et <code>.label-md</code> pour un nom ou un libellé qu’on veut voir. Les boutons du kit ont la taille de <code>.label-md</code>, les titres de champ celle de <code>.label-sm</code>.</li>
+            <li><code>.label-caps</code> et <code>.label-mini-caps</code> pour une rubrique en capitales&nbsp;: un en-tête de tableau, une catégorie sur une carte.</li>
+          </ul>
+          <p class="body ds-mesure" data-inemployes>Quatre styles ne servent à aucun écran de l’outil&nbsp;: <code>body-bold</code>, <code>body-sm-bold</code>, <code>label-sm</code> et <code>kpi-number</code>. Ils sont dans le kit, prêts à servir.</p>
+          <p class="body ds-mesure">Le chiffre des cartes KPI a pourtant la taille de <code>kpi-number</code>&nbsp;: la feuille des composants la redéclare sous le nom <code>kpi__value</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-bande" id="interdits">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h2 class="ds-titre">Deux interdits</h2>
+          <p class="body ds-mesure">Ce sont des règles de ce guide, pas d’une charte validée par la marque.</p>
+        </div>
+
+        <div class="ds-groupe" id="melange">
+          <h3 class="h6">Mélanger les deux polices dans un titre</h3>
+          <div id="cadre-melange"></div>
+          <p class="body ds-mesure">Un titre est en Bricolage Grotesque, tout entier. Deux polices dans une même ligne, et l’œil ne sait plus laquelle est la bonne.</p>
+        </div>
+
+        <div class="ds-groupe" id="taille-mini">
+          <h3 class="h6">Descendre sous <code>body-tiny</code> pour du texte à lire</h3>
+          <div id="cadre-taille-mini"></div>
+          <p class="body ds-mesure">Le plus petit texte à lire du kit est <code>body-tiny</code>, 11&nbsp;px. Il sert aux mentions&nbsp;: un code, une date, une aide. En dessous, on ne lit plus, on devine. Les deux étiquettes en capitales vont à 11 et 10&nbsp;px&nbsp;: elles s’arrêtent à quelques mots.</p>
+          <p class="body ds-mesure">Le prototype descend lui-même plus bas, par exemple&nbsp;: 9&nbsp;px dans les cases de la grille des créneaux, 10&nbsp;px dans ses en-têtes et dans la barre de navigation mobile. Ce sont des libellés de quelques caractères, et ils ne sont pas à imiter.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, piedHtml } from './js/chrome.js';
+    import { cadreHtml, brancherCadres } from './js/cadre.js';
+
+    // Cette page est à la racine de design-system/ : l’adresse passée au chrome est `typographie.html`,
+    // et ses cadres visent `exemples/`, pas `../exemples/` (`depuisRacine`).
+    document.getElementById('entete').outerHTML = enteteHtml('typographie.html');
+    document.getElementById('pied').outerHTML = piedHtml();
+
+    document.getElementById('cadre-familles').outerHTML = cadreHtml({ fichier: 'typographie.html', demo: 'familles', titre: 'Les deux polices du kit : Bricolage Grotesque et Inter', depuisRacine: true });
+    document.getElementById('cadre-echelle').outerHTML = cadreHtml({ fichier: 'typographie.html', demo: 'echelle', titre: 'Tous les styles de texte du kit, avec leur nom, leur taille et leur graisse', depuisRacine: true });
+    document.getElementById('cadre-melange').outerHTML = cadreHtml({ fichier: 'typographie.html', demo: 'melange', titre: 'Un titre en deux polices, à ne pas faire, et le même en une seule', depuisRacine: true });
+    document.getElementById('cadre-taille-mini').outerHTML = cadreHtml({ fichier: 'typographie.html', demo: 'taille-mini', titre: 'Un texte en 9 pixels, à ne pas faire, et le même dans un style de l’échelle', depuisRacine: true });
+    // Rien à attendre entre la pose des cadres et cet appel (voir `js/cadre.js`).
+    brancherCadres(document.getElementById('contenu'));
+  </script>
+</body>
+</html>
