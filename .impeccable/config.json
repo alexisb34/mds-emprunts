@@ -17,6 +17,42 @@
         ],
         "createdAt": "2026-10-28T08:00:27.980Z",
         "reason": "planche de specimens : elle rend l'echelle reelle du kit (.label-mini-caps 10px) et une demonstration du trop petit (9px), toutes deux etiquetees sur la page"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "design-system/exemples/modale.html"
+        ],
+        "createdAt": "2026-11-02T09:10:08.311Z",
+        "reason": "cadre d exemple : rend les vrais composants du kit, dette de contraste comprise, que la page documente et mesure"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "design-system/exemples/mobile-shell.html"
+        ],
+        "createdAt": "2026-11-02T09:10:13.049Z",
+        "reason": "cadre d exemple : rend les vrais composants du kit, dette de contraste comprise, que la page documente et mesure"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "design-system/exemples/mobile-listes.html"
+        ],
+        "createdAt": "2026-11-02T09:10:18.958Z",
+        "reason": "cadre d exemple : rend les vrais composants du kit, dette de contraste comprise, que la page documente et mesure"
+      },
+      {
+        "rule": "undersized-ui-text",
+        "value": "*",
+        "files": [
+          "design-system/exemples/mobile-shell.html"
+        ],
+        "createdAt": "2026-11-02T09:10:24.443Z",
+        "reason": "cadre d exemple : la barre mobile du produit est a 10 px, defaut que la page nomme et porte au registre"
       }
     ]
   }
