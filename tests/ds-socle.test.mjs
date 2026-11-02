@@ -4,9 +4,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { posix } from 'node:path';
 import { ratioExact, verdict } from '../design-system/js/contraste.js';
 import { PAIRES } from '../design-system/js/palette-site.js';
 import { CHAPITRES, COMPOSANTS, RUPTURE_ETROITE, brancherSommaire, enteteHtml, piedHtml, sommaireHtml } from '../design-system/js/chrome.js';
+import { pageHtml as pageLogo } from '../design-system/js/logo.js';
+import { pageHtml as pageCouleurs } from '../design-system/js/couleurs.js';
+import { pageHtml as pageRessources } from '../design-system/js/telechargement.js';
+import { lireTokens, valeursDepuis, sommaireGroupesHtml, tableauTokensHtml } from '../design-system/js/tokens.js';
 
 const lire = (chemin) => readFileSync(new URL(`../design-system/${chemin}`, import.meta.url), 'utf8');
 
@@ -345,4 +350,99 @@ test('le détecteur d’enfants directs voit bien un enfant mal placé', () => {
   const mauvais = '<div class="ds-colonnes"><div class="cadre"><div id="sommaire"></div><main id="contenu"></main></div></div>';
   assert.deepEqual(enfantsDirects(bon, 'ds-colonnes'), ['div#sommaire', 'main#contenu']);
   assert.deepEqual(enfantsDirects(mauvais, 'ds-colonnes'), ['div']);
+});
+
+// ---- La passe finale : titres et entrée dans le site, sur toutes les pages ----
+//
+// « Toutes les pages » est ici `design-system/*.html` et `design-system/composants/*.html` : les
+// dix-neuf pages qu'une personne ouvre. Les fichiers de `design-system/exemples/` sont des pages
+// isolées, rendues dans un cadre, qui ne chargent que les feuilles de l'outil : leur mettre
+// l'en-tête du site contredirait la décision centrale du projet (le cadre montre le composant, rien
+// d'autre). Ils sont tenus par tests/ds-cadre.test.mjs et tests/deploiement.test.mjs.
+
+const PAGES_DU_SITE = ['index.html', ...CHAPITRES.map((c) => c.href), ...COMPOSANTS.map((c) => c.href)];
+
+// Le HTML qu'une personne verra, pas celui du fichier : quatre pages remplacent leur contenu par
+// un module (logo, couleurs, ressources) ou y ajoutent le tableau des tokens (fondations). On
+// reconstitue ce que ces modules posent, avec les vraies fonctions et les vraies feuilles.
+const TOKENS_CSS = readFileSync(new URL('../css/tokens.css', import.meta.url), 'utf8');
+const SOURCES_LOGO = { couleur: 'assets/logo.svg', blanc: 'blob:blanc', anthracite: 'blob:anthracite', violet: 'blob:violet' };
+function htmlRendu(page) {
+  const html = lire(page);
+  const dans = (motif, contenu) => {
+    const m = html.match(motif);
+    assert.ok(m, `${page} : l'endroit où le module pose son contenu n'est plus là`);
+    return html.replace(m[0], m[1] + contenu + m[2]);
+  };
+  if (page === 'logo.html') return dans(/(<main id="contenu">)[\s\S]*?(<\/main>)/, pageLogo(SOURCES_LOGO));
+  if (page === 'couleurs.html') return dans(/(<main id="contenu">)[\s\S]*?(<\/main>)/, pageCouleurs(valeursDepuis(TOKENS_CSS)));
+  if (page === 'ressources.html') return dans(/(<main id="contenu">)[\s\S]*?(<\/main>)/, pageRessources({ sources: SOURCES_LOGO, groupes: lireTokens(TOKENS_CSS) }));
+  if (page === 'composants/fondations.html') {
+    const groupes = lireTokens(TOKENS_CSS);
+    return dans(/(<div id="tokens"[^>]*>)[\s\S]*?(<\/div>\s*<\/main>)/, sommaireGroupesHtml(groupes) + tableauTokensHtml(groupes));
+  }
+  return html;
+}
+
+// Les niveaux de titre dans l'ordre du document, hors scripts et commentaires.
+const niveaux = (html) => [...html.replace(/<script[\s\S]*?<\/script>|<!--[\s\S]*?-->/g, '').matchAll(/<h([1-6])\b/g)].map((m) => Number(m[1]));
+// Le défaut d'une suite de niveaux, ou null : un seul h1 qui ouvre la page, jamais de saut vers le bas.
+function defautDeTitres(suite) {
+  if (suite.filter((n) => n === 1).length !== 1) return `${suite.filter((n) => n === 1).length} h1 au lieu d'un`;
+  if (suite[0] !== 1) return `la page s'ouvre sur un h${suite[0]}`;
+  for (let i = 1; i < suite.length; i++) if (suite[i] - suite[i - 1] > 1) return `saut de h${suite[i - 1]} à h${suite[i]} (titre n° ${i + 1})`;
+  return null;
+}
+
+test('chaque page du design system a une hiérarchie de titres correcte', () => {
+  assert.equal(PAGES_DU_SITE.length, 19, 'le site n’a plus dix-neuf pages : la liste ou le chrome a changé');
+  for (const page of PAGES_DU_SITE) {
+    const suite = niveaux(htmlRendu(page));
+    assert.ok(suite.length >= 4, `${page} : ${suite.length} titres seulement, la page rendue n'est pas celle qu'on croit`);
+    assert.equal(defautDeTitres(suite), null, `${page} : ${defautDeTitres(suite)}`);
+  }
+});
+
+test('le détecteur de titres voit un saut de niveau, un h1 en trop et une page sans h1', () => {
+  assert.equal(defautDeTitres([1, 2, 3, 2, 3]), null);
+  assert.equal(defautDeTitres([1, 3]), 'saut de h1 à h3 (titre n° 2)');
+  assert.equal(defautDeTitres([1, 2, 4]), 'saut de h2 à h4 (titre n° 3)');
+  assert.equal(defautDeTitres([1, 2, 1]), '2 h1 au lieu d\'un');
+  assert.equal(defautDeTitres([2, 3]), '0 h1 au lieu d\'un');
+  // Remonter d'un coup est permis : on ferme une section.
+  assert.equal(defautDeTitres([1, 2, 3, 4, 2]), null);
+});
+
+test('le rendu reconstitué des quatre pages construites par un module garde leur h1 unique', () => {
+  // Garde le test précédent honnête : le contenu du fichier seul (message d'attente compris) ne dit
+  // pas ce qu'on verra, et un module qui ajouterait un second h1 passerait inaperçu sans cela.
+  for (const page of ['logo.html', 'couleurs.html', 'ressources.html', 'composants/fondations.html']) {
+    assert.notEqual(htmlRendu(page), lire(page), `${page} : le rendu n'a rien remplacé`);
+    assert.equal(niveaux(htmlRendu(page)).filter((n) => n === 1).length, 1, `${page} : un seul h1 attendu une fois le module passé`);
+  }
+});
+
+test('chaque page du design system mène au reste du site', () => {
+  for (const page of PAGES_DU_SITE) {
+    const html = lire(page);
+    const dossier = page.includes('/') ? 'composants/' : '';
+    // La page pose l'en-tête et le pied, avec SA propre adresse (voir le test de composants/ plus haut).
+    assert.ok(html.includes('<div id="entete"></div>'), `${page} : pas d'emplacement pour l'en-tête`);
+    assert.ok(html.includes(`document.getElementById('entete').outerHTML = enteteHtml('${page}');`), `${page} ne pose pas enteteHtml('${page}')`);
+    assert.ok(html.includes('<div id="pied"></div>'), `${page} : pas d'emplacement pour le pied`);
+    assert.match(html, new RegExp(`document\\.getElementById\\('pied'\\)\\.outerHTML = piedHtml\\(${dossier ? `'${page}'` : ''}\\);`), `${page} ne pose pas son pied`);
+    assert.ok(html.includes(`from '${dossier ? '../' : './'}js/chrome.js'`), `${page} n'importe pas le chrome depuis le bon dossier`);
+
+    // Ce que le chrome écrit pour CETTE page : le lien de la marque vers l'accueil, l'entrée de
+    // l'étage composants, et chaque chapitre ; et chacune de ces adresses mène à un fichier réel.
+    const chrome = enteteHtml(page) + piedHtml(dossier ? page : '');
+    const base = dossier ? '../' : '';
+    assert.ok(chrome.includes(`href="${base}index.html"`), `${page} : le chrome ne ramène pas à l'accueil`);
+    assert.ok(chrome.includes(`href="${base}composants/demarrer.html"`), `${page} : le chrome ne mène pas à Démarrer`);
+    for (const c of CHAPITRES) assert.ok(chrome.includes(`href="${base}${c.href}"`), `${page} : le chrome ne mène pas à ${c.titre}`);
+    for (const [, cible] of chrome.matchAll(/href="([^"#]+)"/g)) {
+      const fichier = posix.normalize(posix.join(dossier, cible));
+      assert.doesNotThrow(() => readFileSync(new URL(`../design-system/${fichier}`, import.meta.url)), `${page} : ${cible} mène à ${fichier}, qui n'existe pas`);
+    }
+  }
 });

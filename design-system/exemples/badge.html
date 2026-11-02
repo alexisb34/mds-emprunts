@@ -15,6 +15,13 @@
   <link rel="stylesheet" href="../../css/components.css">
   <style>
     body { padding: var(--space-lg); }
+    /* Sur un cadre de téléphone, la liste perdait sa colonne « Badge », coupée sans aucune indication.
+       On resserre les marges de CETTE liste, pas celles du composant : le tableau du kit ne se replie pas. */
+    @media (max-width: 480px) {
+      body { padding: var(--space-sm); }
+      [data-demo="familles"] .card { padding: 0; }
+      [data-demo="familles"] .table th, [data-demo="familles"] .table td { padding-left: var(--space-xs); padding-right: var(--space-xs); }
+    }
   </style>
 </head>
 <body>

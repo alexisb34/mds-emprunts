@@ -687,9 +687,15 @@ test('la largeur de téléphone est nommée une fois, et sert au cadre', () => {
   assert.match(css, /\.ds-cadre--etroit\s*\{[^}]*var\(--ds-cadre-telephone\)/);
   for (const f of fichiersExemples()) {
     const style = [...lireExemple(f).matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
-    assert.doesNotMatch(style, /max-width/,
+    // Une DÉCLARATION `max-width: …` donne sa largeur à l'exemple. Une condition `@media (max-width: …)`
+    // n'en donne aucune : elle réagit à la largeur du cadre, et c'est ce qu'un exemple a le droit de faire
+    // (le `(` qui précède la distingue).
+    assert.doesNotMatch(style, /(?<![(\w-])max-width\s*:/,
       `${f} se donne sa propre largeur : c’est le cadre qui la porte, par cadreHtml({ etroit: true })`);
   }
+  const declaration = /(?<![(\w-])max-width\s*:/;
+  assert.match('body { max-width: 360px; }', declaration, 'le détecteur ne voit plus une largeur déclarée');
+  assert.doesNotMatch('@media (max-width: 480px) { body { padding: 0; } }', declaration, 'le détecteur prend une condition @media pour une largeur');
   // Et la page s'en sert pour la démonstration qui en a besoin.
   assert.match(pageBouton(), /demo: 'bloc'[^}]*etroit: true|etroit: true[^}]*demo: 'bloc'/);
 });
