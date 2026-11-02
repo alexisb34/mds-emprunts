@@ -31,6 +31,19 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   périmée. Elle l’est déjà restée une fois : la première version de cette ligne disait « aucun
   style de focus visible », ce qu’un lecteur réfutait en tabulant trois secondes.
 
+- **La modale ne se ferme pas avec Échap et ne piège pas le focus** (2 novembre 2026). Repérés en
+  documentant la page Modale et retours du design system (`design-system/composants/modale.html`).
+  `openModal`, dans `js/ui.js`, ne se ferme que par la croix, le clic sur le fond, un bouton d’action
+  ou `closeModal()`. (1) **Aucune fermeture par Échap** : ni `js/ui.js` ni aucun autre fichier de
+  `js/` n’écoute le clavier pour une modale ; le seul `keydown` du dépôt est la recherche globale
+  de l’administration. (2) **Aucun piège de focus** : `openModal` ne déplace pas le focus à
+  l’ouverture, ne le rend pas à la fermeture et ne rend rien d’autre inerte. Le focus reste sur le
+  bouton qui a ouvert la modale, derrière le fond, et `#modal-root` vient après le contenu dans
+  l’ordre du balisage : un utilisateur du clavier atteint la modale en dernier. La seule modale qui
+  déplace le focus est celle du scan (`js/scanModal.js`), dans son champ. Reste à décider dans
+  Figma où le focus arrive à l’ouverture (le titre, le premier champ, l’action principale) et où il
+  retourne, puis à le porter dans `js/ui.js`. La page nomme ces deux manques en attendant.
+
 - **Seize paires de couleurs du kit sont sous le seuil de lisibilité de 4,5:1** (constat du
   26 octobre 2026). Mesuré en écrivant le chapitre Couleurs du design system
   (`design-system/couleurs.html`), qui les publie telles quelles, avec leur ratio. La décision

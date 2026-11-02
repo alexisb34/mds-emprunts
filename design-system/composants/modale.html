@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modale et retours — Design system MyDigitalSchool</title>
+  <meta name="description" content="La modale et le toast, qui s’appellent par js/ui.js et ne s’écrivent jamais à la main, et l’alerte, qui est du HTML. L’API, les deux conteneurs à poser, et ce qui manque.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Modale et retours</h1>
+        <p class="ds-chapeau ds-mesure">Trois façons de répondre à ce que fait la personne. La modale et le toast s’appellent par une fonction&nbsp;; l’alerte est du HTML.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <ul class="ds-liste body">
+          <li><strong>L’alerte</strong> (<code>.alert</code>) reste dans la page et se lit à son rythme&nbsp;: un constat, une consigne.</li>
+          <li><strong>Le toast</strong> (<code>toast()</code>) apparaît quelques secondes puis s’efface&nbsp;: la confirmation d’une action qui vient de réussir, ou de rater.</li>
+          <li><strong>La modale</strong> (<code>openModal()</code>) interrompt et demande une décision.</li>
+        </ul>
+        <p class="body ds-mesure"><strong>Personne n’écrit une modale à la main.</strong> <code>openModal</code> pose elle-même le balisage, les rôles ARIA, le bouton Fermer, le fond cliquable et le blocage du défilement, et elle libère les ressources de la modale précédente. Cette page documente donc une API, pas du HTML à recopier&nbsp;: c’est pourquoi la modale et le toast n’ont pas de bloc de code.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <h3 class="h6">La modale, ouverte par openModal</h3>
+        <p class="body ds-mesure">Le bouton appelle la vraie fonction. Confirmer lance, à son tour, un vrai toast.</p>
+        <div id="cadre-modale"></div>
+        <h3 class="h6">Les toasts, une variante après l’autre</h3>
+        <p class="body ds-mesure">Dans l’outil, les toasts s’empilent en bas de l’écran, dans <code>#toast-root</code>. Ici ils sont posés l’un sous l’autre pour qu’on les voie tous&nbsp;: le balisage est celui que <code>toast()</code> écrit.</p>
+        <div id="cadre-toasts"></div>
+        <h3 class="h6">Les alertes</h3>
+        <div id="cadre-alertes"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6"><code>openModal({ title, body, actions, onClose })</code></h3>
+        <ul class="ds-liste body">
+          <li><code>title</code>&nbsp;: du texte. La fonction l’échappe.</li>
+          <li><code>body</code> est du HTML brut. La fonction ne l’échappe pas&nbsp;: <strong>l’appelant échappe lui-même</strong> chaque donnée avec <code>escapeHtml</code>, de <code>js/ui.js</code>. Par exemple <code>`&lt;p&gt;${escapeHtml(nom)}&lt;/p&gt;`</code>.</li>
+          <li><code>actions</code>&nbsp;: un tableau, vide par défaut, de <code>{ label, variant, onClick, close }</code>. Sans actions, le pied de la modale est vide&nbsp;: seuls la croix, le fond et <code>closeModal()</code> la ferment.
+            <ul class="ds-liste body">
+              <li><code>label</code>&nbsp;: du texte, échappé.</li>
+              <li><code>variant</code>&nbsp;: devient la classe <code>btn--</code> suivie de la valeur, <code>secondary</code> par défaut. Les variantes sont celles du bouton&nbsp;: <a href="bouton.html">Bouton</a>. <code>variant</code> n’est pas échappé&nbsp;: c’est un mot du code, jamais une donnée.</li>
+              <li><code>onClick(modal)</code>&nbsp;: reçoit l’élément <code>.modal</code>, pour lire ses champs. La fonction attend son résultat, donc il peut être <code>async</code>. Un <code>onClick</code> qui rend <code>false</code> garde la modale ouverte. Seul <code>false</code> compte&nbsp;: <code>undefined</code>, <code>0</code> ou rien la ferment. Un <code>onClick</code> qui lève une exception la laisse ouverte aussi.</li>
+              <li><code>close: false</code>&nbsp;: la modale reste ouverte quoi que fasse l’action.</li>
+            </ul>
+          </li>
+          <li><code>onClose</code>&nbsp;: appelé une seule fois, une fois le DOM nettoyé, quelle que soit la façon dont la modale se ferme&nbsp;: bouton d’action, croix, clic sur le fond, <code>closeModal()</code>, ou ouverture d’une autre modale. C’est là qu’on libère une caméra ou un minuteur.</li>
+        </ul>
+        <p class="body ds-mesure"><strong>La valeur rendue</strong> est une fonction de fermeture. Elle ne ferme que SA modale&nbsp;: si une autre s’est ouverte entre-temps, elle ne fait rien. C’est celle qu’on appelle après un <code>await</code>.</p>
+
+        <h3 class="h6"><code>closeModal()</code></h3>
+        <p class="body ds-mesure">Ferme la modale à l’écran, quelle qu’elle soit, et appelle son <code>onClose</code>. Sans modale ouverte, elle ne fait rien. Pour fermer la sienne, employez la fonction rendue par <code>openModal</code>.</p>
+
+        <h3 class="h6"><code>toast(message, variant, ms)</code></h3>
+        <ul class="ds-liste body">
+          <li><code>message</code> est du texte, jamais du HTML&nbsp;: il passe par <code>textContent</code>.</li>
+          <li><code>variant</code>&nbsp;: <code>'info'</code> par défaut. <code>success</code>, <code>error</code> et <code>warning</code> ont chacun une teinte. <code>toast--info</code> n’a aucune règle&nbsp;: <code>info</code> est le fond sombre de base. Une valeur inconnue est acceptée, sans erreur et sans teinte.</li>
+          <li><code>ms</code>&nbsp;: la durée, 3000 ms par défaut. Le fondu commence 300 ms avant la fin.</li>
+          <li>Chaque toast est ajouté à <code>#toast-root</code> et porte <code>role="status"</code>. Ils s’empilent&nbsp;; il n’y a aucun bouton pour le fermer, et <code>#toast-root</code> pose <code>pointer-events: none</code>&nbsp;: on ne peut pas non plus cliquer dessus.</li>
+        </ul>
+
+        <h3 class="h6">Ce que la page hôte doit contenir</h3>
+        <p class="body ds-mesure">Deux conteneurs vides, après le contenu et avant les scripts&nbsp;: <code>&lt;div id="modal-root"&gt;&lt;/div&gt;</code> et <code>&lt;div id="toast-root"&gt;&lt;/div&gt;</code>. <code>index.html</code>, <code>admin.html</code> et <code>mobile.html</code> les posent tous les deux, comme <code>kit.html</code>. Sans eux, <code>openModal</code> et <code>toast</code> lèvent une exception&nbsp;; <code>closeModal</code> se tait.</p>
+        <ul class="ds-liste body">
+          <li><code>#toast-root</code> est habillé par <code>css/components.css</code>&nbsp;: fixe, en bas au centre, en pile.</li>
+          <li><code>#modal-root</code> n’a aucune règle. Le fond est <code>.modal-backdrop</code>, de la même feuille.</li>
+          <li>Pendant qu’une modale est ouverte, <code>openModal</code> pose <code>has-modal</code> sur le <code>body</code> et <code>closeModal</code> la retire. La classe bloque le défilement de la page (<code>overflow: hidden</code>)&nbsp;: ne la posez jamais à la main.</li>
+          <li>Sur l’écran du téléphone, <code>css/mobile.css</code> remonte <code>#toast-root</code> de 88&nbsp;px, plus la zone sûre, pour passer au-dessus de la barre du bas&nbsp;: <a href="mobile.html">Mobile</a>.</li>
+        </ul>
+
+        <h3 class="h6">Les dimensions</h3>
+        <p class="body ds-mesure">La modale fait 560&nbsp;px au plus et 90&nbsp;% de la hauteur de l’écran&nbsp;; son contenu défile au-delà. La croix mesure 32&nbsp;px.</p>
+
+        <h3 class="h6">L’alerte</h3>
+        <p class="body ds-mesure"><code>.alert</code> et une variante, <code>.alert--warning</code>, <code>.alert--error</code> ou <code>.alert--info</code>. Il n’y a pas de fonction&nbsp;: les vues écrivent l’alerte en HTML, comme <code>js/mobile/views/accueil.js</code>, et échappent elles-mêmes le texte. Écrivez toujours la variante&nbsp;: sans variante, une alerte n’a pas de fond.</p>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+
+        <h3 class="h6">L’alerte, en HTML</h3>
+        <div id="code-alertes"></div>
+
+        <h3 class="h6">La modale et le toast, en JavaScript</h3>
+        <p class="body ds-mesure">Les trois gestes que l’outil emploie, du plus simple au plus fréquent&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>Informer, sans action&nbsp;: <code>openModal({ title: 'Titre', body: '&lt;p class="body-sm"&gt;Texte&lt;/p&gt;' })</code></li>
+          <li>Demander, puis garder la modale ouverte si l’action échoue&nbsp;: dans <code>onClick</code>, un <code>try</code> qui appelle l’action, et dans le <code>catch</code>, <code>toast(err.message, 'error'); return false;</code>. C’est le motif de <code>js/admin/views/maintenance.js</code>.</li>
+          <li>Garder la fonction de fermeture&nbsp;: <code>const fermer = openModal({ … });</code>, puis <code>fermer()</code> quand le travail asynchrone se termine. <code>js/scanModal.js</code> la garde ainsi, sous le nom <code>close</code>.</li>
+        </ul>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour écrire une modale à la main.</strong> Un <code>&lt;div class="modal"&gt;</code> posé dans une page n’aurait ni rôle, ni fond cliquable, ni libération des ressources&nbsp;: appelez <code>openModal</code>.</li>
+          <li><strong>Pour une information qu’il faut relire.</strong> Un toast disparaît au bout de 3&nbsp;s et on ne peut pas l’arrêter. Écrivez une alerte, <code>.alert</code>, dans la page.</li>
+          <li><strong>Pour une erreur de champ.</strong> Elle se dit sous le champ, pas dans une fenêtre&nbsp;: <a href="formulaires.html">Formulaires</a>.</li>
+          <li><strong>Pour un parcours en plusieurs étapes.</strong> Une seule modale à la fois&nbsp;: la seconde remplace la première et appelle son <code>onClose</code>. Faites-en un écran, avec un lien de retour&nbsp;: <a href="navigation.html">Navigation</a>.</li>
+          <li><strong>Pour un long contenu.</strong> La modale s’arrête à 90&nbsp;% de la hauteur de l’écran et défile. Un contenu long est un écran&nbsp;: <a href="navigation.html">Navigation</a>.</li>
+          <li><strong>Pour confirmer une action sans conséquence.</strong> Une confirmation qui ne défait rien est du bruit&nbsp;: faites l’action, puis lancez <code>toast('…', 'success')</code>.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Ce que la modale pose déjà</h3>
+        <p class="body ds-mesure">Le balisage que <code>openModal</code> écrit porte <code>role="dialog"</code>, <code>aria-modal="true"</code> et <code>aria-labelledby</code>, qui désigne le titre (un <code>h2</code> d’identifiant <code>modal-title</code>&nbsp;: une seule modale à la fois, donc un seul identifiant). La croix porte <code>aria-label="Fermer"</code>.</p>
+
+        <h3 class="h6">Ce qui manque</h3>
+        <p class="body ds-mesure"><strong>Aucune fermeture par Échap.</strong> <code>js/ui.js</code> n’écoute aucune touche, et aucun autre fichier de <code>js/</code> ne le fait pour une modale&nbsp;: le seul écouteur de clavier du dépôt est la recherche globale de l’administration. La croix, le fond et les boutons d’action sont les seules sorties.</p>
+        <p class="body ds-mesure"><strong>Aucun piège de focus.</strong> À l’ouverture, <code>js/ui.js</code> ne déplace pas le focus&nbsp;: il n’appelle ni <code>focus()</code>, ni <code>inert</code>, ni <code>tabindex</code>. La seule exception est la modale de scan, <code>js/scanModal.js</code>, qui met le focus dans son propre champ. Dans l’ordre du balisage, <code>#modal-root</code> vient après le contenu&nbsp;: la modale est donc la dernière que Tab atteint, derrière toute la page. À la fermeture, rien ne rend le focus.</p>
+        <p class="body ds-mesure">Ces deux manques sont reportés dans <code>docs/correctifs-figma.md</code>, à trancher avec la maquette avant de les coder.</p>
+
+        <h3 class="h6">Les retours qui s’effacent, et ceux qui restent</h3>
+        <p class="body ds-mesure">Le toast porte <code>role="status"</code> mais <code>#toast-root</code> n’est pas lui-même une région de statut, et le toast naît déjà plein. <strong>Qu’un lecteur d’écran l’annonce n’a pas été vérifié.</strong> Sa durée est fixe et on ne peut pas l’interrompre&nbsp;: n’y mettez rien qu’il faille relire. Constat à côté&nbsp;: aucune alerte de l’outil ne porte de rôle ARIA ni de région live&nbsp;; elles se lisent en parcourant la page.</p>
+
+        <h3 class="h6">Contraste, mesuré</h3>
+        <p class="body ds-mesure">Les paires des retours, mesurées dans <code>css/tokens.css</code> au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>toast de base, 14&nbsp;px en gras, blanc sur le gris foncé&nbsp;: <strong id="mesure-toast">à mesurer depuis un serveur</strong></li>
+          <li><code>toast--success</code>&nbsp;: <strong id="mesure-toast-success">à mesurer depuis un serveur</strong></li>
+          <li><code>toast--error</code>&nbsp;: <strong id="mesure-toast-error">à mesurer depuis un serveur</strong></li>
+          <li><code>toast--warning</code>, texte foncé sur le jaune&nbsp;: <strong id="mesure-toast-warning">à mesurer depuis un serveur</strong></li>
+          <li><code>alert--warning</code>, 14&nbsp;px&nbsp;: <strong id="mesure-alert-warning">à mesurer depuis un serveur</strong></li>
+          <li><code>alert--error</code>&nbsp;: <strong id="mesure-alert-error">à mesurer depuis un serveur</strong></li>
+          <li><code>alert--info</code>&nbsp;: <strong id="mesure-alert-info">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Quatre de ces paires sont celles que le chapitre <a href="../couleurs.html#dette">Couleurs</a> publie comme sous le seuil de 4,5:1&nbsp;; la correction est à décider dans Figma.</p>
+
+        <h3 class="h6">Taille de cible</h3>
+        <p class="body ds-mesure">La croix de la modale mesure 32&nbsp;px, sous les 44&nbsp;px que recommande WCAG 2.5.5 et que respecte <a href="bouton.html">le bouton</a>. Le fond cliquable et les boutons d’action sont d’autres sorties, plus grandes.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesurePaire, mesureTexte } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/modale.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/modale.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/modale.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair. Seule l'alerte a un bloc de
+    // code : celui d'une modale ou d'un toast serait du HTML à recopier, ce que la page déconseille.
+    // Les blocs de code sont posés AVANT de brancher, et rien n'est attendu (`await`) entre les deux.
+    document.getElementById('cadre-modale').outerHTML = cadreHtml({ fichier: 'modale.html', demo: 'modale', titre: 'Un bouton qui ouvre une vraie modale, avec ses deux actions' });
+    document.getElementById('cadre-toasts').outerHTML = cadreHtml({ fichier: 'modale.html', demo: 'toasts', titre: 'Les quatre variantes de toast, l’une sous l’autre' });
+    document.getElementById('cadre-alertes').outerHTML = cadreHtml({ fichier: 'modale.html', demo: 'alertes', titre: 'Les trois alertes : avertissement, erreur, information' });
+    document.getElementById('code-alertes').outerHTML = codeHtml({ fichier: 'modale.html', demo: 'alertes', titre: 'Les trois alertes : avertissement, erreur, information' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes sont MESURÉS dans `css/tokens.css`, jamais écrits dans la page. Sur un fichier
+    // local, le navigateur refuse de lire les règles de la feuille et la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-toast': mesureTexte(valeurs, '--text-inverse', '--text-primary', 14, true),
+        'mesure-toast-success': mesurePaire(valeurs, 'toast--success'),
+        'mesure-toast-error': mesurePaire(valeurs, 'toast--error'),
+        'mesure-toast-warning': mesureTexte(valeurs, '--text-primary', '--feedback-warning', 14, true),
+        'mesure-alert-warning': mesureTexte(valeurs, '--status-maintenance-text', '--status-maintenance-bg', 14),
+        'mesure-alert-error': mesurePaire(valeurs, 'alert--error'),
+        'mesure-alert-info': mesurePaire(valeurs, 'alert--info'),
+      });
+    }
+  </script>
+</body>
+</html>

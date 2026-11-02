@@ -1,5 +1,5 @@
-// Les pages de composants des Tasks 10 et 11 : Badge et étiquette, Avatar, Formulaires, Cartes,
-// Tableau, Carte KPI, Navigation, Icônes.
+// Les pages de composants des Tasks 10 à 13 : Badge et étiquette, Avatar, Formulaires, Cartes,
+// Tableau, Carte KPI, Navigation, Icônes, Modale et retours, Mobile (et Démarrer).
 //
 // Ce que ce fichier tient, et ce qu'il ne tient pas :
 //   - il LIT components.css, admin.css, mobile.css, tokens.css et le code de l'outil (js/, les pages
@@ -16,7 +16,7 @@ import './helpers/storage.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { badge, avatar } from '../js/ui.js';
+import { badge, avatar, openModal, closeModal, toast, escapeHtml } from '../js/ui.js';
 import { LABELS } from '../js/models.js';
 import { renderTable, sortRows, toggleSort, bindTable } from '../js/admin/table.js';
 import { sidebarHtml } from '../js/admin/layout.js';
@@ -70,7 +70,10 @@ const utilise = (motif) => SOURCES.filter((s) => motif.test(s.source)).map((s) =
 
 const PAGES_10 = ['badge', 'avatar', 'formulaires', 'cartes'];
 const PAGES_11 = ['tableau', 'kpi', 'navigation', 'icones'];
-const PAGES = [...PAGES_10, ...PAGES_11];
+const PAGES_12_13 = ['modale'];
+const PAGES = [...PAGES_10, ...PAGES_11, ...PAGES_12_13];
+// Les fichiers de design-system/exemples/ que ces pages montrent (Démarrer a le sien, sans page de composant à lui).
+const EXEMPLES = [...PAGES_10, ...PAGES_11, 'onglets-admin', 'modale'];
 
 // ---- Les tests du brief, mot pour mot ----
 
@@ -101,7 +104,7 @@ test('le tag — .chip — est documenté avec le badge, et distingué de lui', 
 
 // ---- Ce que tiennent les huit pages ensemble ----
 
-test('chaque page des tâches 10 et 11 existe avec son exemple, son h1 et son chrome', () => {
+test('chaque page des tâches 10 à 13 existe avec son exemple, son h1 et son chrome', () => {
   for (const nom of PAGES) {
     assert.ok(existsSync(new URL(`${nom}.html`, DOSSIER_COMPOSANTS)), `composants/${nom}.html manque`);
     const html = page(nom);
@@ -121,8 +124,8 @@ test('chaque page des tâches 10 et 11 existe avec son exemple, son h1 et son ch
   }
 });
 
-test('chaque page a un fichier d’exemple, et les exemples des tâches 10 et 11 sont ceux qu’on attend', () => {
-  for (const nom of [...PAGES, 'onglets-admin']) assert.ok(existsSync(new URL(`../design-system/exemples/${nom}.html`, import.meta.url)), `exemples/${nom}.html manque`);
+test('chaque page a un fichier d’exemple, et les exemples des tâches 10 à 13 sont ceux qu’on attend', () => {
+  for (const nom of EXEMPLES) assert.ok(existsSync(new URL(`../design-system/exemples/${nom}.html`, import.meta.url)), `exemples/${nom}.html manque`);
 });
 
 test('aucune page n’écrit de valeur de couleur en dur dans sa prose', () => {
@@ -137,7 +140,7 @@ test('aucune page ne pose d’étiquette en capitales au-dessus d’un titre', (
 });
 
 // Les noms que les pages disent ne pas exister : nommés pour être refusés, jamais pour être employés.
-const INEXISTANTES = new Set(['kpi--brand', 'kpi--teal', 'avatar--lg']);
+const INEXISTANTES = new Set(['kpi--brand', 'kpi--teal', 'avatar--lg', 'toast--info']);
 
 test('toute classe à double tiret ou double souligné que la prose écrit existe dans une feuille du dépôt', () => {
   // Les pages parlent en noms de classes : `badge--late`, `nav-item__count`. Aucun ne doit être inventé.
@@ -158,7 +161,7 @@ test('toute classe à double tiret ou double souligné que la prose écrit exist
   assert.ok(vus >= PAGES.length * 7, `${vus} nom(s) de classe lus : le détecteur ne voit plus les pages`);
 });
 
-test('les trois noms que les pages disent inexistants le sont, et le détecteur sait en refuser un', () => {
+test('les quatre noms que les pages disent inexistants le sont, et le détecteur sait en refuser un', () => {
   for (const c of INEXISTANTES) assert.doesNotMatch(TOUT_LE_CSS, new RegExp(`\\.${c}(?![\\w-])`), `${c} existe maintenant : la page doit changer`);
   // Garde le test précédent honnête : un nom inventé n'est pas dans le CSS.
   assert.doesNotMatch(TOUT_LE_CSS, /\.badge--inventee(?![\w-])/);
@@ -1057,4 +1060,436 @@ test('icônes : le bouton central et la flèche de retour portent un aria-label,
   assert.match(layout, /class="m-nav__scan" href="#\/scan" aria-label="Scanner un QR code"/);
   assert.match(layout, /class="m-header__back" href="#\$\{back\}" aria-label="Retour"/);
   assert.match(lire('js/mobile/views/salle.js'), /aria-label="Semaine précédente">←<\/button>/);
+});
+
+// ======================= MODALE ET RETOURS (Task 12) =======================
+//
+// Ce que ces tests tiennent : chaque phrase de la page Modale qui parle du comportement de `openModal`,
+// `closeModal` ou `toast` est confrontée à la VRAIE fonction, appelée sur un faux document (ci-dessous),
+// pas à une copie ; chaque phrase sur ce que le dépôt ne fait pas (Échap, focus) est confrontée au code de
+// `js/`. Ils NE disent PAS ce qu'un lecteur d'écran annonce, ni si le focus se comporte comme la page le
+// décrit dans un vrai navigateur : cela se regarde, et le rapport de la tâche dit ce qui l'a été.
+
+// Un faux document : ce que `openModal` et `toast` y écrivent, et les boutons qu'ils y câblent.
+function fauxDocument({ modal = true, retours = true } = {}) {
+  const boutons = [];
+  const bouton = (dataset = {}) => {
+    const b = { dataset, g: {}, addEventListener(type, f) { this.g[type] = f; }, clic(cible = this) { return this.g.click({ target: cible }); } };
+    boutons.push(b);
+    return b;
+  };
+  const classes = new Set();
+  const element = { nom: '.modal' };
+  const racine = {
+    innerHTML: '',
+    querySelector: (s) => (s === '.modal' ? element : null),
+    querySelectorAll(s) {
+      if (s === '[data-close]') return [...this.innerHTML.matchAll(/data-close/g)].map(() => bouton());
+      if (s === '.modal__footer [data-action]') return [...this.innerHTML.matchAll(/data-action="(\d+)"/g)].map((m) => bouton({ action: m[1] }));
+      return [];
+    },
+  };
+  const toasts = { enfants: [], appendChild(e) { this.enfants.push(e); } };
+  const document = {
+    getElementById: (id) => (id === 'modal-root' && modal ? racine : id === 'toast-root' && retours ? toasts : null),
+    createElement: () => {
+      const e = { className: '', textContent: '', attributs: {}, ajoutees: [], retire: false, setAttribute(k, v) { e.attributs[k] = v; }, classList: { add: (c) => e.ajoutees.push(c) }, remove() { e.retire = true; } };
+      return e;
+    },
+    body: { classList: { add: (c) => classes.add(c), remove: (c) => classes.delete(c) } },
+  };
+  return { document, racine, toasts, boutons, classes, element };
+}
+
+// Exécute `fn` avec ce faux document et un `setTimeout` qui note les délais sans rien attendre.
+function avecDocument(options, fn) {
+  const f = fauxDocument(options);
+  const avantDocument = globalThis.document;
+  const avantMinuteur = globalThis.setTimeout;
+  f.minuteurs = [];
+  globalThis.document = f.document;
+  globalThis.setTimeout = (fonction, ms) => { f.minuteurs.push(ms); return 0; };
+  const fin = () => { globalThis.document = avantDocument; globalThis.setTimeout = avantMinuteur; };
+  let r;
+  try { closeModal(); r = fn(f); } catch (e) { fin(); throw e; }
+  if (r && typeof r.then === 'function') return r.finally(fin);
+  fin();
+  return r;
+}
+
+const UI = lire('js/ui.js');
+const ECRANS_ET_RACINES = ['index.html', 'admin.html', 'mobile.html', 'kit.html'];
+
+test('la page Modale documente l’API JS, ses racines et ses manques', () => {
+  const html = page('modale');
+  for (const attendu of ['openModal', 'closeModal', 'toast', 'modal-root', 'toast-root', 'has-modal']) {
+    assert.match(html, new RegExp(attendu), `${attendu} n’est pas documenté`);
+  }
+  assert.match(html, /chappe/i);     // pas de fermeture au clavier : manque nommé
+  assert.match(html, /focus/i);      // pas de piège de focus : manque nommé
+});
+
+test('les quatre variantes de toast et les trois d’alerte sont montrées', () => {
+  const exemple = lire('design-system/exemples/modale.html');
+  for (const v of ['toast--info', 'toast--success', 'toast--error', 'toast--warning', 'alert--warning', 'alert--error', 'alert--info']) {
+    assert.match(exemple, new RegExp(v));
+  }
+});
+
+test('modale : la page écrit les signatures que le code a, défauts compris', () => {
+  const t = texte(page('modale'));
+  // La signature d'openModal est celle de la déclaration : mêmes quatre noms, dans l'ordre.
+  const declaration = UI.match(/export function openModal\(\{([^}]*)\}\)/)[1].split(',').map((s) => s.split('=')[0].trim());
+  assert.deepEqual(declaration, ['title', 'body', 'actions', 'onClose']);
+  assert.ok(t.includes(`openModal({ ${declaration.join(', ')} })`), 'la signature d’openModal diffère de celle du code');
+  // Celle de toast(), et ses deux défauts, lus dans le code.
+  const [, variante, delai] = UI.match(/export function toast\(message, variant = '(\w+)', ms = (\d+)\)/);
+  assert.ok(t.includes('toast(message, variant, ms)'));
+  assert.ok(t.includes(`« ${variante} »`) || t.includes(`'${variante}'`) || t.includes(`« ${variante}»`), `la page ne dit pas que la variante par défaut est ${variante}`);
+  assert.ok(t.includes(`${delai} ms`), `la page ne dit pas que la durée par défaut est ${delai} ms`);
+  // Les champs d'une action sont ceux que le code lit.
+  for (const champ of ['label', 'variant', 'onClick', 'close']) {
+    assert.match(UI, new RegExp(`\\ba\\.${champ}\\b`), `ui.js ne lit plus action.${champ}`);
+    assert.ok(t.includes(champ), `la page ne nomme pas le champ ${champ}`);
+  }
+  assert.ok(t.includes('closeModal()'));
+});
+
+test('modale : ui.js exporte les trois fonctions et l’échappement que la page nomme', () => {
+  assert.match(UI, /export function openModal\b/);
+  assert.match(UI, /export function closeModal\b/);
+  assert.match(UI, /export function toast\b/);
+  assert.match(UI, /export function escapeHtml\b/);
+});
+
+test('modale : le titre et les libellés sont échappés, le corps ne l’est pas, la variante non plus', () => {
+  avecDocument({}, (f) => {
+    openModal({ title: '<b>T</b>', body: '<i>corps</i>', actions: [{ label: '<u>L</u>', variant: 'x" y' }] });
+    assert.ok(f.racine.innerHTML.includes('&lt;b&gt;T&lt;/b&gt;'), 'le titre n’est pas échappé');
+    assert.ok(f.racine.innerHTML.includes('&lt;u&gt;L&lt;/u&gt;'), 'le libellé n’est pas échappé');
+    assert.ok(f.racine.innerHTML.includes('<i>corps</i>'), 'le corps est du HTML brut');
+    assert.ok(f.racine.innerHTML.includes('btn--x" y'), 'la variante est écrite telle quelle dans la classe');
+  });
+  const t = texte(page('modale'));
+  assert.match(t, /body est du HTML brut/);
+  assert.match(t, /l’appelant échappe lui-même/);
+  assert.match(t, /variant n’est pas échappé/);
+});
+
+test('modale : le message d’un toast est du texte, jamais du HTML', () => {
+  avecDocument({}, (f) => {
+    toast('<b>x</b>', 'success');
+    const e = f.toasts.enfants[0];
+    assert.equal(e.textContent, '<b>x</b>', 'le message doit passer par textContent');
+  });
+  assert.match(UI.slice(UI.indexOf('export function toast')), /el\.textContent = message/);
+  assert.match(texte(page('modale')), /message est du texte/);
+});
+
+test('modale : sans actions le pied est vide, et la variante par défaut d’un bouton est secondary', () => {
+  avecDocument({}, (f) => {
+    openModal({ title: 'T', body: '' });
+    assert.match(f.racine.innerHTML, /<footer class="modal__footer">\s*<\/footer>/);
+    openModal({ title: 'T', body: '', actions: [{ label: 'A' }] });
+    assert.match(f.racine.innerHTML, /class="btn btn--secondary" data-action="0"/);
+  });
+  const t = texte(page('modale'));
+  assert.match(t, /sans actions/i);
+  assert.match(t, /secondary/);
+});
+
+test('modale : la fonction rendue ne ferme que SA modale ; closeModal ferme celle qui est là', () => {
+  avecDocument({}, (f) => {
+    const fermerA = openModal({ title: 'A', body: '' });
+    const fermerB = openModal({ title: 'B', body: '' });
+    fermerA();
+    assert.match(f.racine.innerHTML, />B</, 'A ne doit pas fermer B');
+    fermerB();
+    assert.equal(f.racine.innerHTML, '');
+    openModal({ title: 'C', body: '' });
+    closeModal();
+    assert.equal(f.racine.innerHTML, '');
+  });
+  const t = texte(page('modale'));
+  assert.match(t, /ne ferme que SA modale/);
+  assert.match(t, /après un await/);
+});
+
+test('modale : un onClick qui rend false garde la modale, close:false aussi, le reste la ferme', async () => {
+  await avecDocument({}, async (f) => {
+    const essayer = async (action) => {
+      closeModal();
+      openModal({ title: 'T', body: '', actions: [action] });
+      const b = f.boutons[f.boutons.length - 1];
+      await b.clic();
+      return f.racine.innerHTML !== '';
+    };
+    assert.equal(await essayer({ label: 'a', onClick: () => false }), true, 'false garde la modale ouverte');
+    assert.equal(await essayer({ label: 'a', onClick: async () => false }), true, 'false rendu par une promesse la garde aussi');
+    assert.equal(await essayer({ label: 'a', close: false }), true, 'close:false la garde');
+    assert.equal(await essayer({ label: 'a', onClick: () => {} }), false, 'undefined la ferme');
+    assert.equal(await essayer({ label: 'a', onClick: () => 0 }), false, 'seul false strict garde la modale : 0 la ferme');
+    assert.equal(await essayer({ label: 'a' }), false, 'sans onClick, le bouton ferme');
+    // Le callback reçoit l'élément .modal, pour lire ses champs.
+    let recu = null;
+    await essayer({ label: 'a', onClick: (m) => { recu = m; } });
+    assert.equal(recu, f.element);
+    // Une exception laisse la modale ouverte.
+    closeModal();
+    openModal({ title: 'T', body: '', actions: [{ label: 'a', onClick: () => { throw new Error('non'); } }] });
+    await assert.rejects(f.boutons[f.boutons.length - 1].clic(), /non/);
+    assert.notEqual(f.racine.innerHTML, '', 'une exception doit laisser la modale ouverte');
+  });
+  const t = texte(page('modale'));
+  assert.match(t, /rend false/);
+  assert.match(t, /close: false/);
+  assert.match(t, /lève une exception/);
+});
+
+test('modale : onClose est appelé une fois, quelle que soit la façon de fermer', async () => {
+  await avecDocument({}, async (f) => {
+    const appels = [];
+    const ouvrir = (nom) => openModal({ title: nom, body: '', actions: [{ label: 'ok' }], onClose: () => appels.push(nom) });
+    // [fond, croix, bouton d'action] : l'ordre dans lequel openModal câble ses boutons.
+    const boutons = () => f.boutons.slice(-3);
+    ouvrir('bouton');
+    await boutons()[2].clic();
+    assert.deepEqual(appels, ['bouton']);
+    ouvrir('croix');
+    boutons()[1].clic();
+    assert.deepEqual(appels, ['bouton', 'croix']);
+    ouvrir('fond');
+    boutons()[0].clic({ autre: true });
+    assert.notEqual(f.racine.innerHTML, '', 'un clic qui ne vise pas le fond ne ferme rien');
+    boutons()[0].clic();
+    assert.equal(f.racine.innerHTML, '');
+    assert.deepEqual(appels, ['bouton', 'croix', 'fond']);
+    ouvrir('x'); ouvrir('remplacee');
+    assert.deepEqual(appels, ['bouton', 'croix', 'fond', 'x'], 'ouvrir une seconde modale appelle l’onClose de la première');
+    closeModal(); closeModal();
+    assert.deepEqual(appels, ['bouton', 'croix', 'fond', 'x', 'remplacee'], 'chaque onClose une seule fois');
+  });
+  const t = texte(page('modale'));
+  assert.match(t, /onClose/);
+  assert.match(t, /une seule fois/);
+  assert.match(t, /ouverture d’une autre modale/);
+});
+
+test('modale : has-modal est posée sur le body à l’ouverture, retirée à la fermeture, et bloque le défilement', () => {
+  avecDocument({}, (f) => {
+    openModal({ title: 'T', body: '' });
+    assert.ok(f.classes.has('has-modal'));
+    closeModal();
+    assert.ok(!f.classes.has('has-modal'));
+  });
+  assert.match(regle(COMPONENTS, '.has-modal'), /overflow:\s*hidden/);
+  assert.match(texte(page('modale')), /has-modal/);
+});
+
+test('modale : sans #modal-root ou #toast-root, openModal et toast lèvent une exception ; closeModal se tait', () => {
+  avecDocument({ modal: false, retours: false }, () => {
+    assert.throws(() => openModal({ title: 'T', body: '' }), TypeError);
+    assert.throws(() => toast('x'), TypeError);
+    assert.doesNotThrow(() => closeModal());
+  });
+  assert.match(texte(page('modale')), /lèvent une exception/);
+});
+
+test('modale : les écrans de l’outil posent les deux racines, vides, après leur contenu et avant leurs scripts', () => {
+  for (const f of ECRANS_ET_RACINES) {
+    const html = lire(f);
+    assert.ok(html.includes('<div id="modal-root"></div>'), `${f} : #modal-root absent ou non vide`);
+    assert.ok(html.includes('<div id="toast-root"></div>'), `${f} : #toast-root absent ou non vide`);
+    if (f === 'kit.html') continue;
+    assert.ok(html.indexOf('<main') < html.indexOf('id="modal-root"'), `${f} : la modale précède le contenu`);
+    assert.ok(html.indexOf('id="toast-root"') < html.indexOf('<script'), `${f} : les racines doivent précéder les scripts`);
+  }
+  // #toast-root est habillé par components.css ; #modal-root ne l'est par rien (le fond est .modal-backdrop).
+  assert.match(regle(COMPONENTS, '#toast-root'), /position:\s*fixed/);
+  assert.doesNotMatch(TOUT_LE_CSS, /#modal-root/);
+  const t = texte(page('modale'));
+  assert.match(t, /#modal-root/);
+  assert.match(t, /#toast-root/);
+  assert.match(t, /index\.html, admin\.html et mobile\.html/);
+});
+
+test('modale : un toast porte role="status", sa variante en classe, et s’efface 300 ms avant son terme', () => {
+  avecDocument({}, (f) => {
+    toast('a');
+    toast('b', 'success', 1000);
+    toast('c', 'zzz', 100);
+    const [a, b, c] = f.toasts.enfants;
+    assert.equal(a.className, 'toast toast--info');
+    assert.equal(b.className, 'toast toast--success');
+    assert.equal(c.className, 'toast toast--zzz', 'une variante inconnue n’est pas refusée');
+    assert.equal(a.attributs.role, 'status');
+    assert.deepEqual(f.minuteurs, [2700, 3000, 700, 1000, 0, 100], 'fondu 300 ms avant la fin, jamais en dessous de 0');
+  });
+  // Ni `toast--info` ni une variante inconnue n'ont de règle : seul le fond sombre de base s'applique.
+  assert.doesNotMatch(TOUT_LE_CSS, /\.toast--info\b/);
+  assert.ok(regle(COMPONENTS, '.toast'));
+  for (const v of ['success', 'error', 'warning']) assert.ok(regle(COMPONENTS, `.toast--${v}`), `toast--${v} sans règle`);
+  assert.ok(regle(COMPONENTS, '.toast--leaving'));
+  const t = texte(page('modale'));
+  assert.match(t, /300 ms avant/);
+  assert.match(t, /toast--info n’a aucune règle/);
+  assert.match(t, /role="status"/);
+});
+
+test('modale : un toast ne se ferme pas, ne se clique pas, et #toast-root n’est pas une région de statut', () => {
+  assert.match(regle(COMPONENTS, '#toast-root'), /pointer-events:\s*none/);
+  assert.doesNotMatch(UI.slice(UI.indexOf('export function toast')), /addEventListener|button/);
+  for (const f of ECRANS_ET_RACINES) assert.ok(lire(f).includes('<div id="toast-root"></div>'), f);
+  const t = texte(page('modale'));
+  assert.match(t, /aucun bouton pour le fermer/);
+  assert.match(t, /pointer-events: none/);
+  assert.match(t, /n’a pas été vérifié/, 'la page doit dire ce qu’elle n’a pas vérifié sur les lecteurs d’écran');
+});
+
+test('modale : l’exemple « toasts » est exactement ce que toast() écrit, variante par variante', () => {
+  const ecrit = (variante, message) => avecDocument({}, (f) => {
+    toast(message, variante);
+    const e = f.toasts.enfants[0];
+    return `<div class="${e.className}" role="${e.attributs.role}">${e.textContent}</div>`;
+  });
+  const section = compact(demo('modale', 'toasts'));
+  const messages = {
+    info: 'Copié dans le presse-papiers',
+    success: 'Modifications enregistrées',
+    error: 'Date invalide.',
+    warning: 'Données mises à jour ailleurs — enregistrez ou rechargez la fiche',
+  };
+  for (const [variante, message] of Object.entries(messages)) assert.ok(section.includes(compact(ecrit(variante, message))), `le toast ${variante} diffère de ce que toast() écrit`);
+  // Les trois messages qui ne sont pas des exemples inventés sont ceux de l'outil.
+  const tout = SOURCES.map((s) => s.source).join('\n');
+  assert.ok(tout.includes("toast('Modifications enregistrées', 'success')"));
+  assert.ok(tout.includes("toast('Date invalide.', 'error')"));
+  assert.ok(tout.includes("toast('Données mises à jour ailleurs — enregistrez ou rechargez la fiche', 'warning')"));
+});
+
+test('modale : l’exemple « modale » appelle les vraies fonctions, avec une racine pour chacune', () => {
+  const html = exemple('modale');
+  assert.match(html, /import \{[^}]*\bopenModal\b[^}]*\} from '\.\.\/\.\.\/js\/ui\.js'/);
+  assert.match(html, /import \{[^}]*\btoast\b[^}]*\} from '\.\.\/\.\.\/js\/ui\.js'/);
+  assert.match(html, /import \{[^}]*\bescapeHtml\b[^}]*\} from '\.\.\/\.\.\/js\/ui\.js'/);
+  assert.ok(html.includes('<div id="modal-root"></div>') && html.includes('<div id="toast-root"></div>'));
+  assert.ok(/<section data-demo="modale"[^>]*>[\s\S]*?<button/.test(html));
+  // Le corps passe les données par escapeHtml, comme la page l'enseigne.
+  assert.match(html, /\$\{escapeHtml\(/);
+  // Une modale ouverte dans le cadre est fixe : le cadre doit lui laisser de la place.
+  assert.match(html, /\[data-demo="modale"\][^}]*min-height:\s*\d+(?:\.\d+)?rem/);
+  // Les feuilles : celles de l'application, pas plus.
+  assert.match(html, /css\/components\.css/);
+  assert.doesNotMatch(html, /css\/(?:admin|mobile)\.css/);
+});
+
+test('modale : l’alerte n’a pas de fonction : les vues l’écrivent en HTML, et aucune ne porte de rôle', () => {
+  assert.doesNotMatch(UI, /export function alert/);
+  const ecrites = utilise(/class="alert alert--(?:warning|error|info)/);
+  for (const f of ['js/mobile/views/accueil.js', 'js/admin/views/parametres.js', 'js/admin/views/salle.js']) assert.ok(ecrites.includes(f), `${f} n’écrit plus d’alerte`);
+  assert.deepEqual(utilise(/role="alert"/), [], 'un écran pose role="alert" : la page doit changer');
+  assert.deepEqual(utilise(/class="alert[^"]*"[^>]*\b(?:role|aria-live)=/), [], 'une alerte porte un rôle : la page doit changer');
+  assert.equal(regle(COMPONENTS, '.alert').includes('background'), false, '.alert seule n’a pas de fond : la page le dit');
+  for (const v of ['warning', 'error', 'info']) assert.ok(regle(COMPONENTS, `.alert--${v}`), `alert--${v} sans règle`);
+  const t = texte(page('modale'));
+  assert.match(t, /sans variante, une alerte n’a pas de fond/);
+  assert.match(t, /aucune alerte de l’outil ne porte de rôle/);
+});
+
+test('modale : l’exemple « alertes » montre les trois alertes avec des textes que les vues écrivent', () => {
+  const a = demo('modale', 'alertes');
+  for (const v of ['warning', 'error', 'info']) assert.equal((a.match(new RegExp(`alert--${v}\\b`, 'g')) || []).length, 1, v);
+  const accueil = lire('js/mobile/views/accueil.js');
+  assert.ok(accueil.includes('réservation expirée, le matériel est reparti dans le catalogue.'));
+  assert.ok(accueil.includes('réservation refusée — '));
+  assert.ok(accueil.includes('à retirer avant ${escapeHtml(formatTime(r.window.end))} — <a href="#/emprunts">voir mon code</a>.'));
+  assert.match(a, /réservation expirée, le matériel est reparti dans le catalogue\./);
+  assert.match(a, /réservation refusée — /);
+  assert.match(a, /<a href="#\/emprunts">voir mon code<\/a>/);
+});
+
+test('modale : Échap ne ferme rien et rien ne piège le focus — le code de js/ et des écrans le confirme', () => {
+  // Le seul écouteur de clavier du dépôt est la recherche globale de l'administration.
+  assert.deepEqual(utilise(/keydown|keyup|keypress|\bEscape\b|\bkeyCode\b/), ['js/admin/layout.js']);
+  assert.match(lire('js/admin/layout.js'), /\[data-role="global-search"\]'\)\.addEventListener\('keydown'/);
+  assert.doesNotMatch(UI, /keydown|Escape|\.focus\b|\binert\b|tabindex|aria-hidden/);
+  // Le seul endroit du dépôt qui déplace le focus : la modale de scan, dans son propre champ.
+  assert.deepEqual(utilise(/\.focus\b/), ['js/scanModal.js']);
+  assert.match(lire('js/scanModal.js'), /input\.focus\(\)/);
+  // Dans l'ordre du balisage, la modale vient après la page.
+  for (const f of ['admin.html', 'mobile.html']) assert.ok(lire(f).indexOf('</main>') < lire(f).indexOf('id="modal-root"'), f);
+  const t = texte(page('modale'));
+  assert.match(t, /Aucune fermeture par Échap/);
+  assert.match(t, /Aucun piège de focus/);
+  assert.match(t, /js\/scanModal\.js/);
+  assert.match(t, /la recherche globale de l’administration/);
+});
+
+test('modale : ce que la modale porte déjà est dans son balisage', () => {
+  avecDocument({}, (f) => {
+    openModal({ title: 'T', body: '' });
+    const h = f.racine.innerHTML;
+    assert.match(h, /role="dialog" aria-modal="true" aria-labelledby="modal-title"/);
+    assert.match(h, /<h2 id="modal-title" class="h6">T<\/h2>/);
+    assert.match(h, /<button class="modal__close" type="button" aria-label="Fermer" data-close>/);
+  });
+  const t = texte(page('modale'));
+  assert.match(t, /role="dialog"/);
+  assert.match(t, /aria-modal="true"/);
+  assert.match(t, /aria-labelledby/);
+  assert.match(t, /aria-label="Fermer"/);
+});
+
+test('modale : les dimensions que la page écrit sont celles de la feuille', () => {
+  assert.match(regle(COMPONENTS, '.modal'), /width:\s*min\(560px, 100%\)/);
+  assert.match(regle(COMPONENTS, '.modal'), /max-height:\s*90vh/);
+  assert.match(regle(COMPONENTS, '.modal__close'), /width:\s*32px;\s*height:\s*32px/);
+  assert.match(regle(COMPONENTS, '.modal-backdrop'), /z-index:\s*100/);
+  assert.match(regle(COMPONENTS, '#toast-root'), /z-index:\s*200/);
+  // Sur mobile, mobile.css remonte les toasts au-dessus de la barre.
+  assert.match(regle(MOBILE, '#toast-root'), /bottom:\s*calc\(88px \+ env\(safe-area-inset-bottom\)\)/);
+  const t = texte(page('modale'));
+  assert.match(t, /560 px/);
+  assert.match(t, /90 % de la hauteur/);
+  assert.match(t, /32 px/);
+  assert.match(t, /88 px/);
+});
+
+test('modale : la page mesure les paires des retours, les quatre que le kit publie et trois autres', () => {
+  const html = page('modale');
+  for (const nom of ['toast--success', 'toast--error', 'alert--info', 'alert--error']) assert.match(html, new RegExp(`mesurePaire\\(valeurs, '${nom}'\\)`));
+  assert.match(html, /mesureTexte\(valeurs, '--text-inverse', '--text-primary', 14, true\)/);
+  assert.match(html, /mesureTexte\(valeurs, '--text-primary', '--feedback-warning', 14, true\)/);
+  assert.match(html, /mesureTexte\(valeurs, '--status-maintenance-text', '--status-maintenance-bg', 14\)/);
+  // Ces trois dernières correspondent aux règles de la feuille.
+  assert.match(regle(COMPONENTS, '.toast'), /background:\s*var\(--text-primary\);\s*color:\s*var\(--text-inverse\)/);
+  assert.match(regle(COMPONENTS, '.toast--warning'), /background:\s*var\(--feedback-warning\);\s*color:\s*var\(--text-primary\)/);
+  assert.match(regle(COMPONENTS, '.alert--warning'), /background:\s*var\(--status-maintenance-bg\);\s*color:\s*var\(--status-maintenance-text\)/);
+});
+
+test('modale : les trois cadres visent leurs démonstrations', () => {
+  const html = page('modale');
+  for (const demoNom of ['modale', 'toasts', 'alertes']) assert.match(html, new RegExp(`fichier: 'modale\\.html', demo: '${demoNom}'`));
+  // Seule l'alerte a un bloc de code : celui d'une modale ou d'un toast serait du HTML à recopier, ce que la page déconseille.
+  assert.match(html, /codeHtml\(\{ fichier: 'modale\.html', demo: 'alertes'/);
+  assert.doesNotMatch(html, /codeHtml\(\{ fichier: 'modale\.html', demo: '(?:modale|toasts)'/);
+});
+
+test('modale : le manque d’Échap et de piège de focus est dans le registre, à faire', () => {
+  const registre = lire('docs/correctifs-figma.md');
+  const aFaire = registre.slice(registre.indexOf('## À faire'), registre.indexOf('## Divergences')).replace(/\s+/g, ' ');
+  assert.match(aFaire, /Échap/);
+  assert.match(aFaire, /piège de focus/);
+  assert.match(aFaire, /js\/ui\.js/);
+  assert.match(texte(page('modale')), /docs\/correctifs-figma\.md/);
+});
+
+test('modale : les trois gestes que la page montre en JavaScript sont ceux de l’outil', () => {
+  assert.ok(utilise(/toast\(err\.message, 'error'\); return false;/).includes('js/admin/views/maintenance.js'));
+  assert.match(lire('js/scanModal.js'), /const close = openModal\(\{/);
+  assert.match(lire('js/scanModal.js'), /onCode\([^)]*\{ close \}\)/);
+  const t = texte(page('modale'));
+  assert.match(t, /toast\(err\.message, 'error'\); return false;/);
+  assert.match(t, /sous le nom close/);
+  assert.match(t, /openModal\(\{ title: 'Titre', body: '<p class="body-sm">Texte<\/p>' \}\)/);
 });

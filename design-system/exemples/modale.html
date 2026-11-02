@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modale et retours — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les démonstrations de la modale, des toasts et des alertes, rendues par le CSS et par js/ui.js de l’outil d’emprunt. Chaque section est montrée dans un cadre de la page Modale et retours.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les seules feuilles dont ce composant a besoin : celles de l’application, rien de plus. Voir
+       l’exemple du bouton pour le détail. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    body { padding: var(--space-lg); }
+    /* La modale est fixe : elle couvre la fenêtre du cadre, pas la section. Le cadre prend sa hauteur
+       à son contenu, donc la section lui garde de la place, sans quoi la modale serait rognée. */
+    [data-demo="modale"] { min-height: 26rem; }
+    /* Les toasts sont rangés en pile dans #toast-root, qui est fixe ; ici ils sont posés dans la page,
+       l'un sous l'autre, pour qu'on les voie tous. Le conteneur est celui de l'exemple, pas du composant. */
+    [data-demo="toasts"] { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+  </style>
+</head>
+<body>
+  <!-- La modale, ouverte par la vraie openModal(). Le bouton n'est que le déclencheur : la page ne montre
+       pas le HTML que la fonction écrit, parce que personne ne doit l'écrire. -->
+  <section data-demo="modale">
+    <button type="button" class="btn btn--primary" data-ouvrir>Annuler la réservation</button>
+  </section>
+
+  <!-- Ce que toast() pose dans #toast-root, une variante après l'autre : sans règle pour `info`
+       (le fond sombre de base), puis les trois teintes. Un test appelle toast() et compare. -->
+  <section data-demo="toasts">
+    <div class="toast toast--info" role="status">Copié dans le presse-papiers</div>
+    <div class="toast toast--success" role="status">Modifications enregistrées</div>
+    <div class="toast toast--error" role="status">Date invalide.</div>
+    <div class="toast toast--warning" role="status">Données mises à jour ailleurs — enregistrez ou rechargez la fiche</div>
+  </section>
+
+  <!-- Les trois alertes, avec des textes que les vues de l'outil écrivent (js/mobile/views/accueil.js). -->
+  <section data-demo="alertes">
+    <div class="stack">
+      <div class="alert alert--warning">Canon R10 + 18-55 : réservation expirée, le matériel est reparti dans le catalogue.</div>
+      <div class="alert alert--error">Canon R10 + 18-55 : réservation refusée — Matériel en maintenance</div>
+      <div class="alert alert--info">Canon R10 + 18-55 : à retirer avant 17h00 — <a href="#/emprunts">voir mon code</a>.</div>
+    </div>
+  </section>
+
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <script type="module">
+    import { openModal, toast, escapeHtml } from '../../js/ui.js';
+
+    // La donnée vient de « l'application » : le corps est du HTML brut, donc on l'échappe.
+    const materiel = 'Canon R10 + 18-55';
+    document.querySelector('[data-ouvrir]').addEventListener('click', () => {
+      openModal({
+        title: 'Annuler la réservation',
+        body: `<p class="body-sm">${escapeHtml(materiel)} redeviendra disponible pour les autres emprunteurs.</p>`,
+        actions: [
+          { label: 'Garder', variant: 'ghost' },
+          { label: 'Annuler la réservation', variant: 'danger', onClick: () => { toast('Réservation annulée', 'success'); } },
+        ],
+      });
+    });
+  </script>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>
