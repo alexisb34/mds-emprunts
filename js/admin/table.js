@@ -28,7 +28,8 @@ export function renderTable({ columns, rows, sort = null, rowHref = null, emptyT
   const head = columns.map((c) => {
     const arrow = sort && sort.key === c.key ? (sort.dir === 'desc' ? ' ↓' : ' ↑') : '';
     const attrs = `${c.sortable ? ` data-sortable data-key="${c.key}"` : ''}${c.align ? ` style="text-align:${c.align}"` : ''}`;
-    return `<th${attrs}>${escapeHtml(c.label)}${arrow}</th>`;
+    // `header` : en-tête en HTML brut (une case « tout sélectionner », par exemple).
+    return `<th${attrs}>${c.header || escapeHtml(c.label) + arrow}</th>`;
   }).join('');
   const table = (body) => `<table class="table"><thead><tr>${head}</tr></thead>${body}</table>`;
   if (!rows.length) return `${table('')}<div class="empty-state">${escapeHtml(emptyText)}</div>`;

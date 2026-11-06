@@ -77,6 +77,25 @@ export function setUserActive(id, actif, auteurId) {
   return user;
 }
 
+// Supprimer, pas désactiver : réservé aux comptes sans historique. Dès qu’un compte a
+// emprunté ou réservé une salle, le supprimer laisserait des emprunts signés par un fantôme ;
+// dans ce cas c’est `setUserActive(id, false)` qui répond, et la trace reste.
+export function deleteUser(id, auteurId) {
+  const user = requireUser(id);
+  if (id === auteurId) throw new Error('Impossible de supprimer son propre compte.');
+  if (user.role === ROLES.PEDAGO) throw new Error('Un compte pédagogie ne se supprime pas : désactivez-le depuis sa fiche.');
+  const emprunts = store.loans.list((l) => l.userId === id).length;
+  const salles = store.bookings.list((b) => b.userId === id).length;
+  if (emprunts || salles) {
+    throw new Error(`${user.prenom} ${user.nom} a un historique (${emprunts} emprunt(s), ${salles} réservation(s) de salle) : désactivez le compte au lieu de le supprimer.`);
+  }
+  return store.transaction(() => {
+    store.users.remove(id);
+    logAction({ auteurId, action: ACTIONS.USER_SUPPRIME, userId: id, detail: `${user.prenom} ${user.nom} (${LABELS.role[user.role]})` });
+    return user;
+  });
+}
+
 export function userStats(userId, date) {
   const loans = store.loans.list((l) => l.userId === userId);
   return {
