@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Icônes — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les démonstrations des icônes, rendues par le CSS de l’outil d’emprunt. Chaque section est montrée dans un cadre de la page Icônes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les seules feuilles dont ce composant a besoin : celles de l’application, rien de plus. Voir
+       l’exemple du bouton pour le détail. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    body { padding: var(--space-lg); }
+  </style>
+</head>
+<body>
+  <!-- Les neuf icônes de js/mobile/layout.js, à leur taille d’origine (24 px), avec leur nom. Un test
+       compare chacune à ICONS. -->
+  <section data-demo="inventaire">
+    <div class="row row--wrap">
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span class="body-sm">accueil</span></span>
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span class="body-sm">catalogue</span></span>
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span class="body-sm">salle</span></span>
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg><span class="body-sm">emprunts</span></span>
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg><span class="body-sm">scan</span></span>
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="body-sm">camera</span></span>
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4 10-10"/></svg><span class="body-sm">check</span></span>
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg><span class="body-sm">croix</span></span>
+      <span class="row"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg><span class="body-sm">back</span></span>
+    </div>
+  </section>
+
+  <!-- L’icône « check » seule : le gabarit des neuf. Un test la compare à ICONS.check. -->
+  <section data-demo="modele">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4 10-10"/></svg>
+  </section>
+
+  <!-- Les caractères que l’outil emploie comme des icônes. -->
+  <section data-demo="glyphes">
+    <div class="row row--wrap">
+      <span class="row"><span aria-hidden="true">←</span><span class="body-sm">retour</span></span>
+      <span class="row"><span aria-hidden="true">→</span><span class="body-sm">suite</span></span>
+      <span class="row"><span aria-hidden="true">↑</span><span class="body-sm">tri croissant</span></span>
+      <span class="row"><span aria-hidden="true">↓</span><span class="body-sm">tri décroissant</span></span>
+      <span class="row"><span aria-hidden="true">×</span><span class="body-sm">fermer</span></span>
+      <span class="row"><span aria-hidden="true">✓</span><span class="body-sm">réussi</span></span>
+      <span class="row"><span aria-hidden="true">✕</span><span class="body-sm">refusé</span></span>
+      <span class="row"><span aria-hidden="true">🎉</span><span class="body-sm">aucun retard</span></span>
+      <span class="row"><span aria-hidden="true">👋</span><span class="body-sm">salutation</span></span>
+    </div>
+  </section>
+
+  <!-- La loupe du champ de recherche : une image de fond posée par la feuille, pas un élément. -->
+  <section data-demo="recherche">
+    <input class="input input--search" type="search" placeholder="Rechercher un matériel…" aria-label="Rechercher un matériel">
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

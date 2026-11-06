@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Démarrer — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Un écran fait seulement des classes utilitaires et des composants du kit, rendu par le CSS de l’outil d’emprunt. Il est montré dans un cadre de la page Démarrer.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les trois feuilles de Démarrer, dans leur ordre, et rien d'autre. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    body { padding: var(--space-lg); }
+  </style>
+</head>
+<body>
+  <!-- Un écran fait comme le reste : aucun style en ligne, aucune valeur écrite à la main. Une pile
+       (`.stack`), une rangée qui écarte son titre de son action (`.row`, `.row--between`), une alerte,
+       deux cartes côte à côte (`.grid-2`). Les deux badges sont ceux que badge() écrit. -->
+  <section data-demo="ecran">
+    <div class="stack">
+      <div class="row row--between row--wrap">
+        <h2 class="h5">Matériel à rendre</h2>
+        <a class="btn btn--primary" href="#/emprunts">Voir mes emprunts</a>
+      </div>
+      <div class="alert alert--info">Le matériel se rend au bureau des pédago avant l’heure indiquée.</div>
+      <div class="grid-2">
+        <div class="card stack">
+          <div class="row row--between"><strong class="label-lg">Canon R10 + 18-55</strong><span class="badge badge--borrowed">En cours</span></div>
+          <p class="body-sm text-secondary">Retour demain avant 17h00.</p>
+        </div>
+        <div class="card stack">
+          <div class="row row--between"><strong class="label-lg">DJI Ronin RSC2</strong><span class="badge badge--late">En retard</span></div>
+          <p class="body-sm text-secondary">Retour prévu le 14 sept. 2026.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ton — Guide de marque MyDigitalSchool</title>
+  <meta name="description" content="Comment l’outil d’emprunt écrit déjà : des phrases courtes, pas de jargon, des erreurs qui disent quoi faire. Trois paires « au lieu de / écrire » tirées de ses vrais textes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les feuilles du dépôt d’abord, la feuille du site ensuite : c’est elle qui passe le fond en blanc. -->
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <!-- Tout est écrit ici, lisible dans le fichier. Chaque phrase « Écrire » est copiée de l’outil
+       d’emprunt, et `data-source` dit dans quel fichier : un test la retrouve mot pour mot. Les
+       phrases « Au lieu de » sont inventées, aucune n’est dans l’outil. -->
+  <main id="contenu">
+    <section class="ds-bande">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h1 class="ds-titre-page">Le ton</h1>
+          <p class="ds-chapeau ds-mesure">Comment l’outil d’emprunt parle déjà. Ce chapitre le décrit, il ne l’invente pas.</p>
+          <p class="body ds-mesure">Il ne couvre que les textes des interfaces&nbsp;: boutons, messages, erreurs. Pas les affiches, ni les réseaux sociaux.</p>
+          <p class="body ds-mesure">Les phrases «&nbsp;au lieu de&nbsp;» sont inventées pour la comparaison, et celles à écrire sont les vraies, copiées de l’outil.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-bande" id="phrases-courtes">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h2 class="ds-titre">Des phrases courtes</h2>
+          <p class="body ds-mesure">Confirmer, c’est dire ce qui vient de se passer. Pas besoin de plus.</p>
+        </div>
+        <article class="tn-paire" data-source="js/admin/views/materielFiche.js">
+          <div class="tn-cas">
+            <p class="body-sm"><span aria-hidden="true">✕</span> <strong>Au lieu de</strong></p>
+            <blockquote class="tn-phrase tn-phrase--faux">L’opération a été effectuée avec succès.</blockquote>
+          </div>
+          <div class="tn-cas">
+            <p class="body-sm"><span aria-hidden="true">✓</span> <strong>Écrire</strong></p>
+            <blockquote class="tn-phrase tn-phrase--juste">Modifications enregistrées</blockquote>
+          </div>
+        </article>
+        <p class="body-sm ds-oeil ds-mesure">Dans l’outil&nbsp;: ce qui s’affiche quand on enregistre une fiche.</p>
+      </div>
+    </section>
+
+    <section class="ds-bande ds-bande--doux" id="pas-de-jargon">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h2 class="ds-titre">Pas de jargon</h2>
+          <p class="body ds-mesure">On dit l’état du matériel avec les mots de la pédago. Pas de code d’état, pas de nom technique.</p>
+        </div>
+        <article class="tn-paire" data-source="js/rules.js">
+          <div class="tn-cas">
+            <p class="body-sm"><span aria-hidden="true">✕</span> <strong>Au lieu de</strong></p>
+            <blockquote class="tn-phrase tn-phrase--faux">Ressource indisponible (statut&nbsp;: MAINTENANCE_ACTIVE).</blockquote>
+          </div>
+          <div class="tn-cas">
+            <p class="body-sm"><span aria-hidden="true">✓</span> <strong>Écrire</strong></p>
+            <blockquote class="tn-phrase tn-phrase--juste">Ce matériel est en maintenance.</blockquote>
+          </div>
+        </article>
+        <p class="body-sm ds-oeil ds-mesure">Dans l’outil&nbsp;: ce qu’on lit en essayant d’emprunter un objet en maintenance.</p>
+      </div>
+    </section>
+
+    <section class="ds-bande" id="erreurs">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h2 class="ds-titre">Une erreur dit quoi faire</h2>
+          <p class="body ds-mesure">Dire ce qui ne va pas ne suffit pas. La phrase se termine par ce qu’on peut faire maintenant.</p>
+        </div>
+        <article class="tn-paire" data-source="js/rules.js">
+          <div class="tn-cas">
+            <p class="body-sm"><span aria-hidden="true">✕</span> <strong>Au lieu de</strong></p>
+            <blockquote class="tn-phrase tn-phrase--faux">Erreur 403&nbsp;: opération refusée.</blockquote>
+          </div>
+          <div class="tn-cas">
+            <p class="body-sm"><span aria-hidden="true">✓</span> <strong>Écrire</strong></p>
+            <blockquote class="tn-phrase tn-phrase--juste">Vous avez un emprunt en retard&nbsp;: rendez-le avant d’emprunter à nouveau.</blockquote>
+          </div>
+        </article>
+        <p class="body-sm ds-oeil ds-mesure">Dans l’outil&nbsp;: ce qu’on lit quand un retard bloque un nouvel emprunt.</p>
+      </div>
+    </section>
+
+    <section class="ds-bande ds-bande--doux" id="vouvoiement">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h2 class="ds-titre">On vouvoie</h2>
+          <p class="body ds-mesure">L’outil vouvoie, et donne ses consignes à l’impératif&nbsp;: «&nbsp;<span data-verbe>Scannez</span>&nbsp;», «&nbsp;<span data-verbe>Vérifiez</span>&nbsp;», «&nbsp;<span data-verbe>Choisissez</span>&nbsp;», «&nbsp;<span data-verbe>Montrez</span>&nbsp;».</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-bande" id="phrase-longue">
+      <div class="ds-section">
+        <div class="ds-groupe">
+          <h2 class="ds-titre">Quand la phrase doit être longue</h2>
+          <p class="body ds-mesure">Tout n’est pas aussi court. Quand une règle a besoin d’un horaire, la phrase le donne plutôt que de renvoyer ailleurs&nbsp;:</p>
+          <blockquote class="tn-phrase tn-phrase--juste ds-mesure">Hors de la fenêtre de retrait&nbsp;: le matériel se retire le jour de la réservation, de l’heure prévue à la fermeture du bureau (17h).</blockquote>
+          <p class="body ds-mesure">L’horaire suit les réglages de la pédago&nbsp;: 17h est la valeur par défaut.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, piedHtml } from './js/chrome.js';
+
+    // Cette page est à la racine de design-system/ : l’adresse passée au chrome est `ton.html`.
+    document.getElementById('entete').outerHTML = enteteHtml('ton.html');
+    document.getElementById('pied').outerHTML = piedHtml();
+  </script>
+</body>
+</html>

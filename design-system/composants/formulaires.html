@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formulaires — Design system MyDigitalSchool</title>
+  <meta name="description" content="Les champs de l’outil d’emprunt : champ, liste, zone de texte, case, interrupteur, leurs états, l’absence d’état de chargement, et le HTML à copier.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Cette page NE charge pas `css/components.css` : ses démonstrations sont rendues dans des
+       cadres isolés, chacun avec ses propres feuilles. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <div class="ds-colonnes">
+    <div id="sommaire"></div>
+
+    <main id="contenu" class="ds-article">
+      <header class="ds-article__tete">
+        <h1 class="ds-titre">Formulaires</h1>
+        <p class="ds-chapeau ds-mesure">Libellé, champ, aide, erreur&nbsp;: un champ du kit est une pile de ces quatre éléments. Autour, trois contrôles, une case à cocher et un interrupteur.</p>
+      </header>
+
+      <section id="a-quoi" class="ds-groupe">
+        <h2 class="h5">À quoi ça sert</h2>
+        <p class="body ds-mesure">Un formulaire recueille ce que la personne tape ou choisit&nbsp;: un nom, une catégorie, un motif, un réglage. Le kit en fournit les pièces. <code>.field</code> range un libellé, un contrôle, puis une aide ou une erreur. Le contrôle est un <code>.input</code>, un <code>.select</code> ou un <code>.textarea</code>. À part, <code>.checkbox</code> et <code>.toggle</code>.</p>
+        <p class="body ds-mesure">Le libellé enveloppe tout le champ&nbsp;: <code>&lt;label class="field"&gt;</code>. C’est ce qui l’associe au contrôle, sans <code>for</code> ni <code>id</code>.</p>
+      </section>
+
+      <section id="exemple" class="ds-groupe">
+        <h2 class="h5">L’exemple</h2>
+        <p class="body ds-mesure">Un champ de chaque sorte. Cliquez dans le champ «&nbsp;Nom du matériel&nbsp;»&nbsp;: son contour passe au violet.</p>
+        <div id="cadre-champs"></div>
+      </section>
+
+      <section id="variantes" class="ds-groupe">
+        <h2 class="h5">Les variantes et les états</h2>
+
+        <h3 class="h6">Les contrôles</h3>
+        <ul class="ds-liste body">
+          <li><code>.input</code>&nbsp;: un champ d’une ligne, pour tout <code>type</code> de texte, de nombre ou de recherche. Sa hauteur minimale est <strong id="mesure-haut-champ">à mesurer depuis un serveur</strong> (<code>--size-control-md</code>).</li>
+          <li><code>.input--search</code>&nbsp;: un <code>.input</code> qui laisse la place d’une loupe à gauche. La loupe est une image de fond posée par la feuille&nbsp;; voir <a href="icones.html">Icônes</a>.</li>
+          <li><code>.select</code>&nbsp;: la liste du navigateur, avec sa flèche. Le kit ne la redessine pas.</li>
+          <li><code>.textarea</code>&nbsp;: une zone de texte, 88&nbsp;px au minimum, que l’on redimensionne à la verticale.</li>
+          <li><code>.checkbox</code>&nbsp;: la case du navigateur, colorée en violet de marque, dont toute la ligne est cliquable.</li>
+          <li><code>.toggle</code>&nbsp;: un interrupteur. Une vraie case, cachée, et un rail dessiné par <code>.toggle__track</code>.</li>
+        </ul>
+        <p class="body ds-mesure">Un <code>.input--sm</code> existe aussi, mais seulement dans <code>css/admin.css</code>&nbsp;: les exemples de cette page ne peuvent pas le montrer.</p>
+
+        <h3 class="h6">Le focus</h3>
+        <p class="body ds-mesure">Un champ qui reçoit le focus prend un contour violet de 2&nbsp;px, tracé à l’intérieur (décalé de −1&nbsp;px), et sa bordure devient violette. <strong>C’est l’une des deux seules règles de focus que le dépôt dessine</strong>, avec <code>.kpi--link:focus-visible</code>. Elle s’écrit <code>:focus</code>, pas <code>:focus-visible</code>&nbsp;: l’anneau apparaît donc aussi quand on clique dans le champ, pas seulement au clavier.</p>
+
+        <h3 class="h6">L’aide et l’erreur</h3>
+        <p class="body ds-mesure"><code>.field__hint</code> donne une indication sous le champ. <code>.field__error</code>, avec <code>aria-invalid="true"</code> sur le contrôle, signale une saisie refusée&nbsp;: le filet du champ devient rouge et le message se pose dessous.</p>
+        <div id="cadre-aide-erreur"></div>
+        <p class="body ds-mesure"><strong>L’outil n’emploie aujourd’hui ni <code>.field__error</code> ni <code>aria-invalid</code>.</strong> Quand une saisie est refusée, il affiche une notification. Le kit définit ces deux pièces&nbsp;; aucun écran ne s’en sert.</p>
+        <p class="body ds-mesure"><strong>Le filet rouge ne marque pas la zone de texte.</strong> La règle vise <code>.input</code> et <code>.select</code>&nbsp;; <code>.textarea</code> n’y figure pas. Les trois contrôles ci-dessous portent tous <code>aria-invalid="true"</code>.</p>
+        <div id="cadre-invalide"></div>
+
+        <h3 class="h6">Le désactivé</h3>
+        <p class="body ds-mesure">Le kit ne dessine aucun champ désactivé. Un champ qui porte l’attribut <code>disabled</code> garde la couleur, le fond et l’opacité d’un champ actif&nbsp;; seuls changent le curseur et l’ordre de tabulation, qu’il quitte. Les deux champs ci-dessous sont, à l’œil, identiques.</p>
+        <div id="cadre-desactive"></div>
+
+        <h3 class="h6">La case et l’interrupteur</h3>
+        <div id="cadre-choix"></div>
+        <p class="body ds-mesure">La case est celle du navigateur. L’interrupteur en est une aussi, mais cachée&nbsp;: la feuille la rend invisible (<code>opacity: 0</code>, zéro pixel de côté) et dessine un rail à la place.</p>
+
+        <h3 class="h6">Ce qui n’existe pas</h3>
+        <ul class="ds-liste body">
+          <li><strong>Aucun état de chargement.</strong> Il n’existe ni champ en attente, ni bouton d’envoi qui patiente, ni squelette de formulaire. La seule animation d’attente du dépôt, <code>.spinner</code>, vit dans <code>css/mobile.css</code> et ne sert qu’à une étape du scan. En attendant une décision, désactivez le bouton d’envoi, comme le dit la page <a href="bouton.html">Bouton</a>.</li>
+          <li><strong>Aucun champ désactivé</strong> qui se distingue d’un champ actif, comme ci-dessus.</li>
+          <li><strong>Aucun anneau de focus dessiné pour la case et l’interrupteur.</strong> Celui du navigateur reste pour la case&nbsp;; l’interrupteur n’en a aucun de visible. Voir Accessibilité.</li>
+        </ul>
+      </section>
+
+      <section id="code" class="ds-groupe">
+        <h2 class="h5">Le code</h2>
+        <p class="body ds-mesure">Un champ est du HTML&nbsp;: il se copie. Le <code>type</code> du contrôle est toujours écrit.</p>
+
+        <h3 class="h6">Les quatre contrôles</h3>
+        <div id="code-champs"></div>
+
+        <h3 class="h6">Une aide, puis une erreur</h3>
+        <p class="body ds-mesure"><code>aria-invalid="true"</code> se pose quand le champ est en erreur et se retire quand il est corrigé. Le kit ne le fait pas&nbsp;: c’est au script du formulaire.</p>
+        <div id="code-aide-erreur"></div>
+
+        <h3 class="h6">Case et interrupteur</h3>
+        <div id="code-choix"></div>
+      </section>
+
+      <section id="quand-ne-pas" class="ds-groupe">
+        <h2 class="h5">Quand ne pas l’utiliser</h2>
+        <ul class="ds-liste body">
+          <li><strong>Pour filtrer une liste avec quelques catégories toujours visibles.</strong> Un menu déroulant les cache. Ce sont des étiquettes&nbsp;: <a href="badge.html">Badge et étiquette</a>.</li>
+          <li><strong>Pour une case qui applique un réglage tout de suite.</strong> Une case dit un choix qu’on valide ensuite avec le formulaire. Pour un réglage qui s’applique au geste, employez un interrupteur (<code>.toggle</code>), comme «&nbsp;Comptes actifs uniquement&nbsp;» dans la liste des utilisateurs.</li>
+          <li><strong>Pour annoncer une saisie refusée par une notification seule.</strong> Une notification disparaît au bout de trois secondes par défaut, alors que le champ reste faux. Le message se pose à côté du champ avec <code>.field__error</code>, comme le kit le prévoit.</li>
+          <li><strong>Pour remplacer le libellé par le placeholder.</strong> Il disparaît dès qu’on tape, et sa couleur est mesurée plus bas. Le libellé s’écrit dans <code>.field__label</code>&nbsp;; le placeholder donne un exemple. Le champ de recherche du haut de l’administration n’a pas de libellé visible&nbsp;: il porte un <code>aria-label</code>.</li>
+        </ul>
+      </section>
+
+      <section id="accessibilite" class="ds-groupe">
+        <h2 class="h5">Accessibilité</h2>
+
+        <h3 class="h6">Le focus, mesuré</h3>
+        <p class="body ds-mesure">Le contour violet d’un champ qui a le focus contre son fond blanc, mesuré dans <code>css/tokens.css</code> au chargement de cette page (seuil de 3:1 pour un élément qui ne porte pas de texte)&nbsp;: <strong id="mesure-focus">à mesurer depuis un serveur</strong>.</p>
+        <p class="body ds-mesure"><strong>Cases et interrupteurs n’ont pas ce contour.</strong> La case garde l’anneau du navigateur. L’interrupteur n’en a aucun de visible&nbsp;: sa case est cachée à zéro pixel, c’est elle qui reçoit le focus, et la feuille ne dessine rien sur le rail. Avec une vraie frappe sur Tab, dans Chromium, l’interrupteur a bien le focus et rien ne se voit autour de lui.</p>
+
+        <h3 class="h6">Contraste, mesuré</h3>
+        <p class="body ds-mesure">Les paires du formulaire, mesurées au chargement de cette page&nbsp;:</p>
+        <ul class="ds-liste body">
+          <li>libellé du champ, 12&nbsp;px en gras, texte discret sur blanc&nbsp;: <strong id="mesure-libelle">à mesurer depuis un serveur</strong></li>
+          <li>aide du champ, 11&nbsp;px, texte discret sur blanc&nbsp;: <strong id="mesure-aide">à mesurer depuis un serveur</strong></li>
+          <li>message d’erreur, 11&nbsp;px, rouge d’erreur sur blanc&nbsp;: <strong id="mesure-erreur">à mesurer depuis un serveur</strong></li>
+          <li>placeholder, 14&nbsp;px, gris de texte désactivé sur blanc&nbsp;: <strong id="mesure-placeholder">à mesurer depuis un serveur</strong></li>
+        </ul>
+        <p class="body ds-mesure">Le placeholder est employé par l’outil, par exemple dans le champ de recherche du haut de l’administration. Le message d’erreur n’est employé par aucun écran, mais le kit le définit&nbsp;: la paire est formée par la feuille. Le chapitre <a href="../couleurs.html#dette">Couleurs</a> publie les paires que les écrans émettent.</p>
+
+        <h3 class="h6">Aide et erreur</h3>
+        <p class="body ds-mesure">Comme le libellé enveloppe tout le champ, l’aide et l’erreur sont dans le même <code>&lt;label&gt;</code>&nbsp;: elles entrent dans le nom accessible du champ, d’après la règle de calcul des noms d’ARIA&nbsp;; la façon dont un lecteur d’écran l’annonce dépend de ce lecteur. Ce n’est pas <code>aria-describedby</code>, et ça donne un nom long&nbsp;; mais le message n’est pas séparé du champ.</p>
+
+        <h3 class="h6">Taille de cible</h3>
+        <p class="body ds-mesure">Un champ fait 44&nbsp;px de haut au minimum. Pour une case, c’est la ligne entière qui se clique, libellé compris&nbsp;: la case dessinée fait 20&nbsp;px et le rail de l’interrupteur 22&nbsp;px de haut, sous le minimum de 24&nbsp;px de WCAG 2.5.8, qui admet l’exception d’un espace suffisant autour de la cible. L’espace dépend de l’écran&nbsp;: il est à vérifier écran par écran.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, sommaireHtml, brancherSommaire, piedHtml } from '../js/chrome.js';
+    import { cadreHtml, brancherCadres } from '../js/cadre.js';
+    import { codeHtml } from '../js/code.js';
+    import { lireTokensDepuisDocument } from '../js/tokens.js';
+    import { valeursDe, poserMesures, mesureNonTexte, mesureTexte } from '../js/mesures.js';
+
+    // L’adresse de cette page, toujours relative à design-system/ : le chrome en déduit les `../`.
+    document.getElementById('entete').outerHTML = enteteHtml('composants/formulaires.html');
+    document.getElementById('sommaire').outerHTML = sommaireHtml('composants/formulaires.html');
+    document.getElementById('pied').outerHTML = piedHtml('composants/formulaires.html');
+    brancherSommaire();
+
+    // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
+    // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
+    // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
+    document.getElementById('cadre-champs').outerHTML = cadreHtml({ fichier: 'formulaires.html', demo: 'champs', titre: 'Un champ de texte, une recherche, une liste et une zone de texte' });
+    document.getElementById('cadre-aide-erreur').outerHTML = cadreHtml({ fichier: 'formulaires.html', demo: 'aide-erreur', titre: 'Un champ avec son aide, puis un champ en erreur avec son message' });
+    document.getElementById('cadre-invalide').outerHTML = cadreHtml({ fichier: 'formulaires.html', demo: 'invalide', titre: 'Un champ, une liste et une zone de texte, tous trois marqués en erreur' });
+    document.getElementById('cadre-desactive').outerHTML = cadreHtml({ fichier: 'formulaires.html', demo: 'desactive', titre: 'Un champ actif et le même champ désactivé' });
+    document.getElementById('cadre-choix').outerHTML = cadreHtml({ fichier: 'formulaires.html', demo: 'choix', titre: 'Une case à cocher et un interrupteur' });
+    document.getElementById('code-champs').outerHTML = codeHtml({ fichier: 'formulaires.html', demo: 'champs', titre: 'Un champ de texte, une recherche, une liste et une zone de texte' });
+    document.getElementById('code-aide-erreur').outerHTML = codeHtml({ fichier: 'formulaires.html', demo: 'aide-erreur', titre: 'Un champ avec son aide, puis un champ en erreur avec son message' });
+    document.getElementById('code-choix').outerHTML = codeHtml({ fichier: 'formulaires.html', demo: 'choix', titre: 'Une case à cocher et un interrupteur' });
+    brancherCadres(document.getElementById('contenu'));
+
+    // Les contrastes de la section Accessibilité sont MESURÉS dans `css/tokens.css`, jamais écrits
+    // dans la page. Sur un fichier local, le navigateur refuse de lire les règles de la feuille et
+    // la phrase de repli reste affichée.
+    const valeurs = valeursDe(lireTokensDepuisDocument(document));
+    if (valeurs) {
+      poserMesures(document, {
+        'mesure-haut-champ': valeurs['--size-control-md'],
+        'mesure-focus': mesureNonTexte(valeurs, '--brand-primary', '--bg-surface'),
+        'mesure-libelle': mesureTexte(valeurs, '--text-secondary', '--bg-surface', 12, true),
+        'mesure-aide': mesureTexte(valeurs, '--text-secondary', '--bg-surface', 11),
+        'mesure-erreur': mesureTexte(valeurs, '--feedback-error', '--bg-surface', 11),
+        'mesure-placeholder': mesureTexte(valeurs, '--text-disabled', '--bg-surface', 14),
+      });
+    }
+  </script>
+</body>
+</html>

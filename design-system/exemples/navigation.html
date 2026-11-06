@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Navigation — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les démonstrations de la navigation, rendues par le CSS de l’outil d’emprunt. Chaque section est montrée dans un cadre de la page Navigation.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les seules feuilles dont ce composant a besoin : celles de l’application, rien de plus. Voir
+       l’exemple du bouton pour le détail. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <style>
+    body { padding: var(--space-lg); }
+    /* La barre latérale de l’outil : une colonne blanche à la largeur du token, les liens
+       empilés. C’est la section qui la porte, pas le code que la page montre. */
+    .menu { display: flex; flex-direction: column; gap: var(--space-xs); width: min(var(--size-sidebar), 100%); padding: var(--space-lg); background: var(--bg-surface); border-radius: var(--radius-lg); }
+  </style>
+</head>
+<body>
+  <!-- Le menu latéral : ce que sidebarHtml() de js/admin/layout.js met dans son <nav>, pour la page
+       « Emprunts » et trois emprunts en attente. Un test appelle la fonction et compare. La
+       section tient la mise en page de la barre latérale ; les liens sont ceux de l’outil. -->
+  <section data-demo="menu" class="menu">
+    <a class="nav-item" href="#/dashboard">Tableau de bord</a>
+    <a class="nav-item" href="#/materiel">Matériel</a>
+    <a class="nav-item nav-item--active" href="#/emprunts">Emprunts<span class="nav-item__count">3</span></a>
+    <a class="nav-item" href="#/salle">Salle photo</a>
+    <a class="nav-item" href="#/maintenance">Maintenance</a>
+    <a class="nav-item" href="#/utilisateurs">Utilisateurs</a>
+    <a class="nav-item" href="#/parametres">Paramètres</a>
+  </section>
+
+  <!-- Les onglets de la feuille de base, ceux de l’écran mobile « Emprunts » : soulignés. -->
+  <section data-demo="onglets-desktop">
+    <div class="card">
+      <div class="tabs">
+        <button type="button" class="tab tab--active">En cours <span class="tab__count">2</span></button>
+        <button type="button" class="tab">Réservations <span class="tab__count">1</span></button>
+        <button type="button" class="tab">Historique <span class="tab__count">14</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

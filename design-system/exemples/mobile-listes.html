@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mobile : listes et cartes — exemples du design system MyDigitalSchool</title>
+  <meta name="description" content="Les lignes de liste et les cartes de catalogue de l’interface mobile, rendues par le CSS de l’outil d’emprunt. Elles se regardent dans un cadre de la largeur d’un téléphone.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les exemples mobiles sont les SEULS à charger `css/mobile.css`, et après `css/components.css` :
+       elle suppose les composants de base. Ils se regardent dans un cadre étroit. -->
+  <link rel="stylesheet" href="../../css/tokens.css">
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <link rel="stylesheet" href="../../css/mobile.css">
+  <style>
+    /* Les lignes et les cartes vivent, dans l'application, dans `.m-main` : une colonne, avec une marge
+       et un écart. L'exemple pose la même chose sur ses sections, sans le dégagement de 96 px du bas
+       que `.m-main` réserve à la barre de navigation, qui n'est pas là. */
+    section { display: flex; flex-direction: column; gap: var(--space-lg); padding: var(--space-lg); }
+  </style>
+</head>
+<body>
+  <!-- Les lignes de liste : deux comptes à choisir (la liste de connexion) puis une réservation (une ligne
+       empilée). Un test appelle resultsHtml() et reservationCardHtml() et compare. -->
+  <section data-demo="liste">
+    <div class="m-list">
+        <button type="button" class="m-item m-item--button" data-user="u-lea">
+          <span class="avatar avatar--sm" title="Léa Pezzetti">LP</span>
+          <span class="m-item__body"><strong>Léa Pezzetti</strong><span class="body-tiny text-secondary">Promo 2027</span></span>
+        </button>
+        <button type="button" class="m-item m-item--button" data-user="u-yann">
+          <span class="avatar avatar--sm" title="Yann Guihard">YG</span>
+          <span class="m-item__body"><strong>Yann Guihard</strong><span class="body-tiny text-secondary">Promo 2026</span></span>
+        </button></div>
+    <div class="m-list">
+      <div class="m-item m-item--stacked">
+        <div class="m-item__row"><span class="m-item__body"><strong>Canon R10 + 18-55</strong><span class="body-tiny text-secondary">Retrait demain à 09h00 · retour le 19 sept. 2026</span></span><span class="badge badge--reserved">Réservé</span></div>
+        <p class="body-tiny text-secondary">Votre code de retrait s’affichera à l’heure prévue.</p>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="cancel" data-loan="L-0007">Annuler la réservation</button>
+      </div></div>
+  </section>
+
+  <!-- Les puces de catégorie et deux cartes du catalogue. L'étiquette en capitales au-dessus du nom est
+       celle de l'outil. Un test appelle catalogueHtml() et catalogueResultsHtml() et compare. -->
+  <section data-demo="cartes">
+    <div class="chips"><button type="button" class="chip chip--active" data-categorie="">Tout</button><button type="button" class="chip" data-categorie="Photo">Photo</button><button type="button" class="chip" data-categorie="Audio">Audio</button><button type="button" class="chip" data-categorie="Vidéo">Vidéo</button></div>
+    <div class="m-grid">
+    <a class="m-card" href="#/catalogue/canon-r10">
+      <div class="m-card__media">C</div>
+      <div class="m-card__body">
+        <span class="label-mini-caps text-secondary">Photo</span>
+        <strong>Canon R10 + 18-55</strong>
+        <span class="m-card__meta"><span class="badge badge--borrowed">Emprunté</span></span>
+        <span class="m-card__meta"><span class="badge badge--borrowed">Sur réservation</span></span>
+      </div>
+    </a>
+    <a class="m-card" href="#/catalogue/multiprise">
+      <div class="m-card__media">M</div>
+      <div class="m-card__body">
+        <span class="label-mini-caps text-secondary">Accessoire</span>
+        <strong>Multiprise</strong>
+        <span class="m-card__meta"><span class="badge badge--available">Disponible</span><span class="body-tiny text-secondary">4 sur 6 disponibles</span></span>
+        <span class="m-card__meta"><span class="badge badge--available">Self-service</span></span>
+      </div>
+    </a></div>
+  </section>
+
+  <!-- Ne laisse voir que la section demandée par le fragment, et annonce sa hauteur au cadre. -->
+  <script type="module" src="../js/cadre-enfant.js"></script>
+</body>
+</html>

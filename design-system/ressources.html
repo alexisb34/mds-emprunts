@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ressources — Guide de marque MyDigitalSchool</title>
+  <meta name="description" content="Le logo en SVG et en PNG, les variables CSS de l’outil d’emprunt à coller, et les liens des deux polices.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
+  <!-- Les feuilles du dépôt d’abord, la feuille du site ensuite : c’est elle qui passe le fond en blanc. -->
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div id="entete"></div>
+
+  <!-- Le contenu est rendu par `js/telechargement.js` : il lit le logo officiel et `css/tokens.css`, en
+       fabrique les versions et le bloc à coller, puis pose la page. Ce qui est écrit ici est ce qu’on voit
+       quand cela n’a pas pu se faire, quelle que soit la raison. `ds-message--attente` ne le fait apparaître
+       qu’après un délai, pour qu’il ne clignote pas sur un site qui marche ; en cas d’échec attrapé plus
+       bas, il apparaît tout de suite. -->
+  <main id="contenu">
+    <section class="ds-bande">
+      <div class="ds-section">
+        <h1 class="ds-titre-page">Les ressources</h1>
+        <div class="ds-message ds-message--attente" id="repli">
+          <p class="body">La page n’a pas pu s’afficher. Si vous avez ouvert ce fichier directement, voici la raison.</p>
+          <p class="body" id="raison">Cette page lit le fichier du logo (<code>assets/logo.svg</code>) et les tokens (<code>css/tokens.css</code>), ce qu’un navigateur refuse sur un fichier local. Ouvrez le site depuis un serveur&nbsp;: <code>npm run serve</code>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="pied"></div>
+
+  <script type="module">
+    import { enteteHtml, piedHtml } from './js/chrome.js';
+    import { montrerRepli } from './js/repli.js';
+    import { preparerSources, brancherExports } from './js/logo.js';
+    import { lireTokens } from './js/tokens.js';
+    import { brancherCode } from './js/code.js';
+    import { pageHtml } from './js/telechargement.js';
+
+    // Cette page est à la racine de design-system/ : l’adresse passée au chrome est `ressources.html`.
+    document.getElementById('entete').outerHTML = enteteHtml('ressources.html');
+    document.getElementById('pied').outerHTML = piedHtml();
+
+    const contenu = document.getElementById('contenu');
+    try {
+      const [logo, tokens] = await Promise.all([fetch('assets/logo.svg'), fetch('../css/tokens.css')]);
+      if (!logo.ok) throw new Error(`le serveur répond ${logo.status} pour le logo`);
+      if (!tokens.ok) throw new Error(`le serveur répond ${tokens.status} pour les tokens`);
+      // Les versions blanche et anthracite sont fabriquées ici depuis le fichier officiel : rien d’autre n’est stocké.
+      const sources = preparerSources(
+        await logo.text(),
+        (svg) => URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })),
+      );
+      contenu.innerHTML = pageHtml({ sources, groupes: lireTokens(await tokens.text()) });
+      brancherExports(contenu, sources);
+      // Les blocs à copier sont posés prêts : il ne reste qu’à brancher leur bouton.
+      contenu.querySelectorAll('.ds-code-bloc').forEach((bloc) => brancherCode(bloc));
+      // Le contenu n’existait pas quand le navigateur a lu l’adresse : un lien profond (#tokens)
+      // n’a donc rien atteint. On y va maintenant qu’il est posé.
+      if (location.hash) {
+        const cible = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        if (cible) cible.scrollIntoView();
+      }
+    } catch (erreur) {
+      montrerRepli(document, erreur, 'Les ressources n’ont pas pu être lues');
+    }
+  </script>
+</body>
+</html>
