@@ -30,4 +30,13 @@ export const PAIRES = [
   // un bouton qu'on survole se lit encore.
   { nom: 'Texte sur aplat violet', texte: '--ds-texte-inverse', fond: '--ds-violet', px: 16, gras: false },
   { nom: 'Texte sur aplat violet survolé', texte: '--ds-texte-inverse', fond: '--ds-violet-fonce', px: 16, gras: false },
+
+  // Les trois fonds que la mosaïque d'ouverture ajoute. Son titre de bloc fait 24 px gras,
+  // donc WCAG lui accorderait 3:1 ; ces paires sont quand même déclarées à 16 px non gras,
+  // le seuil le plus sévère, parce que c'est vrai et que la mosaïque rétrécit sur un
+  // téléphone. Le turquoise et le rose de la charte ne sont pas ici, et ne peuvent pas y
+  // être : aucun des deux ne tient 4,5:1, dans aucun sens. Ils n'y servent qu'en décor.
+  { nom: 'Texte sur aplat jaune', texte: '--ds-texte', fond: '--ds-jaune', px: 16, gras: false },
+  { nom: 'Texte sur aplat anthracite', texte: '--ds-texte-inverse', fond: '--ds-texte', px: 16, gras: false },
+  { nom: 'Texte sur aplat gris', texte: '--ds-texte', fond: '--ds-gris', px: 16, gras: false },
 ];

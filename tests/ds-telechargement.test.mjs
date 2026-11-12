@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { nomFichier, tokensEnTexte, LIENS_POLICES, pageHtml } from '../design-system/js/telechargement.js';
 import { lireTokens, GROUPES } from '../design-system/js/tokens.js';
 import { VERSIONS, TAILLES_PNG, brancherExports, pageHtml as pageLogo } from '../design-system/js/logo.js';
-import { CHAPITRES, enteteHtml } from '../design-system/js/chrome.js';
+import { ACCUEIL, CHAPITRES, enteteHtml } from '../design-system/js/chrome.js';
 
 const lire = (chemin) => readFileSync(new URL(`../${chemin}`, import.meta.url), 'utf8');
 const texte = (html) => html.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
@@ -332,7 +332,7 @@ test('la page Ressources livre du SVG et du PNG, et ses promesses ne disent pas 
   assert.match(resume, /SVG/);
   assert.match(resume, /PNG/);
   // La carte de l'accueil est le résumé, mot pour mot : elle ne peut pas promettre autre chose.
-  assert.ok(texte(lire('design-system/index.html')).includes(resume), 'la carte de l’accueil ne reprend plus le résumé du chapitre');
+  assert.ok(texte(lire(`design-system/${ACCUEIL}`)).includes(resume), 'la carte de l’accueil ne reprend plus le résumé du chapitre');
 
   // Aucune des promesses ne parle de « tous » les formats ni de « tout » ce qu'il faut.
   const promesses = {

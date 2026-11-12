@@ -205,7 +205,12 @@ test('typographie.html suit les conventions des chapitres : polices, feuilles, c
 
 test('ton.html suit les conventions des chapitres', () => {
   memeConventions(TON(), 'ton.html');
-  assert.match(TON(), /<title>Ton — /);
+
+  // Le menu, l'onglet et le titre de la page nomment le chapitre de la même façon. Le nom
+  // n'est écrit qu'une fois, dans `CHAPITRES` : c'est lui que les deux autres doivent dire.
+  const ton = CHAPITRES.find((c) => c.href === 'ton.html');
+  assert.match(TON(), new RegExp(`<title>${ton.titre} — `), 'l’onglet ne porte pas le nom du menu');
+  assert.match(TON(), new RegExp(`<h1[^>]*>\\s*${ton.titre}\\s*</h1>`), 'la page ne porte pas le nom du menu');
 });
 
 function structure(html, titre) {
@@ -240,7 +245,7 @@ test('typographie.html : un h1, pas de saut de titre, pas de capitales, des clas
 });
 
 test('ton.html : un h1, pas de saut de titre, pas de capitales, des classes qui existent', () => {
-  structure(TON(), 'Le ton');
+  structure(TON(), CHAPITRES.find((c) => c.href === 'ton.html').titre);
 });
 
 test('typographie.html : chaque cadre est écrit en clair, depuis la racine, et vise une démonstration qui existe', () => {

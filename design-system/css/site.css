@@ -34,6 +34,9 @@
   --ds-violet: #662483;            /* le seul aplat saturé du site, sous du texte blanc */
   --ds-violet-fonce: #521d69;      /* le même au survol */
   --ds-turquoise: #2db8c5;         /* décoratif seulement : filets, puces, dégradés — jamais sous du texte */
+  --ds-jaune: #faad14;             /* le jaune de la charte (--feedback-warning) ; sous l'anthracite, 5,81:1 */
+  --ds-gris: #e1e2e6;              /* le gris de la charte (--bg-muted) ; sous l'anthracite, 8,53:1 */
+  --ds-rose: #e71d73;              /* l'accent de la charte ; décoratif seulement : 4,36:1 sur blanc, 2,54:1 sur l'anthracite — il ne porte de texte dans aucun sens */
   --ds-texte: #3c3c3b;             /* l'anthracite du logo */
   --ds-texte-secondaire: #757678;  /* UNIQUEMENT sur --ds-fond : sur un aplat pastel il tombe à 3,9:1 */
   --ds-texte-inverse: #ffffff;
@@ -907,9 +910,395 @@ ol.ds-liste { list-style: decimal; }
 
 .rs-code { max-height: 28rem; overflow-y: auto; }
 
+/* ---- L'ouverture de l'accueil : la mosaïque ----
+   Sept blocs qui entrent par les bords. Le mouvement n'a pas de durée : il suit le
+   défilement. `design-system/js/mosaique.js` écrit quatre nombres de 0 à 1 sur la section
+   (`--p`, `--carte`, `--tuiles`, `--reduit`) et tout ce qui bouge en dessous les lit.
+
+   Chaque lecture passe par `var(--x, 1)` : sans le module, la mosaïque est à son état
+   final, montée, et les sept liens marchent. C'est aussi ce que montrent le mouvement
+   réduit, les écrans étroits, et le passage au clavier — `:focus-within` termine
+   l'ouverture d'un coup, pour qu'on ne tabule jamais vers un bloc sorti de l'écran.
+
+   Les sept fonds sont les seules couleurs de la charte qui portent du texte à 4,5:1 :
+   `PAIRES` les mesure toutes dans `tests/ds-socle.test.mjs`. Le turquoise et le rose
+   n'en sont pas et ne servent ici qu'en décor, dans les signes des blocs. */
+
+.ds-mosaique {
+  --p: 1;
+  --carte: 1;
+  --tuiles: 1;
+  --reduit: 1;
+
+  /* `--carte` est un seul geste, mais il en contient trois qui ne doivent pas se
+     chevaucher : une phrase violette sur fond blanc qui s'en va, le fond qui se remplit de
+     violet, puis la seconde phrase en blanc qui arrive. Les faire ensemble donnerait du
+     violet sur du violet, et un logo à mi-chemin entre ses couleurs et le blanc, c'est-à-dire
+     gris. Les voici l'un après l'autre, sur les trois tiers de `--carte`. */
+  /* Le côté du carré central, une fois la carte repliée. Il tombe sur le croisement des
+     quatre blocs du milieu, donc il mord sur le coin de chacun : le titre du bloc dont le
+     coin HAUT-GAUCHE est ce croisement doit s'en écarter, d'où la mesure en un seul endroit. */
+  --pastille: 76px;
+
+  --sortie: clamp(0, calc(var(--carte, 1) * 3), 1);
+  --plein: clamp(0, calc((var(--carte, 1) - 0.32) * 3.5), 1);
+  --entree: clamp(0, calc((var(--carte, 1) - 0.62) * 2.7), 1);
+}
+
+.ds-mosaique__piste { height: 320vh; }
+
+/* La scène se cale SOUS l'en-tête, qui est collant lui aussi : `--entete` est sa hauteur,
+   mesurée par le module. La piste garde sa course — 320 vh moins un écran — parce que la
+   scène raccourcit d'autant qu'elle descend. */
+.ds-mosaique__scene {
+  position: sticky;
+  top: var(--entete, 0px);
+  height: calc(100vh - var(--entete, 0px));
+  overflow: hidden;
+}
+
+/* La trame du début : elle s'efface à mesure que les blocs la recouvrent. */
+.ds-mosaique__scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  --ds-discret: var(--ds-texte);
+  background:
+    repeating-linear-gradient(to right, var(--ds-filet) 0 1px, transparent 1px 25%),
+    repeating-linear-gradient(to bottom, var(--ds-filet) 0 1px, transparent 1px 33.33%);
+  opacity: calc(1 - var(--tuiles, 1));
+}
+
+.ds-mosaique__grille {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1.3fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    'guide ton  logo       typo'
+    'guide coul composants ress';
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+}
+
+/* Un bloc entre par son bord. `--retard` échelonne les sept entrées ; le plus tardif part
+   à 0,42, d'où le 0,58 qui reste pour qu'il arrive exactement quand `--tuiles` atteint 1. */
+.ds-tuile {
+  --t: clamp(0, calc((var(--tuiles, 1) - var(--retard)) / 0.58), 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-xl);
+  border-radius: var(--radius-md);
+  transform: translate(calc(var(--dx, 0%) * (1 - var(--t))), calc(var(--dy, 0%) * (1 - var(--t))));
+}
+
+.ds-tuile--de-gauche { --dx: -130%; }
+.ds-tuile--de-droite { --dx: 130%; }
+.ds-tuile--de-haut { --dy: -210%; }
+.ds-tuile--de-bas { --dy: 210%; }
+
+.ds-tuile--guide { grid-area: guide; background: var(--ds-violet); color: var(--ds-texte-inverse); }
+.ds-tuile--ton { grid-area: ton; background: var(--ds-jaune); color: var(--ds-texte); }
+.ds-tuile--logo { grid-area: logo; background: var(--ds-fond-frais); color: var(--ds-texte); }
+.ds-tuile--typo { grid-area: typo; background: var(--ds-texte); color: var(--ds-texte-inverse); }
+.ds-tuile--couleurs { grid-area: coul; background: var(--ds-fond-doux); color: var(--ds-texte); }
+.ds-tuile--composants { grid-area: composants; background: var(--ds-violet-fonce); color: var(--ds-texte-inverse); }
+.ds-tuile--ressources { grid-area: ress; background: var(--ds-gris); color: var(--ds-texte); }
+
+.ds-tuile__titre { position: relative; }
+
+/* « Composants d'interface » est le bloc dont le coin haut-gauche est le croisement :
+   son titre commence après la moitié de la pastille. Les trois autres s'en éloignent
+   d'eux-mêmes — le croisement est leur coin haut-droit, bas-gauche ou bas-droit. */
+.ds-tuile--composants .ds-tuile__titre { margin-left: calc(var(--pastille) / 2); }
+
+/* Les signes sont du décor : ils reprennent la couleur du texte, très atténuée, donc ils
+   ne peuvent pas devenir un repère qu'on croit lire. Les trois disques de « Couleurs »
+   sont la seule exception, et ils ne portent rien. */
+.ds-tuile__signe {
+  align-self: flex-end;
+  width: clamp(48px, 7vw, 92px);
+  height: auto;
+  fill: currentColor;
+  opacity: 0.22;
+}
+
+.ds-tuile__signe--texte {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(44px, 6vw, 86px);
+  line-height: 1;
+  width: auto;
+}
+
+.ds-tuile__signe--logo { opacity: 1; width: clamp(96px, 11vw, 150px); }
+
+.ds-tuile__signe--disques { width: clamp(84px, 12vw, 150px); opacity: 1; mix-blend-mode: multiply; }
+/* Violet, jaune, rose : trois couleurs de la charte qui ont le droit de remplir une forme.
+   Le turquoise n'en fait pas partie — le chapitre Couleurs dit qu'il ne sert sur ce site
+   qu'en filet ou en bordure, et `tests/ds-dette.test.mjs` le vérifie dans la feuille. */
+.ds-tuile__signe--disques circle:nth-child(1) { fill: var(--ds-violet); }
+.ds-tuile__signe--disques circle:nth-child(2) { fill: var(--ds-jaune); }
+.ds-tuile__signe--disques circle:nth-child(3) { fill: var(--ds-rose); }
+
+/* ---- Les sept signes au survol ----
+   Un geste par bloc, et chacun dit ce que la page d'arrivée contient. Tout est enfermé
+   dans `no-preference` : quand le système demande moins de mouvement, aucune de ces règles
+   n'existe, donc rien ne bouge NI ne saute — une transition coupée laisserait le signe
+   changer d'un coup, ce qui est encore du mouvement.
+
+   Les blocs sont des liens : chaque geste répond au survol ET au focus clavier, sinon il
+   n'existerait que pour la souris. */
+@media (prefers-reduced-motion: no-preference) {
+  /* 1. Brand guidelines : les quatre formes échangent leur nature. Les trois carrés
+     s'arrondissent, le disque se carre — ce sont quatre rectangles, seul leur rayon les
+     distingue, et c'est exactement ce que raconte un design system. */
+  .ds-tuile--guide .ds-tuile__signe rect { transition: rx 240ms ease-out var(--d, 0ms); }
+  .ds-tuile--guide .ds-tuile__signe rect:nth-child(2) { --d: 40ms; }
+  .ds-tuile--guide .ds-tuile__signe rect:nth-child(3) { --d: 80ms; }
+  .ds-tuile--guide .ds-tuile__signe rect:nth-child(4) { --d: 120ms; }
+  .ds-tuile--guide:hover .ds-tuile__signe rect:nth-child(-n+3),
+  .ds-tuile--guide:focus-visible .ds-tuile__signe rect:nth-child(-n+3) { rx: 10; }
+  .ds-tuile--guide:hover .ds-tuile__signe rect:nth-child(4),
+  .ds-tuile--guide:focus-visible .ds-tuile__signe rect:nth-child(4) { rx: 3; }
+
+  /* 2. Ton & Voix : une phrase s'écrit entre les guillemets, une lettre à la fois. Au
+     repos chaque lettre a une largeur nulle, donc les guillemets restent collés ; à son
+     tour, chacune prend sa place d'un coup et pousse la suivante. La transition dure 1 ms :
+     ce n'est pas elle qui fait la frappe, c'est le délai. */
+  /* Les lettres sont des blocs en ligne à débordement caché : leur ligne de base est leur
+     bord BAS, donc sans rien elles s'assoient sur la ligne de base des guillemets et
+     tombent sous leur milieu. Le décalage les remonte à hauteur du « et du ». */
+  .ds-tuile__frappe { font-size: 0.28em; vertical-align: 0.7em; }
+  .ds-tuile__frappe > span { display: inline-block; max-width: 0; overflow: hidden; opacity: 0; }
+  .ds-tuile--ton:hover .ds-tuile__frappe > span,
+  .ds-tuile--ton:focus-visible .ds-tuile__frappe > span {
+    max-width: 2em;
+    opacity: 1;
+    transition: max-width 1ms calc(var(--i) * 70ms), opacity 1ms calc(var(--i) * 70ms);
+  }
+
+  /* 3. Logo : il se lève, et rien d'autre. C'est le seul signe des sept qui est le logo
+     réel, et le chapitre vers lequel il mène interdit de le déformer : une mise à
+     l'échelle ici contredirait la page d'arrivée. */
+  .ds-tuile--logo .ds-tuile__signe { transition: transform 200ms ease-out; }
+  .ds-tuile--logo:hover .ds-tuile__signe,
+  .ds-tuile--logo:focus-visible .ds-tuile__signe { transform: translateY(-4px); }
+
+  /* 4. Typographie : le corps grossit, l'approche se resserre. Le geste du typographe.
+     L'origine est le coin bas-droit, celui par lequel le signe est posé : il grossit donc
+     vers l'intérieur du bloc, jamais dans la découpe. */
+  .ds-tuile--typo .ds-tuile__signe {
+    transform-origin: 100% 100%;
+    transition: transform 200ms ease-out, letter-spacing 200ms ease-out;
+  }
+  .ds-tuile--typo:hover .ds-tuile__signe,
+  .ds-tuile--typo:focus-visible .ds-tuile__signe { transform: scale(1.06); letter-spacing: -1px; }
+
+  /* 5. Couleurs : les trois disques se chevauchent au repos. Ils s'écartent, et on voit
+     chaque couleur pour elle-même — ce que le chapitre va montrer. Les décalages sont en
+     unités du `viewBox`, donc ils suivent la taille du signe. */
+  /* Les deux signes qui se déplacent sortent de leur `viewBox`, qui les serre de près : un
+     SVG rogne net ce qui dépasse, et on perdait un bout du disque de gauche et de la barre
+     la plus longue. Le bloc, lui, garde sa découpe — le retrait du signe laisse la place. */
+  .ds-tuile--couleurs .ds-tuile__signe,
+  .ds-tuile--composants .ds-tuile__signe { overflow: visible; }
+
+  .ds-tuile--couleurs .ds-tuile__signe circle { transition: transform 240ms ease-out; }
+  .ds-tuile--couleurs:hover .ds-tuile__signe circle:nth-child(1),
+  .ds-tuile--couleurs:focus-visible .ds-tuile__signe circle:nth-child(1) { transform: translateX(-6px); }
+  .ds-tuile--couleurs:hover .ds-tuile__signe circle:nth-child(3),
+  .ds-tuile--couleurs:focus-visible .ds-tuile__signe circle:nth-child(3) { transform: translateX(6px); }
+
+  /* 6. Composants d'interface : les trois barres glissent l'une après l'autre. L'empilement
+     se lit comme une liste de composants qui se déploie. */
+  .ds-tuile--composants .ds-tuile__signe rect { transition: transform 200ms ease-out var(--d, 0ms); }
+  .ds-tuile--composants .ds-tuile__signe rect:nth-child(2) { --d: 60ms; }
+  .ds-tuile--composants .ds-tuile__signe rect:nth-child(3) { --d: 120ms; }
+  .ds-tuile--composants:hover .ds-tuile__signe rect,
+  .ds-tuile--composants:focus-visible .ds-tuile__signe rect { transform: translateX(6px); }
+
+  /* 7. Ressources : la flèche plonge et rebondit. C'est le geste du téléchargement, et
+     c'est ce que la page contient. Elle descend dans le retrait du bloc, pas dans sa
+     découpe. */
+  .ds-tuile--ressources .ds-tuile__signe { transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .ds-tuile--ressources:hover .ds-tuile__signe,
+  .ds-tuile--ressources:focus-visible .ds-tuile__signe { transform: translateY(8px); }
+}
+
+/* La carte du milieu. Elle commence blanche avec la première phrase en violet, se remplit
+   de violet pour la seconde, puis se replie sur le petit carré du centre. */
+.ds-mosaique__carte {
+  --ds-discret: var(--ds-texte-inverse);
+  position: absolute;
+  /* Au-dessus des blocs : ils arrivent par-dessous et se referment autour d'elle, et à la
+     fin c'est elle le petit carré du centre. Sans cet étage, les blocs la recouvriraient
+     et il n'en resterait qu'une croix violette dans les gouttières. */
+  z-index: 1;
+  left: 50%;
+  /* Centrée sur la scène, comme la grille : le petit carré final tombe exactement sur le
+     croisement des quatre blocs du milieu. */
+  top: 50%;
+  width: calc(30% - (30% - var(--pastille)) * var(--reduit, 1));
+  height: calc(62% - (62% - var(--pastille)) * var(--reduit, 1));
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: calc(var(--space-xl) - (var(--space-xl) - var(--space-sm)) * var(--reduit, 1));
+  border-radius: var(--radius-md);
+}
+
+.ds-mosaique__carte::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  --ds-discret: var(--ds-texte-inverse);
+  background: var(--ds-violet);
+  opacity: var(--plein);
+}
+
+/* Les deux phrases se superposent : l'une s'efface pendant que l'autre arrive. */
+.ds-mosaique__phrase {
+  position: absolute;
+  left: calc(var(--space-xl) - (var(--space-xl) - var(--space-sm)) * var(--reduit, 1));
+  right: calc(var(--space-xl) - (var(--space-xl) - var(--space-sm)) * var(--reduit, 1));
+  top: calc(var(--space-xl) - (var(--space-xl) - var(--space-sm)) * var(--reduit, 1));
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(20px, 1.9vw, 28px);
+  line-height: 1.25;
+  letter-spacing: -0.4px;
+  /* La phrase rétrécit avec la carte qui la porte, et finit à rien : à la fin il ne reste
+     que le logo dans le petit carré. Une mise à l'échelle plutôt qu'une taille de police,
+     pour que les lignes ne se recomposent pas à chaque pixel. L'origine est le coin
+     haut-gauche, celui dont la phrase ne bouge pas pendant que la carte se referme. */
+  transform: scale(calc(1 - var(--reduit, 1)));
+  transform-origin: top left;
+}
+
+.ds-mosaique__phrase--un { color: var(--ds-violet); opacity: calc((1 - var(--sortie)) * (1 - var(--reduit, 1))); }
+.ds-mosaique__phrase--deux { color: var(--ds-texte-inverse); opacity: calc(var(--entree) * (1 - var(--reduit, 1))); }
+
+/* Un seul logo pour toute la séquence : `brightness(0) invert(1)` le passe au blanc quand
+   la carte se remplit, sans charger un second fichier. */
+.ds-mosaique__logo {
+  --logo: clamp(72px, 8vw, 110px);
+  /* Il rétrécit avec la carte : à la fin elle ne fait que 76 px de côté. */
+  --logo-largeur: calc(var(--logo) - (var(--logo) - 52px) * var(--reduit, 1));
+  position: relative;
+  width: var(--logo-largeur);
+  height: auto;
+  align-self: flex-start;
+  /* En bas à gauche de la grande carte, comme dans la séquence d'ouverture ; centré dans le
+     petit carré final, où il est seul et où « en bas à gauche » ne veut plus rien dire. Les
+     deux marges sont nulles au départ et valent à la fin exactement la place qui reste —
+     un pourcentage de marge se mesure sur la largeur du contenu de la carte. */
+  margin-left: calc((100% - var(--logo-largeur)) / 2 * var(--reduit, 1));
+  margin-bottom: calc(15px * var(--reduit, 1));
+  filter: brightness(calc(1 - var(--plein))) invert(var(--plein));
+}
+
+/* L'invitation à faire défiler, en bas à droite. Elle s'efface dès que le déroulé commence :
+   une fois qu'on a compris, elle n'a plus rien à dire. */
+.ds-mosaique__repere {
+  position: absolute;
+  right: var(--space-3xl);
+  bottom: var(--space-3xl);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--ds-violet);
+  opacity: calc(1 - var(--sortie));
+}
+
+/* Le double de `.label-caps`, taille, interligne et interlettre : c'est une invitation à
+   agir, pas un libellé, et elle doit se voir du coin de l'œil. */
+.ds-mosaique__repere-texte {
+  font-size: 22px;
+  line-height: 28px;
+  letter-spacing: 1.6px;
+}
+
+/* Le va-et-vient ne sert qu'à se faire repérer : il porte le même sens que la flèche
+   immobile, donc le couper sous `prefers-reduced-motion` ne retire aucune information. */
+.ds-mosaique__repere svg {
+  width: 56px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  animation: ds-repere 1.6s ease-in-out infinite;
+}
+
+@keyframes ds-repere {
+  from, to { transform: translateY(-8px); }
+  50% { transform: translateY(8px); }
+}
+
+/* Au clavier, l'ouverture se termine d'un coup : on ne tabule jamais vers un bloc qui est
+   encore hors de l'écran.
+
+   `!important` n'est pas un raccourci ici, c'est la seule façon : le module écrit
+   l'avancement en style EN LIGNE sur la section, et un style en ligne bat n'importe quelle
+   règle de feuille. Les trois états qui court-circuitent le déroulé — le clavier,
+   l'écran étroit, le mouvement réduit — doivent donc passer devant lui. */
+.ds-mosaique:focus-within { --carte: 1 !important; --tuiles: 1 !important; --reduit: 1 !important; }
+
+/* Les sept fonds et la carte déclarent la couleur qu'y prend le texte discret. */
+.ds-tuile--ton,
+.ds-tuile--logo,
+.ds-tuile--couleurs,
+.ds-tuile--ressources { --ds-discret: var(--ds-texte); }
+
+.ds-tuile--guide,
+.ds-tuile--typo,
+.ds-tuile--composants { --ds-discret: var(--ds-texte-inverse); }
+
 /* ---- Largeurs étroites ----
    Les deux seuils sont ceux de `css/components.css` : un seul jeu de ruptures pour tout le
    dépôt. À 360 px, rien ne doit déborder. */
+
+/* La mosaïque ne se déroule pas sur un téléphone : une scène collée sur 320 vh y coûte
+   trois écrans de défilement pour sept liens. Elle y devient ce qu'elle finit par être,
+   une pile de sept blocs, précédée de sa phrase d'ouverture. */
+@media (max-width: 900px) {
+  .ds-mosaique { --carte: 0 !important; --tuiles: 1 !important; --reduit: 0 !important; }
+  .ds-mosaique__piste { height: auto; }
+  .ds-mosaique__scene { position: static; height: auto; overflow: visible; }
+  .ds-mosaique__scene::before { display: none; }
+  .ds-mosaique__repere { display: none; }
+
+  .ds-mosaique__carte {
+    position: static;
+    width: auto;
+    height: auto;
+    transform: none;
+    padding: var(--ds-air) var(--space-2xl) var(--space-2xl);
+  }
+
+  .ds-mosaique__carte::before { display: none; }
+  .ds-mosaique__phrase { position: static; }
+  .ds-mosaique__phrase--deux { display: none; }
+  .ds-mosaique__logo { margin-bottom: var(--space-lg); }
+
+  .ds-mosaique__grille {
+    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: 'guide' 'ton' 'logo' 'typo' 'coul' 'composants' 'ress';
+    padding: var(--space-2xl);
+    gap: var(--space-sm);
+  }
+
+  /* Empilés, les blocs n'ont plus de croisement central : le titre reprend sa marge. */
+  .ds-tuile--composants .ds-tuile__titre { margin-left: 0; }
+  .ds-tuile { min-height: 164px; }
+}
 
 @media (max-width: 900px) {
   .ds-grille--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1051,4 +1440,10 @@ ol.ds-liste { list-style: decimal; }
   .ds-carte__fleche { transition: none; }
   .ds-carte:hover { transform: none; }
   .ds-carte:hover .ds-carte__fleche { transform: none; }
+
+  /* La mosaïque est montée d'emblée, et sa piste rend les trois écrans qu'elle réservait. */
+  .ds-mosaique { --carte: 1 !important; --tuiles: 1 !important; --reduit: 1 !important; }
+  .ds-mosaique__piste { height: auto; }
+  .ds-mosaique__scene { position: static; height: 88vh; }
+  .ds-mosaique__repere svg { animation: none; }
 }

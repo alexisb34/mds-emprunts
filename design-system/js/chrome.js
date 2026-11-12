@@ -16,13 +16,23 @@
 //
 // Le site est publié dans un sous-répertoire : aucune adresse ne commence par `/`.
 
+// L'accueil du guide : le hero, les deux étages, les cartes des chapitres. Ce n'est PAS
+// `index.html`, qui est la porte d'entrée animée — la mosaïque, sans en-tête ni pied, dont
+// le premier bloc mène ici. Tout ce qui dit « accueil » dans le chrome passe par cette
+// constante, pour qu'il n'y ait qu'un endroit à changer.
+export const ACCUEIL = 'guide.html';
+
+// La réserve du site, écrite une fois : le pied la porte sur chaque page, et la mosaïque
+// la porte sur la landing, qui n'a pas de pied. Deux copies dériveraient.
+export const RESERVE = 'Les règles d’usage du logo ont été construites pour ce guide. Elles ne sont validées par personne du côté de la marque : ce site n’est pas une charte officielle.';
+
 // Étage 1 — la vitrine de marque. Un chapitre par page, un résumé par chapitre : c'est le
 // texte des cartes de l'accueil, écrit une fois.
 export const CHAPITRES = [
   { href: 'logo.html', titre: 'Logo', resume: 'Les versions, la zone de protection, les fonds autorisés et les interdits, chacun avec sa raison.' },
   { href: 'couleurs.html', titre: 'Couleurs', resume: 'Le turquoise de la marque, le violet du produit, et laquelle sert à quoi. Contrastes mesurés.' },
   { href: 'typographie.html', titre: 'Typographie', resume: 'Bricolage Grotesque pour les titres, Inter pour le reste. L’échelle complète.' },
-  { href: 'ton.html', titre: 'Ton', resume: 'Comment on écrit dans les interfaces de l’école : phrases courtes, pas de jargon, erreurs qui disent quoi faire.' },
+  { href: 'ton.html', titre: 'Ton &amp; Voix', resume: 'Comment on écrit dans les interfaces de l’école : phrases courtes, pas de jargon, erreurs qui disent quoi faire.' },
   { href: 'ressources.html', titre: 'Ressources', resume: 'Le logo en SVG et en PNG, les couleurs et mesures à coller en variables CSS, les liens des deux polices.' },
 ];
 
@@ -76,12 +86,12 @@ export function enteteHtml(courant = '') {
   return `<header class="ds-entete">
   <a class="ds-saut label-md" href="#contenu">Aller au contenu</a>
   <div class="ds-entete__barre">
-    ${lien(`${base}index.html`, `<img class="ds-entete__logo" src="${base}assets/logo.svg" alt="MyDigitalSchool" width="150" height="88"><span class="ds-entete__titre label-sm">Guide de marque<span class="ds-entete__titre-suite"> &amp; design system</span></span>`, { classe: 'ds-entete__marque', marque: courant === 'index.html' ? 'page' : '' })}
+    ${lien(base + ACCUEIL, `<img class="ds-entete__logo" src="${base}assets/logo.svg" alt="MyDigitalSchool" width="150" height="88"><span class="ds-entete__titre label-md">Brand guidelines<span class="ds-entete__titre-suite"> &amp; design system</span></span>`, { classe: 'ds-entete__marque', marque: courant === ACCUEIL ? 'page' : '' })}
     <nav class="ds-nav" aria-label="Chapitres de la marque">
       <ul class="ds-nav__liste">${chapitres}
       </ul>
     </nav>
-    ${lien(base + ENTREE_COMPOSANTS, 'Composants', { classe: 'ds-entete__etage label-md', marque: courant === ENTREE_COMPOSANTS ? 'page' : (dansComposants ? 'true' : '') })}
+    ${lien(base + ENTREE_COMPOSANTS, 'Composants<span class="ds-entete__titre-suite">&nbsp;d’interface</span>', { classe: 'ds-entete__etage label-md', marque: courant === ENTREE_COMPOSANTS ? 'page' : (dansComposants ? 'true' : '') })}
   </div>
 </header>`;
 }
@@ -137,9 +147,9 @@ export function piedHtml(courant = '') {
   return `<footer class="ds-pied">
   <div class="ds-pied__corps">
     <p class="body-sm">Les couleurs, les espacements et les composants montrés ici sont lus dans le code de l’outil d’emprunt. Quand le code change, ce site change.</p>
-    <p class="body-sm ds-pied__reserve">Les règles d’usage du logo ont été construites pour ce guide. Elles ne sont validées par personne du côté de la marque : ce site n’est pas une charte officielle.</p>
+    <p class="body-sm ds-pied__reserve">${RESERVE}</p>
     <ul class="ds-pied__liens">
-      <li>${lien(`${base}index.html`, 'Accueil', { classe: 'ds-pied__lien' })}</li>
+      <li>${lien(base + ACCUEIL, 'Accueil', { classe: 'ds-pied__lien' })}</li>
       <li>${lien(base + ENTREE_COMPOSANTS, 'Démarrer avec les composants', { classe: 'ds-pied__lien' })}</li>
     </ul>
   </div>

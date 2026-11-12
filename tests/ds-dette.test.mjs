@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { ratio, ratioExact, verdict } from '../design-system/js/contraste.js';
 import { valeursDepuis } from '../design-system/js/tokens.js';
-import { enteteHtml } from '../design-system/js/chrome.js';
+import { ACCUEIL, enteteHtml } from '../design-system/js/chrome.js';
 import { COULEURS } from '../design-system/js/logo.js';
 import { LABELS } from '../js/models.js';
 import {
@@ -627,7 +627,7 @@ test('la page dit où se range ce site lui-même, et c’est vrai de sa feuille'
   assert.equal(couleurDe('.ds-etage__liste a'), 'var(--ds-lien)');
   assert.equal(valeur('--ds-texte-secondaire'), '#757678', 'le gris des liens de navigation n’est plus celui du texte discret');
   // Les pastels de l'accueil : ce que la phrase dit, lu dans la feuille et dans la page d'accueil.
-  const accueil = lire('design-system/index.html');
+  const accueil = lire(`design-system/${ACCUEIL}`);
   assert.match(accueil, /class="ds-etage ds-etage--marque"/);
   assert.match(accueil, /class="ds-etage ds-etage--composants"/);
   assert.equal(css.match(/\.ds-etage--marque\s*\{\s*background:\s*(var\(--[\w-]+\))/)[1], 'var(--ds-fond-doux)');

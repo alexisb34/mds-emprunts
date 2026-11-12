@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { posix } from 'node:path';
 import { ratioExact, verdict } from '../design-system/js/contraste.js';
 import { PAIRES } from '../design-system/js/palette-site.js';
-import { CHAPITRES, COMPOSANTS, RUPTURE_ETROITE, brancherSommaire, enteteHtml, piedHtml, sommaireHtml } from '../design-system/js/chrome.js';
+import { ACCUEIL, CHAPITRES, COMPOSANTS, RESERVE, RUPTURE_ETROITE, brancherSommaire, enteteHtml, piedHtml, sommaireHtml } from '../design-system/js/chrome.js';
 import { pageHtml as pageLogo } from '../design-system/js/logo.js';
 import { pageHtml as pageCouleurs } from '../design-system/js/couleurs.js';
 import { pageHtml as pageRessources } from '../design-system/js/telechargement.js';
@@ -66,7 +66,9 @@ test('enteteHtml marque le chapitre courant et un seul', () => {
 });
 
 test('les deux étages sont annoncés sur l’accueil', () => {
-  const html = readFileSync(new URL('../design-system/index.html', import.meta.url), 'utf8');
+  // L'accueil du guide est `guide.html` : `index.html` est la landing, qui ne porte que la
+  // mosaïque et n'annonce les deux étages que par ses blocs (tests/ds-mosaique.test.mjs).
+  const html = readFileSync(new URL(`../design-system/${ACCUEIL}`, import.meta.url), 'utf8');
   for (const c of CHAPITRES) assert.match(html, new RegExp(`href="${c.href}"`));
   assert.match(html, /href="composants\/demarrer\.html"/);
 });
@@ -132,22 +134,22 @@ test('le site ne pose aucune valeur de couleur en dur hors de son :root', () => 
 test('l’en-tête mène aux deux étages depuis n’importe quelle profondeur', () => {
   // Depuis une page de `composants/`, les liens du site remontent d'un cran : sans ça,
   // « Logo » viserait `composants/logo.html`, qui n'existera jamais.
-  const racine = enteteHtml('index.html');
-  assert.match(racine, /href="index\.html"/);
+  const racine = enteteHtml(ACCUEIL);
+  assert.match(racine, new RegExp(`href="${ACCUEIL}"`));
   assert.match(racine, /href="composants\/demarrer\.html"/);
 
   // Une seule règle d'adresse pour tout le site : l'adresse relative à `design-system/`,
   // précédée d'autant de `../` qu'il faut. Depuis `composants/`, l'étage composants se
   // désigne donc par `../composants/…`, qui se résout bien dans le même dossier.
   const profond = enteteHtml('composants/badge.html');
-  assert.match(profond, /href="\.\.\/index\.html"/);
+  assert.match(profond, new RegExp(`href="\\.\\./${ACCUEIL}"`));
   assert.match(profond, /href="\.\.\/logo\.html"/);
   assert.match(profond, /href="\.\.\/composants\/demarrer\.html"/);
   assert.doesNotMatch(profond, /href="(?!\.\.\/|#)/, 'une adresse du chrome ne remonte pas');
 
   // Le pied suit la même convention, et s'en passe à la racine.
-  assert.match(piedHtml(), /href="index\.html"/);
-  assert.match(piedHtml('composants/badge.html'), /href="\.\.\/index\.html"/);
+  assert.match(piedHtml(), new RegExp(`href="${ACCUEIL}"`));
+  assert.match(piedHtml('composants/badge.html'), new RegExp(`href="\\.\\./${ACCUEIL}"`));
 });
 
 test('l’en-tête signale l’étage composants sans mentir sur la page courante', () => {
@@ -207,24 +209,32 @@ test('le pied rappelle que ces règles ne sont pas une charte approuvée', () =>
   const html = piedHtml();
   assert.match(html, /<footer/);
   assert.match(html, /valid/i);
-  assert.match(html, /href="index\.html"/);
+  assert.ok(html.includes(RESERVE), 'le pied ne porte plus la réserve du site');
+  assert.match(html, new RegExp(`href="${ACCUEIL}"`));
+  // La landing n'a pas de pied : tests/ds-mosaique.test.mjs vérifie qu'elle porte la même
+  // réserve, mot pour mot, dans sa propre bande sous les blocs.
 });
 
 test('l’accueil charge les polices avant ses feuilles et reste relatif', () => {
-  const html = lire('index.html');
-  const famille = html.search(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2\?family=Inter[^"]*display=swap">/);
-  assert.ok(famille >= 0, 'index.html ne charge pas les polices par <link>');
-  assert.ok(html.includes('<link rel="preconnect" href="https://fonts.googleapis.com">'), 'preconnect googleapis');
-  assert.ok(html.includes('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'), 'preconnect gstatic');
-  assert.ok(famille < html.indexOf('href="../css/tokens.css"'), 'les polices passent avant nos feuilles');
-  // Publié dans un sous-répertoire : aucun chemin absolu, et les feuilles du dépôt sont au-dessus.
-  assert.doesNotMatch(html, /(?:src|href)="\/[^/]/);
-  assert.match(html, /href="\.\.\/css\/tokens\.css"/);
-  assert.match(html, /href="css\/site\.css"/);
+  // Les deux pages de la racine du site : la landing et l'accueil du guide. Elles ont le
+  // même <head>, et tests/ds-telechargement.test.mjs compare le bloc de polices de la
+  // landing, mot pour mot, à celui que la page Ressources donne à copier.
+  for (const page of ['index.html', ACCUEIL]) {
+    const html = lire(page);
+    const famille = html.search(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2\?family=Inter[^"]*display=swap">/);
+    assert.ok(famille >= 0, `${page} ne charge pas les polices par <link>`);
+    assert.ok(html.includes('<link rel="preconnect" href="https://fonts.googleapis.com">'), `${page} : preconnect googleapis`);
+    assert.ok(html.includes('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'), `${page} : preconnect gstatic`);
+    assert.ok(famille < html.indexOf('href="../css/tokens.css"'), `${page} : les polices passent avant nos feuilles`);
+    // Publié dans un sous-répertoire : aucun chemin absolu, et les feuilles du dépôt sont au-dessus.
+    assert.doesNotMatch(html, /(?:src|href)="\/[^/]/, `${page} : chemin absolu`);
+    assert.match(html, /href="\.\.\/css\/tokens\.css"/);
+    assert.match(html, /href="css\/site\.css"/);
+  }
 });
 
 test('l’accueil a un seul h1, et c’est la signature de l’école', () => {
-  const html = lire('index.html');
+  const html = lire(ACCUEIL);
   assert.equal((html.match(/<h1\b/g) || []).length, 1);
   assert.match(html, /<h1[^>]*>\s*Les talents se connectent\s*<\/h1>/);
   // Le lien d'évitement de l'en-tête a besoin de sa cible.
@@ -368,7 +378,10 @@ test('le détecteur d’enfants directs voit bien un enfant mal placé', () => {
 // l'en-tête du site contredirait la décision centrale du projet (le cadre montre le composant, rien
 // d'autre). Ils sont tenus par tests/ds-cadre.test.mjs et tests/deploiement.test.mjs.
 
-const PAGES_DU_SITE = ['index.html', ...CHAPITRES.map((c) => c.href), ...COMPOSANTS.map((c) => c.href)];
+// `index.html` n'en est pas : c'est la landing, et c'est la seule page du site qui n'a ni
+// en-tête ni pied — on en sort en choisissant un bloc de la mosaïque. Elle est tenue par
+// tests/ds-mosaique.test.mjs, qui vérifie ses sept destinations, son `<h1>` et sa réserve.
+const PAGES_DU_SITE = [ACCUEIL, ...CHAPITRES.map((c) => c.href), ...COMPOSANTS.map((c) => c.href)];
 
 // Le HTML qu'une personne verra, pas celui du fichier : quatre pages remplacent leur contenu par
 // un module (logo, couleurs, ressources) ou y ajoutent le tableau des tokens (fondations). On
@@ -445,7 +458,7 @@ test('chaque page du design system mène au reste du site', () => {
     // l'étage composants, et chaque chapitre ; et chacune de ces adresses mène à un fichier réel.
     const chrome = enteteHtml(page) + piedHtml(dossier ? page : '');
     const base = dossier ? '../' : '';
-    assert.ok(chrome.includes(`href="${base}index.html"`), `${page} : le chrome ne ramène pas à l'accueil`);
+    assert.ok(chrome.includes(`href="${base}${ACCUEIL}"`), `${page} : le chrome ne ramène pas à l'accueil`);
     assert.ok(chrome.includes(`href="${base}composants/demarrer.html"`), `${page} : le chrome ne mène pas à Démarrer`);
     for (const c of CHAPITRES) assert.ok(chrome.includes(`href="${base}${c.href}"`), `${page} : le chrome ne mène pas à ${c.titre}`);
     for (const [, cible] of chrome.matchAll(/href="([^"#]+)"/g)) {

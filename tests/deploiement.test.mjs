@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { posix } from 'node:path';
-import { CHAPITRES, COMPOSANTS } from '../design-system/js/chrome.js';
+import { ACCUEIL, CHAPITRES, COMPOSANTS } from '../design-system/js/chrome.js';
 
 const RACINE = new URL('../', import.meta.url);
 const pages = readdirSync(RACINE).filter((f) => f.endsWith('.html'));
@@ -98,7 +98,9 @@ test('les pages du dépôt sont bien celles qu’on croit', () => {
 
 test('les pages du design system sont celles que son chrome annonce, plus les exemples des cadres', () => {
   const de = (dossier) => pagesDS.filter((p) => p.dossier === dossier).map((p) => p.nom).sort();
-  assert.deepEqual(de('design-system'), ['index.html', ...CHAPITRES.map((c) => c.href)].sort());
+  // `index.html` est la landing — la mosaïque, sans chrome ; `guide.html` est l'accueil du
+  // guide, où mène son premier bloc et où ramène le logo de l'en-tête.
+  assert.deepEqual(de('design-system'), ['index.html', ACCUEIL, ...CHAPITRES.map((c) => c.href)].sort());
   assert.deepEqual(de('design-system/composants'), COMPOSANTS.map((c) => c.href.replace('composants/', '')).sort());
   // Un exemple est une page isolée sans entrée dans le chrome : on vérifie seulement qu'il y en a,
   // pour qu'un dossier vidé ou renommé ne laisse pas la boucle de publication tourner à vide.
