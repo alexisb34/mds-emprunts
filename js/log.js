@@ -4,7 +4,7 @@ import { now } from './rules.js';
 
 export const ACTIONS = {
   ITEM_CREE: 'item.cree', ITEM_MODIFIE: 'item.modifie', ITEM_ETAT: 'item.etat',
-  USER_CREE: 'user.cree', USER_MODIFIE: 'user.modifie', USER_DESACTIVE: 'user.desactive',
+  USER_CREE: 'user.cree', USER_MODIFIE: 'user.modifie', USER_DESACTIVE: 'user.desactive', USER_SUPPRIME: 'user.supprime',
   LOAN_EMPRUNT: 'loan.emprunt', LOAN_RETOUR: 'loan.retour', LOAN_RESERVEE: 'loan.reservee',
   LOAN_REMISE: 'loan.remise', LOAN_REFUSEE: 'loan.refusee', LOAN_EXPIREE: 'loan.expiree',
   LOAN_ANNULEE: 'loan.annulee', LOAN_PROLONGEE: 'loan.prolongee',
@@ -17,7 +17,7 @@ export const ACTIONS = {
 
 export const ACTION_LABELS = {
   'item.cree': 'Matériel ajouté', 'item.modifie': 'Matériel modifié', 'item.etat': 'Changement d’état',
-  'user.cree': 'Utilisateur ajouté', 'user.modifie': 'Utilisateur modifié', 'user.desactive': 'Utilisateur désactivé',
+  'user.cree': 'Utilisateur ajouté', 'user.modifie': 'Utilisateur modifié', 'user.desactive': 'Utilisateur désactivé', 'user.supprime': 'Utilisateur supprimé',
   'loan.emprunt': 'Emprunt', 'loan.retour': 'Retour', 'loan.reservee': 'Réservation',
   'loan.remise': 'Remise', 'loan.refusee': 'Réservation refusée', 'loan.expiree': 'Réservation expirée',
   'loan.annulee': 'Réservation annulée', 'loan.prolongee': 'Emprunt prolongé',

@@ -44,6 +44,10 @@ test('utilisateursHtml : compteur, filtres, table', () => {
   assert.match(html, /<option value="pedago" selected>Pédagogie/);
   assert.match(html, /Alexis Bengel/);
   assert.match(html, /name="actifs"[^>]*checked/);
+  assert.match(html, /data-select-all/);
+  assert.match(html, /data-select="user_041"[^>]*aria-label="Sélectionner Alexis Bengel"/);
+  assert.match(html, /data-action="export-csv"|data-action="import-csv"/);
+  assert.match(html, /data-action="delete-selected" disabled>Supprimer la sélection \(0\)/);
 });
 
 test('userFormHtml : champs, promo pré-sélectionnée', () => {

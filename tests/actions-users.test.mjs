@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { ACTIONS } from '../js/log.js';
-import { validateUser, createUser, updateUser, setUserActive, userStats, userHistory } from '../js/actions/users.js';
+import { validateUser, createUser, updateUser, setUserActive, deleteUser, userStats, userHistory } from '../js/actions/users.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const PEDAGO = 'user_041';
@@ -103,4 +103,26 @@ test('userHistory : emprunts, réservations salle et journal', () => {
   assert.ok(h.bookings.some((x) => x.id === b.id));
   assert.ok(h.loans.every((l) => l.userId === b.userId));
   assert.ok(h.log.every((e) => e.userId === b.userId || e.auteurId === b.userId));
+});
+
+test('deleteUser : un compte sans historique part, le journal le note', () => {
+  const u = createUser(valid, PEDAGO);
+  deleteUser(u.id, PEDAGO);
+  assert.equal(store.users.get(u.id), null);
+  const entry = store.log.list().at(-1);
+  assert.equal(entry.action, ACTIONS.USER_SUPPRIME);
+  assert.equal(entry.userId, u.id);
+  assert.match(entry.detail, /Nina Costa \(Élève\)/);
+});
+
+test('deleteUser : refus avec historique, pédago, soi-même, inconnu', () => {
+  const avecEmprunt = store.loans.list()[0].userId;
+  assert.throws(() => deleteUser(avecEmprunt, PEDAGO), /désactivez le compte/);
+  assert.ok(store.users.get(avecEmprunt));
+  const avecSalle = store.bookings.list().map((b) => b.userId).find((id) => !store.loans.list((l) => l.userId === id).length);
+  if (avecSalle) assert.throws(() => deleteUser(avecSalle, PEDAGO), /réservation\(s\) de salle/);
+  const autrePedago = store.users.list((u) => u.role === 'pedago' && u.id !== PEDAGO)[0];
+  assert.throws(() => deleteUser(autrePedago.id, PEDAGO), /ne se supprime pas/);
+  assert.throws(() => deleteUser(PEDAGO, PEDAGO), /propre compte/);
+  assert.throws(() => deleteUser('user_zzz', PEDAGO), /introuvable/);
 });
