@@ -23,7 +23,7 @@
     <main id="contenu" class="ds-article">
       <header class="ds-article__tete">
         <h1 class="ds-titre">Icônes</h1>
-        <p class="ds-chapeau ds-mesure">Il n’y a pas de système d’icônes. Il y a neuf dessins en ligne, une loupe en image de fond, quelques caractères et deux emoji.</p>
+        <p class="ds-chapeau ds-mesure">Il n’y a pas de système d’icônes. Il y a dix dessins en ligne, une loupe en image de fond, quelques caractères et deux emoji.</p>
       </header>
 
       <section id="a-quoi" class="ds-groupe">
@@ -34,7 +34,7 @@
 
       <section id="exemple" class="ds-groupe">
         <h2 class="h5">L’exemple</h2>
-        <p class="body ds-mesure">Les neuf icônes dessinées de l’outil, à leur taille d’origine, avec le nom de leur clé dans <code>ICONS</code>.</p>
+        <p class="body ds-mesure">Les dix icônes dessinées de l’outil, à leur taille d’origine, avec le nom de leur clé dans <code>ICONS</code>.</p>
         <div id="cadre-inventaire"></div>
       </section>
 
@@ -42,18 +42,20 @@
         <h2 class="h5">Les variantes et les états</h2>
 
         <h3 class="h6">Ce qui est réellement employé</h3>
-        <p class="body ds-mesure"><strong>Neuf dessins en ligne</strong>, dans l’objet <code>ICONS</code> de <code>js/mobile/layout.js</code>. Chacun est un <code>&lt;svg&gt;</code> de 24&nbsp;px, au trait de 2, aux bouts arrondis, qui prend la couleur du texte (<code>currentColor</code>) et se cache aux lecteurs d’écran (<code>aria-hidden="true"</code>).</p>
+        <p class="body ds-mesure"><strong>Dix dessins en ligne</strong>, dans l’objet <code>ICONS</code> de <code>js/mobile/layout.js</code>. Chacun est un <code>&lt;svg&gt;</code> de 24&nbsp;px, au trait de 2, aux bouts arrondis, qui prend la couleur du texte (<code>currentColor</code>) et se cache aux lecteurs d’écran (<code>aria-hidden="true"</code>).</p>
         <ul class="ds-liste body">
           <li><code>accueil</code>, <code>catalogue</code>, <code>salle</code>, <code>emprunts</code>&nbsp;: les quatre onglets de la barre du bas.</li>
           <li><code>scan</code>&nbsp;: le bouton central de la barre, et le bouton «&nbsp;Scanner un autre objet&nbsp;».</li>
           <li><code>camera</code>&nbsp;: le bouton «&nbsp;Prendre la photo de l’objet&nbsp;».</li>
-          <li><code>check</code>&nbsp;: une étape faite du scan, et le bouton «&nbsp;Confirmer l’emprunt&nbsp;».</li>
-          <li><code>croix</code>&nbsp;: le bouton «&nbsp;Annuler l’emprunt&nbsp;».</li>
+          <li><code>check</code>&nbsp;: une étape faite du scan, le bouton «&nbsp;Confirmer l’emprunt&nbsp;», et la coche d’un créneau retenu dans la grille de la semaine.</li>
+          <li><code>croix</code>&nbsp;: les boutons «&nbsp;Annuler l’emprunt&nbsp;» et «&nbsp;Annuler la réservation&nbsp;».</li>
+          <li><code>chevron</code>&nbsp;: le bouton «&nbsp;Réserver&nbsp;» sous la grille de la salle photo.</li>
           <li><code>back</code>&nbsp;: la flèche de retour de l’en-tête mobile.</li>
         </ul>
 
-        <p class="body ds-mesure"><strong>Une loupe</strong>, dans le champ de recherche. Ce n’est pas un élément&nbsp;: c’est l’image de fond de <code>.input--search</code>, écrite dans la feuille. Sa couleur est celle de <code>--text-secondary</code>, <strong>recopiée dans l’image</strong> et non lue du token&nbsp;: si le token change, la loupe ne suit pas.</p>
+        <p class="body ds-mesure"><strong>Deux images de fond</strong>&nbsp;: la loupe du champ de recherche (<code>.input--search</code>) et le pictogramme binaire du champ «&nbsp;code de retrait&nbsp;» (<code>.input--code</code>). Ce ne sont pas des éléments&nbsp;: ce sont des images écrites dans la feuille. Sa couleur est celle de <code>--text-secondary</code>, <strong>recopiée dans l’image</strong> et non lue du token&nbsp;: si le token change, la loupe ne suit pas.</p>
         <div id="cadre-recherche"></div>
+        <p class="body ds-mesure"><strong>Un masque</strong>, dans <code>.alert::before</code>&nbsp;: le point d’exclamation cerclé des alertes. Le dessin ne sert que de découpe (<code>mask</code>)&nbsp;; la couleur vient du texte de l’alerte, donc elle suit la variante sans être recopiée.</p>
 
         <p class="body ds-mesure"><strong>Des caractères</strong>, que l’outil emploie comme des icônes&nbsp;: les flèches <code>←</code> et <code>→</code> dans des libellés de liens et de boutons («&nbsp;← Matériel&nbsp;», «&nbsp;Tout voir →&nbsp;»), <code>↑</code> et <code>↓</code> pour le sens d’un tri, <code>×</code> pour fermer une modale, <code>✓</code>, <code>!</code> et <code>✕</code> pour le résultat d’un scan (réussi, à signaler, refusé).</p>
         <div id="cadre-glyphes"></div>
@@ -62,7 +64,7 @@
         <p class="body ds-mesure">Les icônes de l’application installée (<code>assets/icon-192.png</code>, <code>assets/icon-512.png</code>) ne sont pas des icônes d’interface&nbsp;: ce sont celles du manifeste.</p>
 
         <h3 class="h6">Les tailles</h3>
-        <p class="body ds-mesure">Les neuf icônes ont 24&nbsp;px, par leurs attributs. Deux règles les réduisent, et elles sont dans <code>css/mobile.css</code>, pas dans la feuille des composants&nbsp;: <code>.btn &gt; svg</code> à 20&nbsp;px, et <code>.stepper__dot--done svg</code> à 15&nbsp;px. Un écran qui ne charge pas cette feuille garde les 24&nbsp;px, dans un bouton comme ailleurs.</p>
+        <p class="body ds-mesure">Les dix icônes ont 24&nbsp;px, par leurs attributs. Trois règles les réduisent, et elles sont dans <code>css/mobile.css</code>, pas dans la feuille des composants&nbsp;: <code>.btn &gt; svg</code> à 20&nbsp;px, <code>.btn--sm &gt; svg</code> à 16&nbsp;px, et <code>.stepper__dot--done svg</code> à 15&nbsp;px. Un écran qui ne charge pas cette feuille garde les 24&nbsp;px, dans un bouton comme ailleurs.</p>
 
         <h3 class="h6">Ce qui n’existe pas</h3>
         <ul class="ds-liste body">
@@ -75,7 +77,7 @@
 
       <section id="code" class="ds-groupe">
         <h2 class="h5">Le code</h2>
-        <p class="body ds-mesure">Une icône est un <code>&lt;svg&gt;</code> en ligne, fait pour hériter de la couleur du texte. Les neuf partagent les mêmes attributs et ne changent que leur tracé. Voici le gabarit, avec <code>check</code>&nbsp;:</p>
+        <p class="body ds-mesure">Une icône est un <code>&lt;svg&gt;</code> en ligne, fait pour hériter de la couleur du texte. Les dix partagent les mêmes attributs et ne changent que leur tracé. Voici le gabarit, avec <code>check</code>&nbsp;:</p>
         <div id="cadre-modele"></div>
         <div id="code-modele"></div>
         <ul class="ds-liste body">
@@ -91,7 +93,7 @@
           <li><strong>Pour dire un état.</strong> La couleur et le libellé d’un badge le disent mieux qu’un pictogramme&nbsp;: <a href="badge.html">Badge et étiquette</a>.</li>
           <li><strong>Pour ajouter une dixième icône copiée d’une bibliothèque.</strong> Les tracés suivent ceux du kit Figma, et quand une décision y est prise c’est Figma qui fait foi&nbsp;: une icône qui manque se dessine d’abord dans le kit, puis se recopie ici.</li>
           <li><strong>Pour décorer.</strong> Une icône qui n’aide à reconnaître rien est du bruit&nbsp;: gardez le libellé seul.</li>
-          <li><strong>Pour un emoji dans l’interface.</strong> Son dessin change d’un appareil à l’autre&nbsp;; l’outil n’en a que deux, dans un état vide et dans une salutation. Employez un des neuf dessins, ou un libellé.</li>
+          <li><strong>Pour un emoji dans l’interface.</strong> Son dessin change d’un appareil à l’autre&nbsp;; l’outil n’en a que deux, dans un état vide et dans une salutation. Employez un des dix dessins, ou un libellé.</li>
         </ul>
       </section>
 
@@ -99,7 +101,7 @@
         <h2 class="h5">Accessibilité</h2>
 
         <h3 class="h6">Muette par construction</h3>
-        <p class="body ds-mesure">Les neuf icônes portent <code>aria-hidden="true"</code>&nbsp;: un lecteur d’écran ne les voit pas. C’est voulu, et ça impose que le bouton ou le lien qui les contient se nomme autrement, par son libellé ou son <code>aria-label</code>. L’écran mobile de la salle photo l’écrit pour ses flèches&nbsp;: <code>aria-label="Semaine précédente"</code> sur un bouton qui ne contient que <code>←</code>.</p>
+        <p class="body ds-mesure">Les dix icônes portent <code>aria-hidden="true"</code>&nbsp;: un lecteur d’écran ne les voit pas. C’est voulu, et ça impose que le bouton ou le lien qui les contient se nomme autrement, par son libellé ou son <code>aria-label</code>. L’écran mobile de la salle photo l’écrit pour ses flèches&nbsp;: <code>aria-label="Semaine précédente"</code> sur un bouton qui ne contient que <code>←</code>.</p>
 
         <h3 class="h6">Contraste</h3>
         <p class="body ds-mesure">Une icône prend la couleur du texte qui l’entoure&nbsp;: son contraste est celui de ce texte, avec le seuil de 3:1 d’un élément qui ne porte pas de texte (WCAG 1.4.11). La loupe du champ de recherche, <code>--text-secondary</code> sur le blanc du champ, mesurée dans <code>css/tokens.css</code> au chargement de cette page&nbsp;: <strong id="mesure-loupe">à mesurer depuis un serveur</strong>.</p>
@@ -128,10 +130,10 @@
     // Un cadre par démonstration, `fichier` et `demo` écrits en clair : un test vérifie que chacun
     // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
     // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
-    document.getElementById('cadre-inventaire').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'inventaire', titre: 'Les neuf icônes dessinées de l’outil, chacune avec son nom' });
+    document.getElementById('cadre-inventaire').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'inventaire', titre: 'Les dix icônes dessinées de l’outil, chacune avec son nom' });
     document.getElementById('cadre-recherche').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'recherche', titre: 'Un champ de recherche et sa loupe, image de fond de la feuille' });
     document.getElementById('cadre-glyphes').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'glyphes', titre: 'Les caractères et les emoji que l’outil emploie comme des icônes' });
-    document.getElementById('cadre-modele').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'modele', titre: 'L’icône check, gabarit des neuf icônes' });
+    document.getElementById('cadre-modele').outerHTML = cadreHtml({ fichier: 'icones.html', demo: 'modele', titre: 'L’icône check, gabarit des dix icônes' });
     document.getElementById('code-modele').outerHTML = codeHtml({ fichier: 'icones.html', demo: 'modele', titre: 'Le HTML de l’icône check' });
     brancherCadres(document.getElementById('contenu'));
 

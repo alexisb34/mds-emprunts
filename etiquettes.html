@@ -16,6 +16,7 @@
     .labels__toolbar h1 { flex: 1; }
     .labels__grid { display: grid; grid-template-columns: repeat(auto-fill, 62mm); gap: 6mm; }
     .label { width: 62mm; height: 48mm; border: 1px dashed var(--border-strong); border-radius: var(--radius-xs); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5mm; background: var(--bg-surface); page-break-inside: avoid; break-inside: avoid; }
+    .label__legende { font-size: 8px; line-height: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text-secondary); }
     .label__code { font-size: 14px; line-height: 18px; font-weight: 700; }
     .label__name { font-size: 11px; line-height: 14px; color: var(--text-secondary); max-width: 56mm; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .label__brand { font-size: 9px; line-height: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-brand); }
@@ -52,7 +53,7 @@
         ? '<p class="empty-state">Aucun matériel à étiqueter.</p>'
         : `<p class="empty-state">Codes inconnus : ${escapeHtml(inconnus.join(', '))}</p>`;
     } else {
-      const labels = items.map((i) => `<div class="label"><div class="label__qr" data-code="${escapeHtml(i.code)}"></div><strong class="label__code">${escapeHtml(i.code)}</strong><span class="label__name">${escapeHtml(i.nom)}</span><span class="label__brand">MDS Emprunts</span></div>`).join('');
+      const labels = items.map((i) => `<div class="label"><div class="label__qr" data-code="${escapeHtml(i.code)}"></div><span class="label__legende">Code de retrait</span><strong class="label__code">${escapeHtml(i.code)}</strong><span class="label__name">${escapeHtml(i.nom)}</span><span class="label__brand">MDS Emprunts</span></div>`).join('');
       const avertissement = inconnus.length
         ? `<p class="body-tiny text-secondary no-print">Codes inconnus ignorés : ${escapeHtml(inconnus.join(', '))}</p>`
         : '';

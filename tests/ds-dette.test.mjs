@@ -425,16 +425,19 @@ test('les cinq retours (alertes, bouton de danger, notifications) sont formés p
   const de = (nom) => PAIRES_KIT.find((p) => p.nom === nom);
   const retours = ['toast--success', 'alert--info', 'alert--error', 'btn--danger', 'toast--error'];
   assert.deepEqual(retours.map((n) => de(n)?.famille), ['notification', 'alerte', 'alerte', 'bouton', 'notification']);
-  // Une alerte : 14 px, graisse normale.
+  // Une alerte : 14 px, en gras, avec son icône posée en absolu (et non en flex, qui coupait
+  // une phrase à <strong> en trois colonnes).
   const alerte = declarations(KIT, '.alert');
   assert.equal(alerte['font-size'], '14px');
-  assert.ok(!('font-weight' in alerte));
+  assert.equal(alerte['font-weight'], '700');
+  assert.equal(alerte.position, 'relative');
+  assert.ok(!('display' in alerte), 'l’alerte n’est plus un conteneur flex');
   for (const nom of ['alert--error', 'alert--info']) {
     const p = de(nom);
     const d = declarations(KIT, `.${nom}`);
     assert.equal(d.color, `var(${p.texte})`, `${nom} : texte`);
     assert.equal(d.background, `var(${p.fond})`, `${nom} : fond`);
-    assert.deepEqual(p.elements, [{ selecteur: '.alert', px: 14, gras: false }]);
+    assert.deepEqual(p.elements, [{ selecteur: '.alert', px: 14, gras: true }]);
     assert.ok(VUES.includes(`alert ${nom}`), `aucune vue n'émet « alert ${nom} »`);
   }
   // Le bouton de danger : `.btn` 14 px gras, `.btn--sm` 12 px ; les deux tailles sont émises.
@@ -661,8 +664,9 @@ test('le registre écrit la marge et les tons que la page affiche', () => {
 
 test('les feuilles du kit n’écrivent aucune couleur en dur, hormis la loupe de .input--search', () => {
   const litteraux = [...sansCommentaires(FEUILLES).matchAll(/(?:#|%23)[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/g)].map((m) => m[0]);
-  assert.deepEqual(litteraux, ['%23757678'], 'le kit écrit une couleur en dur de plus (ou de moins) : la page Couleurs le dit à tort');
+  assert.deepEqual(litteraux, ['%23757678', '%23757678'], 'le kit écrit une couleur en dur de plus (ou de moins) : la page Couleurs le dit à tort');
   assert.equal('#757678', VALEURS['--text-secondary'], 'la loupe n’a plus la couleur de --text-secondary');
+  assert.match(declarations(KIT, '.input--code').background, /url\("data:image\/svg\+xml[^"]*stroke='%23757678'/);
   assert.match(declarations(KIT, '.input--search').background, /url\("data:image\/svg\+xml[^"]*stroke='%23757678'/);
 });
 

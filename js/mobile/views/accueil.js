@@ -5,15 +5,32 @@ import { now, isBookingActive } from '../../rules.js';
 import { escapeHtml, badge, formatTime, formatDate, formatSlots, relativeDay } from '../../ui.js';
 import { userLoans, sweepExpirations } from '../../actions/loans.js';
 import { userBookings, sweepBookings } from '../../actions/bookings.js';
-import { setHeader } from '../layout.js';
+import { setHeader, ICONS } from '../layout.js';
 
-function loansCard(enCours, date) {
-  if (!enCours.length) return '<div class="empty-state">Aucun emprunt en cours.</div>';
-  return `<div class="m-list">${enCours.map(({ loan, item, late }) => `
-    <a class="m-item" href="#/catalogue/${escapeHtml(item ? item.reference : '')}">
-      <span class="m-item__body"><strong>${escapeHtml(item ? item.nom : loan.itemId)}</strong><span class="body-tiny text-secondary">Retour ${escapeHtml(relativeDay(loan.finPrevue, date).toLowerCase())} avant ${escapeHtml(formatTime(loan.finPrevue))}</span></span>
-      ${late ? badge('loan', 'en_retard') : badge('loan', loan.statut)}
-    </a>`).join('')}</div>`;
+// La carte réunit ce que l’emprunteur a entre les mains et ce qu’il a réservé : deux listes
+// séparées, il fallait ouvrir « Mes emprunts » pour savoir qu’une réservation l’attendait.
+function loansCard(enCours, reservations, date) {
+  const ligne = (href, nom, sous, pastille) => `
+    <a class="m-item" href="#${href}">
+      <span class="m-item__body"><strong>${escapeHtml(nom)}</strong><span class="body-tiny text-secondary">${escapeHtml(sous)}</span></span>
+      ${pastille}
+    </a>`;
+  const lignes = [
+    ...enCours.map(({ loan, item, late }) => ligne(
+      `/catalogue/${item ? item.reference : ''}`,
+      item ? item.nom : loan.itemId,
+      `Retour ${relativeDay(loan.finPrevue, date).toLowerCase()} avant ${formatTime(loan.finPrevue)}`,
+      late ? badge('loan', 'en_retard') : badge('loan', loan.statut),
+    )),
+    ...reservations.filter((r) => !r.expired).map(({ loan, item }) => ligne(
+      '/emprunts/reservations',
+      item ? item.nom : loan.itemId,
+      `Réservé pour ${relativeDay(loan.debutPrevu, date).toLowerCase()} à ${formatTime(loan.debutPrevu)}`,
+      badge('loan', loan.statut),
+    )),
+  ];
+  if (!lignes.length) return '<div class="empty-state">Aucun emprunt en cours.</div>';
+  return `<div class="m-list">${lignes.join('')}</div>`;
 }
 
 function bookingCard(nextBooking, date, active = null) {
@@ -66,12 +83,12 @@ export function accueilHtml({ user, enCours, nextBooking, date, reservations = [
       <p class="label-caps">${escapeHtml(formatDate(date))}</p>
       <h2 class="h5">Bonjour ${escapeHtml(user.prenom)} 👋</h2>
       <p class="m-hero__sub">${lateCount ? `${lateCount} emprunt${lateCount > 1 ? 's' : ''} en retard — pensez à le rendre.` : 'Scannez l’étiquette d’un objet pour l’emprunter ou le rendre.'}</p>
-      <a class="btn btn--primary btn--block" href="#/scan">Scanner un QR code</a>
+      <a class="btn btn--primary btn--block" href="#/scan">${ICONS.scan}<span>Scanner un QR code</span></a>
     </section>
     ${noticesHtml(reservations, expireesRecentes, refuseesRecentes)}
     <section class="card">
-      <div class="card__header"><h3 class="card__title">Mes emprunts en cours</h3><a class="body-sm" href="#/emprunts">Tout voir →</a></div>
-      ${loansCard(enCours, date)}
+      <div class="card__header"><h3 class="card__title">Mes emprunts</h3><a class="body-sm" href="#/emprunts">Tout voir →</a></div>
+      ${loansCard(enCours, reservations, date)}
     </section>
     <section class="card">
       <div class="card__header"><h3 class="card__title">Salle photo</h3><a class="body-sm" href="#/salle">Réserver →</a></div>

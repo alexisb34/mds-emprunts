@@ -118,8 +118,8 @@ export const PAIRES_KIT = [
     texte: '--status-reserved-fg',
     fond: '--brand-secondary-subtle',
     px: 14,
-    gras: false,
-    elements: [{ selecteur: '.alert', px: 14, gras: false }],
+    gras: true,
+    elements: [{ selecteur: '.alert', px: 14, gras: true }],
     echantillon: { texte: 'Le matériel se retire au bureau des pédago' },
   },
   {
@@ -129,8 +129,8 @@ export const PAIRES_KIT = [
     texte: '--status-late-fg',
     fond: '--status-late-bg',
     px: 14,
-    gras: false,
-    elements: [{ selecteur: '.alert', px: 14, gras: false }],
+    gras: true,
+    elements: [{ selecteur: '.alert', px: 14, gras: true }],
     echantillon: { texte: 'Réservation refusée' },
   },
   {

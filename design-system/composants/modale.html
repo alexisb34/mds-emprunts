@@ -92,6 +92,7 @@
 
         <h3 class="h6">L’alerte</h3>
         <p class="body ds-mesure"><code>.alert</code> et une variante, <code>.alert--warning</code>, <code>.alert--error</code> ou <code>.alert--info</code>. Il n’y a pas de fonction&nbsp;: les vues écrivent l’alerte en HTML, comme <code>js/mobile/views/accueil.js</code>, et échappent elles-mêmes le texte. Écrivez toujours la variante&nbsp;: sans variante, une alerte n’a pas de fond.</p>
+        <p class="body ds-mesure">L’alerte est un <strong>bloc</strong>, pas un conteneur flex, et son point d’exclamation cerclé est posé par <code>.alert::before</code> en position absolue, avec 68&nbsp;px de retrait à gauche. C’est voulu&nbsp;: en flex, chaque morceau de la phrase devenait un élément, et un <code>&lt;strong&gt;</code> au milieu d’un texte le coupait en trois colonnes. Le dessin est un masque&nbsp;: sa couleur est celle du texte, donc elle suit la variante. Le texte est en gras (700).</p>
       </section>
 
       <section id="code" class="ds-groupe">

@@ -41,6 +41,13 @@ export function catalogueView(container) {
     // La saisie ne re-rend que la grille : le champ de recherche garde le focus (le clavier reste ouvert).
     container.querySelector('[name="q"]').addEventListener('input', (e) => {
       filters.q = e.target.value;
+      // Une recherche porte sur tout le catalogue : garder la catégorie choisie avant masquait
+      // des résultats sans le dire. La chip revient sur « Tout » sans re-rendre l’écran, sinon
+      // le champ perdrait le focus et le clavier se fermerait.
+      if (filters.q.trim() && filters.categorie) {
+        filters.categorie = '';
+        container.querySelectorAll('[data-categorie]').forEach((b) => b.classList.toggle('chip--active', b.dataset.categorie === ''));
+      }
       container.querySelector('[data-role="results"]').innerHTML = catalogueResultsHtml(filterCatalog(groupByReference(store.items.list()), filters));
     });
     container.querySelectorAll('[data-categorie]').forEach((b) => b.addEventListener('click', () => { filters.categorie = b.dataset.categorie; render(); }));

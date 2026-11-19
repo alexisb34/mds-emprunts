@@ -6,54 +6,47 @@ import { navigate } from '../../router.js';
 import { now, addDays, isBookingActive, isWeekday, REASONS, reasonLabel } from '../../rules.js';
 import { BOOKING_STATES } from '../../models.js';
 import { escapeHtml, badge, formatDate, formatSlots, relativeDay, openModal, toast } from '../../ui.js';
-import { buildWeekGrid, toggleSlot, selectionIsValid, startOfWeek, weekLabel } from '../../weekGrid.js';
+import { buildWeekGrid, toggleSlot, selectionIsValid, startOfWeek, weekLabel, weekGridHtml, bindDayChecks, freeHoursOfDay } from '../../weekGrid.js';
 import { createBooking, cancelBooking, recordEntry, recordExit, roomChecklist, userBookings, sweepBookings } from '../../actions/bookings.js';
-import { setHeader } from '../layout.js';
+import { setHeader, ICONS } from '../layout.js';
 
 const emptySelection = () => ({ ymd: null, creneaux: [] });
 
-function slotClass(cell, selection) {
-  if (selection.ymd === cell.ymdJour && selection.creneaux.includes(cell.heure)) return 'slot slot--selected';
-  if (cell.booking) return cell.mine ? 'slot slot--mine' : 'slot slot--taken';
-  if (cell.past) return 'slot slot--past';
-  return 'slot slot--free';
+// La case d’en-tête d’une journée : cochée quand tous ses créneaux libres sont pris,
+// indéterminée quand une partie l’est.
+function etatJour(grid, selection, jour) {
+  if (selection.ymd !== jour) return 'aucun';
+  const libres = freeHoursOfDay(grid, jour);
+  const n = libres.filter((h) => selection.creneaux.includes(h)).length;
+  if (!n) return 'aucun';
+  return n === libres.length ? 'tous' : 'partiel';
 }
 
-// État dit à voix haute par le lecteur d’écran : le texte visible (« Vous », « Pris ») ne couvre ni libre ni passé.
-function slotEtat(cell, selection) {
-  if (selection.ymd === cell.ymdJour && selection.creneaux.includes(cell.heure)) return 'sélectionné';
-  if (cell.booking) return cell.mine ? 'réservé par vous' : 'déjà pris';
-  return cell.past ? 'passé' : 'libre';
+// Cocher une journée prend tous ses créneaux libres ; la décocher libère la sélection.
+export function toggleDay(selection, grid, jour) {
+  const libres = freeHoursOfDay(grid, jour);
+  if (!libres.length) return emptySelection();
+  const complet = selection.ymd === jour && libres.every((h) => selection.creneaux.includes(h));
+  return complet ? emptySelection() : { ymd: jour, creneaux: libres };
 }
 
 export function gridHtml({ grid, selection }) {
-  const entetes = grid.days.map((d) => `<th data-day="${escapeHtml(d.ymd)}"${d.isToday ? ' class="is-today"' : ''}>${escapeHtml(d.label)}</th>`).join('');
-  const lignes = grid.hours.map((heure) => {
-    const cases = grid.days.map((d) => {
-      const cell = { ...grid.cells[d.ymd][heure], ymdJour: d.ymd };
-      const cls = slotClass(cell, selection);
-      const libelle = cell.booking ? (cell.mine ? 'Vous' : 'Pris') : '';
-      const disabled = cell.booking || cell.past ? ' disabled' : '';
-      return `<td><button type="button" data-slot="${escapeHtml(d.ymd)}:${heure}" class="${cls}"${disabled} aria-label="${escapeHtml(d.label)} ${heure}h, ${escapeHtml(slotEtat(cell, selection))}">${escapeHtml(libelle)}</button></td>`;
-    }).join('');
-    return `<tr><th>${heure}h</th>${cases}</tr>`;
-  }).join('');
-  return `<table class="week-grid"><thead><tr><th></th>${entetes}</tr></thead><tbody>${lignes}</tbody></table>`;
+  return weekGridHtml({
+    grid,
+    estSelectionne: (jour, heure) => selection.ymd === jour && selection.creneaux.includes(heure),
+    etatJour: (jour) => etatJour(grid, selection, jour),
+    coche: ICONS.check,
+  });
 }
 
+// La grille montre déjà ce qui est retenu (coches) : sous elle, il ne reste que le bouton,
+// et le texte qui manque pour agir — l’invitation quand rien n’est choisi, le motif d’un refus.
 export function selectionBarHtml({ selection, check, settings = null }) {
-  const n = selection.creneaux.length;
-  const resume = n
-    ? `<strong>${escapeHtml(formatSlots(selection.creneaux))}</strong> · ${n} créneau${n > 1 ? 'x' : ''}`
-    : 'Touchez un ou plusieurs créneaux qui se suivent.';
-  // Sélection vide : le résumé invite déjà à choisir, inutile d’empiler un second message.
-  const message = check.ok || check.reason === REASONS.CRENEAU_VIDE ? '' : `<p class="body-tiny text-secondary">${escapeHtml(reasonLabel(check.reason, settings) || '')}</p>`;
+  const aide = selection.creneaux.length ? '' : 'Touchez un ou plusieurs créneaux qui se suivent.';
+  const message = check.ok || check.reason === REASONS.CRENEAU_VIDE ? aide : (reasonLabel(check.reason, settings) || '');
   return `
-    <div class="selection-bar">
-      <div class="selection-bar__resume body-sm">${resume}</div>
-      ${message}
-      <button type="button" class="btn btn--primary btn--block" data-action="book"${check.ok ? '' : ' disabled'}>Réserver</button>
-    </div>`;
+    ${message ? `<p class="body-tiny text-secondary">${escapeHtml(message)}</p>` : ''}
+    <button type="button" class="btn btn--primary btn--block" data-action="book"${check.ok ? '' : ' disabled'}>Réserver${ICONS.chevron}</button>`;
 }
 
 export function myBookingsHtml({ active, aVenir }, date) {
@@ -189,6 +182,11 @@ export function salleView(container, params = {}) {
     container.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => {
       const [jour, heure] = b.dataset.slot.split(':');
       selection = toggleSlot(selection, { ymd: jour, heure: Number(heure) });
+      render();
+    }));
+    bindDayChecks(container);
+    container.querySelectorAll('[data-day-check]').forEach((c) => c.addEventListener('change', () => {
+      selection = toggleDay(selection, grid, c.dataset.dayCheck);
       render();
     }));
     container.querySelector('[data-action="prev-week"]').addEventListener('click', () => { semaine = addDays(startOfWeek(semaine), -7); selection = emptySelection(); render(); });

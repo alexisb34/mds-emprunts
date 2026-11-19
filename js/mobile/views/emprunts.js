@@ -5,7 +5,7 @@ import { now } from '../../rules.js';
 import { escapeHtml, badge, formatDate, formatTime, formatDateTime, relativeDay, openModal, toast } from '../../ui.js';
 import { loanQrPayload, renderQr } from '../../qr.js';
 import { userLoans, cancelLoan, sweepExpirations } from '../../actions/loans.js';
-import { setHeader } from '../layout.js';
+import { setHeader, ICONS } from '../layout.js';
 
 export const TABS_EMPRUNTS = [
   { key: 'enCours', label: 'En cours' },
@@ -42,14 +42,14 @@ export function reservationCardHtml({ loan, item, pickupOpen, expired, window },
       <div class="m-item m-item--stacked">
         <div class="m-item__row"><span class="m-item__body"><strong>${nom}</strong><span class="body-tiny text-secondary">Retrait ${escapeHtml(relativeDay(loan.debutPrevu, date).toLowerCase())} à ${escapeHtml(formatTime(loan.debutPrevu))} · retour le ${escapeHtml(formatDate(loan.finPrevue))}</span></span>${badge('loan', loan.statut)}</div>
         <p class="body-tiny text-secondary">Votre code de retrait s’affichera à l’heure prévue.</p>
-        <button type="button" class="btn btn--ghost btn--sm" data-action="cancel" data-loan="${escapeHtml(loan.id)}">Annuler la réservation</button>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="cancel" data-loan="${escapeHtml(loan.id)}">${ICONS.croix}<span>Annuler la réservation</span></button>
       </div>`;
   }
   return `
     <div class="m-item m-item--stacked m-item--pickup">
       <div class="m-item__row"><span class="m-item__body"><strong>${nom}</strong><span class="body-tiny text-secondary">À retirer avant ${escapeHtml(formatTime(window.end))}</span></span>${badge('loan', loan.statut)}</div>
       <div class="pickup"><div data-role="qr" data-code="${escapeHtml(loanQrPayload(loan))}"></div><strong class="label-lg">${escapeHtml(loan.codeRetrait)}</strong><span class="body-tiny text-secondary">Montrez ce code à la pédago pour récupérer le matériel.</span></div>
-      <button type="button" class="btn btn--ghost btn--sm" data-action="cancel" data-loan="${escapeHtml(loan.id)}">Annuler la réservation</button>
+      <button type="button" class="btn btn--ghost btn--sm" data-action="cancel" data-loan="${escapeHtml(loan.id)}">${ICONS.croix}<span>Annuler la réservation</span></button>
     </div>`;
 }
 

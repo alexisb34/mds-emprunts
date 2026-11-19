@@ -77,13 +77,14 @@ export function scanStepHtml({ codes, camera, returnable = [] }) {
     ${stepperHtml(1)}
     ${stepTitle(1, 'Emprunter : scannez l’étiquette de l’objet')}
     ${reader}
+    <form data-action="manual">
+      <label class="visually-hidden" for="code-manual">Code de retrait</label>
+      <input class="input input--code" id="code-manual" name="code-manual" placeholder="Code de retrait en dessous du QR code" autocapitalize="characters" autocomplete="off">
+      <button type="submit" class="visually-hidden">Valider le code</button>
+    </form>
     <div class="card">
       <div class="card__header"><h3 class="card__title">Simuler un scan</h3></div>
-      <div class="stack">
-        ${simulation}
-        <label class="field"><span class="field__label">Ou saisir un code</span><input class="input" name="code-manual" placeholder="MDS-0001" autocapitalize="characters"></label>
-        <button type="button" class="btn btn--ghost btn--block" data-action="manual">Valider le code</button>
-      </div>
+      <div class="stack">${simulation}</div>
     </div>`;
 }
 
@@ -211,7 +212,10 @@ export function scanView(container) {
     stopCamera();
     container.querySelectorAll('[data-return]').forEach((b) => b.addEventListener('click', () => handleCode(b.dataset.return)));
     on('[data-action="simulate"]', () => handleCode(container.querySelector('[name="code-sim"]').value));
-    on('[data-action="manual"]', () => handleCode(container.querySelector('[name="code-manual"]').value));
+    // Le code imprimé sous le QR se valide à la touche « Entrée » du clavier : pas de bouton
+    // à viser quand on saisit un code parce que la caméra ne répond pas.
+    const saisie = container.querySelector('form[data-action="manual"]');
+    if (saisie) saisie.addEventListener('submit', (e) => { e.preventDefault(); handleCode(saisie.querySelector('[name="code-manual"]').value); });
     if (!camera) return;
     try {
       await startScanner('reader', (text) => handleCode(text));

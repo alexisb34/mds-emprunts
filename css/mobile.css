@@ -29,15 +29,19 @@
 .week-grid th { font-size: 10px; font-weight: 700; color: var(--text-secondary); padding: var(--space-xs) 0; }
 .week-grid th.is-today { color: var(--text-brand); }
 .week-grid tbody th { width: 28px; text-align: right; padding-right: var(--space-xs); }
-.week-grid .slot { width: 100%; height: 30px; border-radius: var(--radius-xs); font-size: 9px; font-weight: 700; border: var(--stroke-thin) solid transparent; }
+.week-grid .slot { width: 100%; height: 30px; border-radius: var(--radius-xs); font-size: 9px; font-weight: 700; border: var(--stroke-thin) solid transparent; display: grid; place-items: center; }
+.week-grid .slot svg { width: 14px; height: 14px; }
+/* Prendre une journée entière d’un geste, sans toucher ses neuf créneaux un par un. */
+/* La case se pose au-dessus du jour : côte à côte, « lun. 16 » ne tient pas dans une colonne
+   de 46 px, et mobile.css n’a pas de requête de largeur pour en décider autrement. */
+.day-check { display: flex; flex-direction: column; align-items: center; gap: var(--space-xxs); cursor: pointer; white-space: nowrap; }
+.day-check input { flex: none; width: 14px; height: 14px; margin: 0; accent-color: var(--brand-primary); }
 .week-grid .slot--free { background: var(--bg-surface); border-color: var(--border-default); }
 .week-grid .slot--free:hover { border-color: var(--border-brand); }
 .week-grid .slot--selected { background: var(--brand-primary); color: var(--text-on-brand); }
 .week-grid .slot--taken { background: var(--status-borrowed-bg); color: var(--status-borrowed-fg); }
 .week-grid .slot--mine { background: var(--status-reserved-bg); color: var(--status-reserved-fg); }
 .week-grid .slot--past { background: var(--bg-muted); }
-.selection-bar { position: sticky; bottom: calc(88px + env(safe-area-inset-bottom)); background: var(--bg-surface); border: var(--stroke-thin) solid var(--border-default); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); padding: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-sm); }
-.selection-bar__resume { min-height: 21px; }
 .m-item--pickup { border: var(--stroke-thin) solid var(--border-brand); }
 .pickup { display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); padding: var(--space-lg) 0; text-align: center; }
 .pickup [data-role="qr"] img, .pickup [data-role="qr"] canvas { image-rendering: pixelated; }
@@ -111,6 +115,7 @@
 
 /* Une icône dans un bouton : le bouton est déjà en flex, elle se range toute seule. */
 .btn > svg { flex: none; width: 20px; height: 20px; }
+.btn--sm > svg { width: 16px; height: 16px; }
 
 /* Chargement entre le scan et la photo */
 .loader-step { display: flex; flex-direction: column; align-items: center; gap: var(--space-md); padding: var(--space-3xl) var(--space-lg); text-align: center; }

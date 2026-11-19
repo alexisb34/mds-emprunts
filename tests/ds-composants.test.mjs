@@ -984,13 +984,13 @@ test('navigation : les cadres de la page visent les deux fichiers d’exemple', 
 test('icônes : l’inventaire montre chaque icône de ICONS, à l’identique, avec son nom', () => {
   const inventaire = compact(demo('icones', 'inventaire'));
   const noms = Object.keys(ICONS);
-  assert.equal(noms.length, 9, 'ICONS n’a plus neuf icônes : la page doit changer');
+  assert.equal(noms.length, 10, 'ICONS n’a plus dix icônes : la page doit changer');
   for (const nom of noms) assert.ok(inventaire.includes(`<span class="row">${ICONS[nom]}<span class="body-sm">${nom}</span></span>`), `${nom} : l’exemple ne montre pas ICONS.${nom}`);
   assert.equal((inventaire.match(/<svg/g) || []).length, noms.length, 'l’exemple montre une icône qui n’est pas dans ICONS');
-  assert.match(texte(page('icones')), /Neuf dessins en ligne/);
+  assert.match(texte(page('icones')), /Dix dessins en ligne/);
 });
 
-test('icônes : le gabarit « modele » est ICONS.check, et les neuf partagent le même gabarit', () => {
+test('icônes : le gabarit « modele » est ICONS.check, et les dix partagent le même gabarit', () => {
   assert.equal(compact(demo('icones', 'modele')), ICONS.check);
   for (const [nom, svg] of Object.entries(ICONS)) {
     assert.match(svg, /^<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/, `${nom} : gabarit différent`);
@@ -1027,7 +1027,7 @@ test('icônes : le dépôt n’a aucun système d’icônes, comme la page le di
   assert.match(t, /Aucun système d’icônes\. Ni police d’icônes, ni sprite, ni bibliothèque, ni dossier d’icônes/);
 });
 
-test('icônes : les neuf dessins sont les seuls <svg> du code, tous dans le module mobile', () => {
+test('icônes : les dix dessins sont les seuls <svg> du code, tous dans le module mobile', () => {
   const avec = SOURCES.filter((s) => /<svg/.test(s.source)).map((s) => s.fichier);
   assert.deepEqual(avec, ['js/mobile/layout.js']);
   assert.doesNotMatch(RACINE_HTML.map((f) => lire(f)).join('\n'), /<svg/);
@@ -1604,13 +1604,12 @@ test('mobile : .is-login cache l’en-tête et la barre, et c’est app.js qui l
   assert.match(t, /app\.js/);
 });
 
-test('mobile : la distance de 88 px des barres collantes est écrite dans trois règles, et 96 px dans une', () => {
+test('mobile : la distance de 88 px des barres collantes est écrite dans deux règles, et 96 px dans une', () => {
   const regles = (valeur) => [...MOBILE.matchAll(/(?:^|\n)([^{}\n]+)\{([^}]*)\}/g)].filter((m) => m[2].includes(valeur)).map((m) => m[1].trim()).sort();
-  assert.deepEqual(regles('88px'), ['#toast-root', '.m-cta', '.selection-bar']);
+  assert.deepEqual(regles('88px'), ['#toast-root', '.m-cta']);
   assert.deepEqual(regles('96px'), ['.m-main']);
   const t = texte(page('mobile'));
-  assert.match(t, /88 px, écrits à la main dans trois règles/);
-  assert.match(t, /\.selection-bar/);
+  assert.match(t, /88 px, écrits à la main dans deux règles/);
   assert.match(t, /\.m-cta/);
 });
 

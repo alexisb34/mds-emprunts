@@ -6,7 +6,7 @@ import { buildSeed } from '../js/seed.js';
 import { DEFAULT_SETTINGS, REASONS, ymd } from '../js/rules.js';
 import { buildWeekGrid, selectionIsValid } from '../js/weekGrid.js';
 import { roomChecklist, userBookings } from '../js/actions/bookings.js';
-import { gridHtml, selectionBarHtml, myBookingsHtml, etatHtml, salleHtml, openingWeek } from '../js/mobile/views/salle.js';
+import { gridHtml, selectionBarHtml, toggleDay, myBookingsHtml, etatHtml, salleHtml, openingWeek } from '../js/mobile/views/salle.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
 const ELEVE = 'user_010';
@@ -16,7 +16,7 @@ const grid = () => buildWeekGrid({ date: NOW, bookings: store.bookings.list(), s
 
 test('gridHtml : une colonne par jour ouvré, une case par heure, états distingués', () => {
   const html = gridHtml({ grid: grid(), selection: { ymd: '2026-09-17', creneaux: [11] } });
-  assert.equal((html.match(/data-day="/g) || []).length, 5);
+  assert.equal((html.match(/data-day-check="/g) || []).length, 5, 'une case « journée entière » par jour');
   assert.equal((html.match(/class="slot/g) || []).length, 45, '5 jours × 9 heures');
   assert.match(html, /data-slot="2026-09-17:11" class="slot slot--selected"/);
   assert.match(html, /data-slot="2026-09-17:8" class="slot slot--past"/);
@@ -29,19 +29,28 @@ test('gridHtml : une colonne par jour ouvré, une case par heure, états disting
   assert.match(label('2026-09-17:15'), /, libre$/);
 });
 
-test('selectionBarHtml : résumé, motif de refus, bouton actif ou non', () => {
+test('selectionBarHtml : invitation, motif de refus, bouton actif ou non', () => {
   const vide = selectionBarHtml({ selection: { ymd: null, creneaux: [] }, check: { ok: false, reason: REASONS.CRENEAU_VIDE } });
   assert.match(vide, /Touchez un ou plusieurs créneaux/);
   assert.match(vide, /data-action="book"[^>]*disabled/);
   assert.doesNotMatch(vide, /Choisissez au moins un créneau/);
-  assert.equal((vide.match(/body-tiny/g) || []).length, 0, 'sélection vide : le résumé suffit, pas de second message');
+  // La grille coche les créneaux retenus : les redire sous le bouton n’apprenait plus rien.
   const ok = selectionBarHtml({ selection: { ymd: '2026-09-17', creneaux: [11, 12] }, check: { ok: true, reason: null } });
-  assert.match(ok, /11h-13h/);
-  assert.match(ok, /2 créneaux/);
+  assert.equal((ok.match(/body-tiny/g) || []).length, 0, 'sélection valide : le bouton seul');
   assert.doesNotMatch(ok, /disabled/);
   const occupe = selectionBarHtml({ selection: { ymd: '2026-09-17', creneaux: [9] }, check: { ok: false, reason: REASONS.CRENEAU_OCCUPE } });
   assert.match(occupe, /déjà réservé/);
   assert.equal((occupe.match(/body-tiny/g) || []).length, 1, 'un motif de refus réel reste affiché');
+  assert.match(occupe, /data-action="book"[^>]*disabled/);
+});
+
+test('toggleDay : cocher une journée prend ses créneaux libres, la décocher les rend', () => {
+  const g = grid();
+  const jour = '2026-09-18';
+  const libres = g.hours.filter((h) => g.cells[jour][h].free);
+  const pris = toggleDay({ ymd: null, creneaux: [] }, g, jour);
+  assert.deepEqual(pris, { ymd: jour, creneaux: libres });
+  assert.deepEqual(toggleDay(pris, g, jour), { ymd: null, creneaux: [] });
 });
 
 test('myBookingsHtml : créneau en cours avec le bon bouton d’état des lieux', () => {
