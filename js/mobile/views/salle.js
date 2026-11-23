@@ -10,30 +10,45 @@ import { buildWeekGrid, toggleSlot, selectionIsValid, startOfWeek, weekLabel, we
 import { createBooking, cancelBooking, recordEntry, recordExit, roomChecklist, userBookings, sweepBookings } from '../../actions/bookings.js';
 import { setHeader, ICONS } from '../layout.js';
 
-const emptySelection = () => ({ ymd: null, creneaux: [] });
+const emptySelection = () => ({});
+const creneauxDu = (selection, jour) => selection[jour] || [];
 
 // La case d’en-tête d’une journée : cochée quand tous ses créneaux libres sont pris,
 // indéterminée quand une partie l’est.
 function etatJour(grid, selection, jour) {
-  if (selection.ymd !== jour) return 'aucun';
   const libres = freeHoursOfDay(grid, jour);
-  const n = libres.filter((h) => selection.creneaux.includes(h)).length;
+  const n = libres.filter((h) => creneauxDu(selection, jour).includes(h)).length;
   if (!n) return 'aucun';
   return n === libres.length ? 'tous' : 'partiel';
 }
 
-// Cocher une journée prend tous ses créneaux libres ; la décocher libère la sélection.
+// Cocher une journée prend tous ses créneaux libres, la décocher les rend — sans toucher aux
+// autres journées déjà retenues.
 export function toggleDay(selection, grid, jour) {
   const libres = freeHoursOfDay(grid, jour);
-  if (!libres.length) return emptySelection();
-  const complet = selection.ymd === jour && libres.every((h) => selection.creneaux.includes(h));
-  return complet ? emptySelection() : { ymd: jour, creneaux: libres };
+  if (!libres.length) return selection;
+  const suite = { ...selection };
+  if (libres.every((h) => creneauxDu(selection, jour).includes(h))) delete suite[jour];
+  else suite[jour] = libres;
+  return suite;
+}
+
+// Chaque journée retenue donnera sa réservation : elles se valident une par une, et le
+// premier refus est celui qui s’affiche.
+export function selectionCheck(selection, contexte) {
+  const jours = Object.keys(selection).sort();
+  if (!jours.length) return { ok: false, reason: REASONS.CRENEAU_VIDE };
+  for (const ymd of jours) {
+    const check = selectionIsValid({ ymd, creneaux: selection[ymd] }, contexte);
+    if (!check.ok) return check;
+  }
+  return { ok: true, reason: null };
 }
 
 export function gridHtml({ grid, selection }) {
   return weekGridHtml({
     grid,
-    estSelectionne: (jour, heure) => selection.ymd === jour && selection.creneaux.includes(heure),
+    estSelectionne: (jour, heure) => creneauxDu(selection, jour).includes(heure),
     etatJour: (jour) => etatJour(grid, selection, jour),
     coche: ICONS.check,
   });
@@ -42,7 +57,7 @@ export function gridHtml({ grid, selection }) {
 // La grille montre déjà ce qui est retenu (coches) : sous elle, il ne reste que le bouton,
 // et le texte qui manque pour agir — l’invitation quand rien n’est choisi, le motif d’un refus.
 export function selectionBarHtml({ selection, check, settings = null }) {
-  const aide = selection.creneaux.length ? '' : 'Touchez un ou plusieurs créneaux qui se suivent.';
+  const aide = Object.keys(selection).length ? '' : 'Touchez un ou plusieurs créneaux qui se suivent.';
   const message = check.ok || check.reason === REASONS.CRENEAU_VIDE ? aide : (reasonLabel(check.reason, settings) || '');
   return `
     ${message ? `<p class="body-tiny text-secondary">${escapeHtml(message)}</p>` : ''}
@@ -176,7 +191,7 @@ export function salleView(container, params = {}) {
       return;
     }
     const grid = buildWeekGrid({ date: semaine, bookings, settings, userId: user.id, now: date });
-    const check = selectionIsValid(selection, { bookings, settings, date });
+    const check = selectionCheck(selection, { bookings, settings, date });
     setHeader({ title: 'Salle photo' });
     container.innerHTML = salleHtml({ grid, selection, check, mine: userBookings(user.id, date), semaine, date, settings });
     container.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => {
@@ -192,14 +207,19 @@ export function salleView(container, params = {}) {
     container.querySelector('[data-action="prev-week"]').addEventListener('click', () => { semaine = addDays(startOfWeek(semaine), -7); selection = emptySelection(); render(); });
     container.querySelector('[data-action="next-week"]').addEventListener('click', () => { semaine = addDays(startOfWeek(semaine), 7); selection = emptySelection(); render(); });
     container.querySelector('[data-action="book"]').addEventListener('click', () => {
+      // Une journée = une réservation ; la sélection peut en couvrir plusieurs.
+      const faits = [];
       try {
-        const b = createBooking({ userId: user.id, date: selection.ymd, creneaux: selection.creneaux });
-        toast(`Salle réservée ${formatSlots(b.creneaux)} le ${formatDate(b.date)}`, 'success');
-        selection = emptySelection();
-        render();
+        for (const jour of Object.keys(selection).sort()) faits.push(createBooking({ userId: user.id, date: jour, creneaux: selection[jour] }));
+        toast(faits.length > 1
+          ? `${faits.length} journées réservées`
+          : `Salle réservée ${formatSlots(faits[0].creneaux)} le ${formatDate(faits[0].date)}`, 'success');
       } catch (e) {
         toast(e.message, 'error');
       }
+      // Ce qui est réservé quitte la sélection ; ce qui a échoué y reste, avec son motif.
+      selection = Object.fromEntries(Object.entries(selection).filter(([jour]) => !faits.some((b) => b.date === jour)));
+      render();
     });
     const entry = container.querySelector('[data-action="entry"]');
     if (entry) entry.addEventListener('click', () => { etat = { bookingId: userBookings(user.id, date).active.booking.id, moment: 'entree', lignes: roomChecklist() }; render(); });

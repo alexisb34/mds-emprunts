@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { DEFAULT_SETTINGS, REASONS, ymd } from '../js/rules.js';
-import { buildItemWeekGrid, togglePeriode, periodeBornes } from '../js/weekGrid.js';
+import { buildItemWeekGrid, togglePeriode, togglePeriodeJour, periodeContient, periodeBornes } from '../js/weekGrid.js';
 import { reserverHtml, disponibiliteHtml } from '../js/mobile/views/reserver.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
@@ -93,4 +93,20 @@ test('periodeBornes : du début du premier créneau à la fin du dernier', () =>
   assert.deepEqual(bornes.debutPrevu, new Date(2026, 8, 18, 9));
   assert.deepEqual(bornes.finPrevue, new Date(2026, 8, 21, 12));
   assert.equal(periodeBornes(null), null);
+});
+
+test('togglePeriodeJour : une seconde journée étend la période au lieu de la remplacer', () => {
+  const g = grille('sd-256'); // trois exemplaires : la semaine entière est libre
+  const [a, b] = ['2026-09-17', '2026-09-18'];
+  const heures = (j) => g.hours.filter((h) => g.cells[j][h].free);
+  const un = togglePeriodeJour(null, g, a);
+  assert.deepEqual(un, { debut: { ymd: a, heure: heures(a)[0] }, fin: { ymd: a, heure: heures(a).at(-1) } });
+  const deux = togglePeriodeJour(un, g, b);
+  assert.deepEqual(deux.debut, un.debut, 'cocher le vendredi ne rend pas le jeudi');
+  assert.deepEqual(deux.fin, { ymd: b, heure: heures(b).at(-1) });
+  // Décocher retire la journée par son bout, le reste de la période tient.
+  const sansB = togglePeriodeJour(deux, g, b);
+  assert.deepEqual(sansB.fin, { ymd: a, heure: heures(a).at(-1) });
+  assert.equal(periodeContient(sansB, b, heures(b)[0]), false);
+  assert.equal(togglePeriodeJour(sansB, g, a), null, 'la dernière journée décochée efface la période');
 });

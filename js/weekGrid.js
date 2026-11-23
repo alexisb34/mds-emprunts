@@ -60,12 +60,17 @@ export function buildWeekGrid({ date, bookings, settings, userId, now }) {
   return { days, hours, cells };
 }
 
+// La sélection de la salle est une liste d’heures par journée — `{ '2026-11-23': [9, 10] }` —
+// et chaque journée retenue donnera sa propre réservation. Toucher un créneau ne touche que
+// sa journée : prendre le mardi ne rend plus le lundi déjà choisi.
 export function toggleSlot(selection, { ymd: jour, heure }) {
-  if (selection.ymd !== jour) return { ymd: jour, creneaux: [heure] };
-  const creneaux = selection.creneaux.includes(heure)
-    ? selection.creneaux.filter((h) => h !== heure)
-    : [...selection.creneaux, heure].sort((a, b) => a - b);
-  return creneaux.length ? { ymd: jour, creneaux } : { ymd: null, creneaux: [] };
+  const actuels = selection[jour] || [];
+  const creneaux = actuels.includes(heure)
+    ? actuels.filter((h) => h !== heure)
+    : [...actuels, heure].sort((a, b) => a - b);
+  const suite = { ...selection };
+  if (creneaux.length) suite[jour] = creneaux; else delete suite[jour];
+  return suite;
 }
 
 export function selectionIsValid(selection, { bookings, settings, date }) {
@@ -173,11 +178,32 @@ export function togglePeriode(periode, jour, heure) {
   return { debut: periode.debut, fin: borne };
 }
 
-// Cocher une journée retient tous ses créneaux libres ; la décocher efface la période.
+// Les deux bouts d’une journée : ses créneaux libres, ou toute la plage horaire si elle
+// n’en a aucun (la période reste calculable, le verdict dira qu’elle est complète).
+function bornesJour(grid, jour) {
+  const heures = freeHoursOfDay(grid, jour).length ? freeHoursOfDay(grid, jour) : grid.hours;
+  return { premier: { ymd: jour, heure: heures[0] }, dernier: { ymd: jour, heure: heures[heures.length - 1] } };
+}
+
+// Cocher une journée l’ajoute à la période, sans rendre celles déjà retenues. La décocher la
+// retire par le bout où elle se trouve ; une journée du milieu ne se retire pas, le matériel
+// reste dehors d’un bout à l’autre.
 export function togglePeriodeJour(periode, grid, jour) {
   const libres = freeHoursOfDay(grid, jour);
-  if (!libres.length || libres.every((h) => periodeContient(periode, jour, h))) return null;
-  return { debut: { ymd: jour, heure: libres[0] }, fin: { ymd: jour, heure: libres[libres.length - 1] } };
+  if (!libres.length) return periode;
+  const { premier, dernier } = bornesJour(grid, jour);
+  if (!periode) return { debut: premier, fin: dernier };
+  if (!libres.every((h) => periodeContient(periode, jour, h))) {
+    return {
+      debut: cle(jour, premier.heure) < cle(periode.debut.ymd, periode.debut.heure) ? premier : periode.debut,
+      fin: cle(jour, dernier.heure) > cle(periode.fin.ymd, periode.fin.heure) ? dernier : periode.fin,
+    };
+  }
+  if (periode.debut.ymd === jour && periode.fin.ymd === jour) return null;
+  const couverts = grid.days.map((d) => d.ymd).filter((d) => d >= periode.debut.ymd && d <= periode.fin.ymd);
+  if (jour === couverts[0]) return { debut: bornesJour(grid, couverts[1]).premier, fin: periode.fin };
+  if (jour === couverts[couverts.length - 1]) return { debut: periode.debut, fin: bornesJour(grid, couverts[couverts.length - 2]).dernier };
+  return periode;
 }
 
 export function etatJourPeriode(periode, grid, jour) {

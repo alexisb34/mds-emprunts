@@ -52,17 +52,19 @@ test('buildWeekGrid : réservations placées, créneaux passés marqués, les mi
   assert.equal(jeudi[11].free, true);
 });
 
-test('toggleSlot : ajoute, retire, change de jour', () => {
-  let sel = toggleSlot({ ymd: null, creneaux: [] }, { ymd: '2026-09-17', heure: 9 });
-  assert.deepEqual(sel, { ymd: '2026-09-17', creneaux: [9] });
+test('toggleSlot : ajoute, retire, et garde les autres journées', () => {
+  let sel = toggleSlot({}, { ymd: '2026-09-17', heure: 9 });
+  assert.deepEqual(sel, { '2026-09-17': [9] });
   sel = toggleSlot(sel, { ymd: '2026-09-17', heure: 10 });
-  assert.deepEqual(sel.creneaux, [9, 10]);
+  assert.deepEqual(sel['2026-09-17'], [9, 10]);
   sel = toggleSlot(sel, { ymd: '2026-09-17', heure: 9 });
-  assert.deepEqual(sel.creneaux, [10]);
+  assert.deepEqual(sel['2026-09-17'], [10]);
+  // Une seconde journée s’ajoute : prendre le vendredi ne rend plus le jeudi.
   sel = toggleSlot(sel, { ymd: '2026-09-18', heure: 8 });
-  assert.deepEqual(sel, { ymd: '2026-09-18', creneaux: [8] }, 'changer de jour repart de zéro');
-  const vide = toggleSlot({ ymd: '2026-09-18', creneaux: [8] }, { ymd: '2026-09-18', heure: 8 });
-  assert.deepEqual(vide, { ymd: null, creneaux: [] }, 'plus rien de sélectionné');
+  assert.deepEqual(sel, { '2026-09-17': [10], '2026-09-18': [8] });
+  sel = toggleSlot(sel, { ymd: '2026-09-18', heure: 8 });
+  assert.deepEqual(sel, { '2026-09-17': [10] }, 'une journée vidée quitte la sélection');
+  assert.deepEqual(toggleSlot(sel, { ymd: '2026-09-17', heure: 10 }), {}, 'plus rien de sélectionné');
 });
 
 test('selectionIsValid : vide, non contiguë, conflit, passé, jour ouvré', () => {
