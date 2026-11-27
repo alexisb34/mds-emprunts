@@ -52,6 +52,7 @@ function declarations(regles, selecteur) {
 const KIT = reglesDe([lire('css/base.css'), lire('css/components.css')].join('\n'));
 const FEUILLES = ['base.css', 'components.css', 'admin.css', 'mobile.css'].map((f) => lire(`css/${f}`)).join('\n');
 const DASHBOARD = lire('js/admin/views/dashboard.js');
+const MAINTENANCE = lire('js/admin/views/maintenance.js');
 // Toutes les vues et tous les modules : pour savoir si une classe ou un texte est émis QUELQUE PART.
 const VUES = readdirSync(new URL('../js/', import.meta.url), { recursive: true }).filter((f) => f.endsWith('.js')).map((f) => lire(`js/${f}`)).join('\n');
 const UI = lire('js/ui.js');
@@ -93,14 +94,16 @@ test('le tableau publié annonce cinq échecs et une seule conformité', () => {
 // ---- Les mesures de la tâche, au-delà des badges ----
 
 test('les cartes KPI et le tableau sont mesurés comme le chef de projet les a mesurés', () => {
-  // Les chiffres du 26 octobre : texte discret sur chaque fond de carte, en-tête de tableau
-  // sur blanc, texte discret sur une ligne survolée.
+  // Les chiffres du 26 octobre pour le tableau. Les cartes, elles, ont été redessinées depuis :
+  // leur texte discret a laissé la place au texte principal, et les sept teintes passent.
   const r = (nom) => { const p = PAIRES_KIT.find((x) => x.nom === nom); assert.ok(p, `${nom} n'est pas publiée`); return ratio(VALEURS[p.texte], VALEURS[p.fond]); };
-  assert.equal(r('kpi'), 3.51);
-  assert.equal(r('kpi--disponible'), 4.06);
-  assert.equal(r('kpi--emprunte'), 3.82);
-  assert.equal(r('kpi--retard'), 3.76);
-  assert.equal(r('kpi--salle'), 4.02);
+  assert.equal(r('kpi'), 8.53);
+  assert.equal(r('kpi--disponible'), 9.86);
+  assert.equal(r('kpi--emprunte'), 9.28);
+  assert.equal(r('kpi--retard'), 9.14);
+  assert.equal(r('kpi--salle'), 9.77);
+  assert.equal(r('kpi--maintenance'), 10.01);
+  assert.equal(r('kpi--hs'), 8.53);
   assert.equal(r('table th'), 4.55);
   assert.equal(r('table tr:hover'), 4.13);
 });
@@ -141,30 +144,34 @@ test('les libellés des échantillons de badge sont ceux que l’outil affiche',
   for (const p of badges) assert.ok(connus.includes(p.libelle), `« ${p.libelle} » n'est un libellé d'aucune famille de js/models.js`);
 });
 
-test('chaque carte KPI est formée par components.css, et le tableau de bord les émet', () => {
+test('chaque carte KPI est formée par components.css, et les écrans les émettent', () => {
   const kpi = PAIRES_KIT.filter((p) => p.nom === 'kpi' || p.nom.startsWith('kpi--'));
-  assert.deepEqual(kpi.map((p) => p.nom).sort(), ['kpi', 'kpi--disponible', 'kpi--emprunte', 'kpi--retard', 'kpi--salle']);
+  assert.deepEqual(kpi.map((p) => p.nom).sort(), ['kpi', 'kpi--disponible', 'kpi--emprunte', 'kpi--hs', 'kpi--maintenance', 'kpi--retard', 'kpi--salle']);
   for (const p of kpi) {
-    assert.equal(declarations(KIT, `.${p.nom}`).background, `var(${p.fond})`, `${p.nom} : fond`);
+    assert.equal(declarations(KIT, `.${p.nom}`)['background-color'], `var(${p.fond})`, `${p.nom} : fond`);
     assert.deepEqual(p.elements, [
-      { selecteur: '.kpi__label', px: 14, gras: false },
-      { selecteur: '.kpi__delta', px: 12, gras: false },
+      { selecteur: '.kpi__label', px: 18, gras: true },
+      { selecteur: '.kpi__value', px: 40, gras: true },
     ]);
     for (const e of p.elements) {
       const regle = declarations(KIT, e.selecteur);
       assert.equal(regle.color, `var(${p.texte})`, `${e.selecteur} : couleur du texte`);
       assert.equal(regle['font-size'], `${e.px}px`, `${e.selecteur} : taille`);
-      assert.ok(!('font-weight' in regle) || Number(regle['font-weight']) < 700, `${e.selecteur} est en gras : le registre dit le contraire`);
+      assert.ok(Number(regle['font-weight']) >= 700, `${e.selecteur} n'est pas en gras : le registre dit le contraire`);
     }
   }
-  // Les quatre teintes sont des variantes que le tableau de bord pose, et la carte pose bien
-  // un libellé et une variation à l'intérieur.
-  for (const p of kpi.filter((x) => x.nom !== 'kpi')) assert.ok(DASHBOARD.includes(`'${p.nom}'`), `dashboard.js n'émet jamais ${p.nom}`);
-  assert.match(DASHBOARD, /class="kpi__label"[\s\S]*class="kpi__delta"/);
+  // Les teintes du tableau de bord viennent de dashboard.js ; les deux autres, maintenance et
+  // hors service, ne sont posées que par l'écran Maintenance.
+  for (const nom of ['kpi--disponible', 'kpi--emprunte', 'kpi--retard', 'kpi--salle']) assert.ok(DASHBOARD.includes(`'${nom}'`), `dashboard.js n'émet jamais ${nom}`);
+  for (const nom of ['kpi--maintenance', 'kpi--hs']) assert.ok(MAINTENANCE.includes(`'${nom}'`), `maintenance.js n'émet jamais ${nom}`);
+  assert.match(DASHBOARD, /class="kpi__label"[\s\S]*class="kpi__value"/);
   for (const p of kpi) {
     assert.ok(p.echantillon && p.echantillon.libelle && p.echantillon.variation, `${p.nom} n'a pas d'échantillon`);
   }
-  for (const p of kpi.filter((x) => x.nom !== 'kpi')) assert.ok(DASHBOARD.includes(`'${p.echantillon.libelle}'`), `« ${p.echantillon.libelle} » n'est pas le libellé de ${p.nom} dans dashboard.js`);
+  for (const nom of ['kpi--disponible', 'kpi--emprunte', 'kpi--retard', 'kpi--salle']) {
+    const p = kpi.find((x) => x.nom === nom);
+    assert.ok(DASHBOARD.includes(`'${p.echantillon.libelle}'`), `« ${p.echantillon.libelle} » n'est pas le libellé de ${nom} dans dashboard.js`);
+  }
 });
 
 test('la carte KPI neutre existe dans le kit, mais le tableau de bord ne l’emploie pas', () => {
@@ -351,15 +358,16 @@ test('le badge de maintenance renvoie à ce que le kit a déjà : --status-maint
 
 test('la synthèse compte les paires et propose un seul correctif pour --text-secondary', () => {
   const s = syntheseDette(PAIRES_KIT, VALEURS);
-  assert.equal(s.mesurees, 18);
-  assert.equal(s.echouent, 16);
-  assert.equal(s.conformes, 2);
+  assert.equal(s.mesurees, 20);
+  assert.equal(s.echouent, 11);
+  assert.equal(s.conformes, 9);
   assert.equal(s.mesurees, s.echouent + s.conformes);
-  // Six lignes tiennent à un seul token. Le ton proposé passe sur chacune d'elles.
+  // Les cartes KPI tenaient cinq de ces lignes ; redessinées en texte principal, elles passent.
+  // Il n'en reste qu'une sur --text-secondary, et le ton proposé passe dessus.
   const secondaires = PAIRES_KIT.filter((p) => p.texte === '--text-secondary' && jugerPaire(p, VALEURS).echoue);
-  assert.equal(secondaires.length, 6);
-  assert.equal(s.couvertes, 6);
-  assert.deepEqual(secondaires.map((p) => p.famille).sort(), ['kpi', 'kpi', 'kpi', 'kpi', 'kpi', 'tableau']);
+  assert.equal(secondaires.length, 1);
+  assert.equal(s.couvertes, 1);
+  assert.deepEqual(secondaires.map((p) => p.famille), ['tableau']);
   for (const p of secondaires) assert.ok(ratioExact(s.tonSecondaire, VALEURS[p.fond]) >= 4.5, `${s.tonSecondaire} ne passe pas sur ${p.fond}`);
   assert.ok(ratioExact(s.tonSecondaire, '#ffffff') > ratioExact(VALEURS['--text-secondary'], '#ffffff'));
 });
@@ -504,10 +512,10 @@ test('la valeur affichée sur une ligne en --text-secondary règle TOUTES les li
   const html = tableauDetteHtml(PAIRES_KIT, VALEURS);
   const s = syntheseDette(PAIRES_KIT, VALEURS);
   const lignes = PAIRES_KIT.filter((p) => p.texte === '--text-secondary' && jugerPaire(p, VALEURS).echoue);
-  assert.equal(lignes.length, 6);
-  assert.equal((texte(html).match(/même valeur pour toutes les lignes en --text-secondary/g) || []).length, 6, 'chaque ligne doit dire que la valeur est la même pour les six');
+  assert.equal(lignes.length, 1, 'les cartes KPI sont sorties de la dette : il ne reste que la ligne survolée');
+  assert.equal((texte(html).match(/même valeur pour toutes les lignes en --text-secondary/g) || []).length, 1, 'la ligne doit dire que la valeur vaut pour tout le token');
   const affichees = lignes.map((p) => tonAffiche(html, p.nom));
-  // Une seule valeur pour les six lignes, et c'est celle de la page et de la synthèse.
+  // Une seule valeur pour ce token, et c'est celle de la page et de la synthèse.
   assert.deepEqual([...new Set(affichees)], [s.tonSecondaire], `les lignes affichent ${affichees.join(', ')}`);
   // Et copier cette valeur règle chaque ligne : elle passe sur CHAQUE fond, y compris le plus exigeant.
   for (const p of lignes) assert.ok(ratioExact(affichees[0], VALEURS[p.fond]) >= 4.5, `${affichees[0]} ne règle pas ${p.nom}`);
@@ -542,7 +550,7 @@ test('un ton proposé a une vraie marge : il vise 4,8:1, pas le premier ton qui 
     const [a, b] = repere.role === 'texte' ? [repere.hex, VALEURS[p.fond]] : [VALEURS[p.texte], repere.hex];
     assert.ok(ratioExact(a, b) >= CIBLE_CONSEIL, `${p.nom} : ${repere.hex} ne donne que ${ratioExact(a, b).toFixed(3)}`);
   }
-  assert.ok(vus >= 12, `${vus} repères seulement`);
+  assert.ok(vus >= 8, `${vus} repères seulement`);
   // Sur la ligne la plus exigeante, le ton reste le plus clair qui atteint la cible (il ne fonce pas pour rien).
   const s = syntheseDette(PAIRES_KIT, VALEURS);
   const marge = ratioExact(s.tonSecondaire, VALEURS[s.fondExigeant]);
@@ -567,13 +575,12 @@ test('la page dit que les tons sont des repères avec une marge, et dans quel se
   const s = syntheseDette(PAIRES_KIT, VALEURS);
   const secondaires = PAIRES_KIT.filter((p) => p.texte === '--text-secondary' && jugerPaire(p, VALEURS).echoue);
   const exigeant = ratioExact(s.tonSecondaire, VALEURS[s.fondExigeant]);
-  const facile = secondaires.map((p) => ({ fond: p.fond, r: ratioExact(s.tonSecondaire, VALEURS[p.fond]) })).reduce((a, b) => (b.r > a.r ? b : a));
-  assert.equal(s.fondExigeant, '--bg-muted');
+  assert.equal(secondaires.length, 1, 'tant qu’il n’en reste qu’une, la page ne nomme pas de « ligne facile »');
+  assert.equal(s.fondExigeant, '--bg-canvas');
   assert.ok(marge.includes(`le fond le plus exigeant est ${s.fondExigeant}`), 'le fond exigeant n’est pas nommé');
   assert.ok(marge.includes(`donne ${virgule(exigeant)}:1`), 'le ratio sur le fond exigeant manque');
   assert.ok(marge.includes(`${virgule(exigeant - 4.5)} de marge réelle`), 'la marge réelle manque');
-  assert.ok(marge.includes(`la ligne en ${facile.fond} en affiche ${virgule(facile.r)}:1`), 'la ligne la plus facile n’est pas nommée avec son ratio');
-  assert.ok(facile.r - 4.5 > 3 * (exigeant - 4.5), 'la ligne facile ne trompe plus : la phrase n’a plus d’objet');
+  assert.match(marge, /la seule ligne de ce token qui échoue encore/);
   assert.match(marge, /foncer davantage ne fait jamais perdre de contraste/);
 });
 
@@ -973,7 +980,7 @@ test('le registre des correctifs nomme chaque paire publiée qui échoue, avec s
   const REGISTRE = registre();
   assert.match(REGISTRE, /26 octobre 2026/);
   const echouent = PAIRES_KIT.filter((p) => jugerPaire(p, VALEURS).echoue);
-  assert.equal(echouent.length, 16);
+  assert.equal(echouent.length, 11, 'les cinq lignes des cartes KPI sont sorties de la dette');
   for (const p of echouent) {
     const ligne = REGISTRE.split('\n').find((l) => l.includes(`\`${p.nom}\``));
     assert.ok(ligne, `le registre ne nomme pas ${p.nom}`);

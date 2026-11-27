@@ -33,6 +33,18 @@ export const SELECT_COLUMN = {
 };
 
 const options = (values, labelOf, selected, emptyLabel) => `<option value="">${escapeHtml(emptyLabel)}</option>${values.map((v) => `<option value="${escapeHtml(v)}"${v === selected ? ' selected' : ''}>${escapeHtml(labelOf(v))}</option>`).join('')}`;
+
+// Les quatre champs de tri de l’inventaire. L’écran Maintenance les repose au-dessus de son
+// tableau du hors service : même balisage, donc `filterItems` suffit à les faire marcher.
+export function filtersHtml(filters) {
+  return `
+      <div class="filters">
+        <input class="input input--search" type="search" name="q" placeholder="Nom, code, référence, localisation…" value="${escapeHtml(filters.q)}" aria-label="Rechercher">
+        <select class="select" name="categorie" aria-label="Catégorie">${options(CATEGORIES, (v) => v, filters.categorie, 'Toutes les catégories')}</select>
+        <select class="select" name="circuit" aria-label="Circuit">${options(Object.values(CIRCUITS), (v) => LABELS.circuit[v], filters.circuit, 'Tous les circuits')}</select>
+        <select class="select" name="etat" aria-label="État">${options(Object.values(ITEM_STATES), (v) => LABELS.itemState[v], filters.etat, 'Tous les états')}</select>
+      </div>`;
+}
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 
 export function materielHtml({ items, total, disponibles, filters, sort }) {
@@ -42,12 +54,7 @@ export function materielHtml({ items, total, disponibles, filters, sort }) {
       <p class="page-header__meta" data-role="count">${plural(items.length, 'résultat', 'résultats')}</p>
     </div>
     <div class="card">
-      <div class="filters">
-        <input class="input input--search" type="search" name="q" placeholder="Nom, code, référence, localisation…" value="${escapeHtml(filters.q)}" aria-label="Rechercher">
-        <select class="select" name="categorie" aria-label="Catégorie">${options(CATEGORIES, (v) => v, filters.categorie, 'Toutes les catégories')}</select>
-        <select class="select" name="circuit" aria-label="Circuit">${options(Object.values(CIRCUITS), (v) => LABELS.circuit[v], filters.circuit, 'Tous les circuits')}</select>
-        <select class="select" name="etat" aria-label="État">${options(Object.values(ITEM_STATES), (v) => LABELS.itemState[v], filters.etat, 'Tous les états')}</select>
-      </div>
+      ${filtersHtml(filters)}
       <div class="toolbar"><button type="button" class="btn btn--secondary btn--sm" data-action="print-selected" disabled>Imprimer les QR sélectionnés (0)</button></div>
       <div data-role="table">${renderTable({ columns: [SELECT_COLUMN, ...COLUMNS], rows: items, sort, rowHref: (i) => `/materiel/${i.id}`, emptyText: 'Aucun matériel ne correspond à ces filtres.' })}</div>
     </div>`;

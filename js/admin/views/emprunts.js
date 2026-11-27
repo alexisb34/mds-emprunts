@@ -9,12 +9,16 @@ import { receiveLoan, refuseLoan, extendLoan, sweepExpirations } from '../../act
 import { setTopbar } from '../layout.js';
 import { sortRows, toggleSort, renderTable, bindTable } from '../table.js';
 import { openHandoverModal, checklistFormHtml, readChecklistForm } from '../handoverModal.js';
+import { ICONS } from '../../mobile/layout.js';
+import { relanceTeams } from '../../actions/loans.js';
 
+// Les quatre filtres sont les quatre cartes du haut : une teinte chacun, celle du badge que
+// leurs lignes portent, et la carte retenue se cercle de violet.
 export const TABS_ADMIN_LOANS = [
-  { key: 'enCours', label: 'En cours' },
-  { key: 'reserves', label: 'Réservés' },
-  { key: 'retards', label: 'En retard' },
-  { key: 'historique', label: 'Historique' },
+  { key: 'enCours', label: 'En cours', variante: 'kpi--emprunte' },
+  { key: 'reserves', label: 'Réservés', variante: 'kpi--salle' },
+  { key: 'retards', label: 'En retard', variante: 'kpi--retard' },
+  { key: 'historique', label: 'Historique', variante: 'kpi--disponible' },
 ];
 
 const ACTIVE = [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS];
@@ -46,16 +50,21 @@ export const LOAN_COLUMNS = [
   { key: 'statut', label: 'Statut', sortable: true, sortValue: (r) => (r.late ? 'zz' : r.loan.statut), render: (r) => badge('loan', r.late ? 'en_retard' : r.loan.statut) },
 ];
 
+// Une icône par action, le libellé sur aria-label : `.tooltip` le montre au survol et au focus.
+function actionBouton(action, id, libelle, icone) {
+  return `<button type="button" class="btn btn--ghost btn--sm btn--icon tooltip" data-action="${action}" data-loan="${escapeHtml(id)}" aria-label="${escapeHtml(libelle)}">${icone}</button>`;
+}
+
 function actionsColumn(tab) {
   return {
-    key: 'actions', label: '', align: 'right',
+    key: 'actions', label: 'Actions', align: 'right',
     render: (r) => {
-      const id = escapeHtml(r.loan.id);
+      const id = r.loan.id;
       if (tab === 'reserves') {
-        return `<div class="table__actions"><button type="button" class="btn btn--primary btn--sm" data-action="handover" data-loan="${id}">Remettre</button><button type="button" class="btn btn--ghost btn--sm" data-action="refuse" data-loan="${id}">Refuser</button></div>`;
+        return `<div class="table__actions">${actionBouton('handover', id, 'Remettre le matériel', ICONS.check)}${actionBouton('refuse', id, 'Refuser la réservation', ICONS.croix)}</div>`;
       }
       if (tab === 'enCours' || tab === 'retards') {
-        return `<div class="table__actions"><button type="button" class="btn btn--primary btn--sm" data-action="receive" data-loan="${id}">Réceptionner</button><button type="button" class="btn btn--ghost btn--sm" data-action="extend" data-loan="${id}">Prolonger</button></div>`;
+        return `<div class="table__actions">${actionBouton('relance', id, 'Envoyer un message automatique sur Teams', ICONS.message)}${actionBouton('extend', id, 'Prolonger la réservation', ICONS.prolonger)}${actionBouton('receive', id, 'Réceptionner', ICONS.colis)}</div>`;
       }
       return '';
     },
@@ -65,15 +74,16 @@ function actionsColumn(tab) {
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 
 export function empruntsHtml({ tab, rows, counts, sort, date }) {
-  const tabs = TABS_ADMIN_LOANS.map((t) => `<button type="button" class="tab${t.key === tab ? ' is-active' : ''}" data-tab="${t.key}">${escapeHtml(t.label)} <span class="tab__count">${counts[t.key]}</span></button>`).join('');
+  const cartes = TABS_ADMIN_LOANS.map((t) => `<button type="button" class="kpi kpi--link ${t.variante}${t.key === tab ? ' kpi--actif' : ''}" data-tab="${t.key}" aria-pressed="${t.key === tab}"><span class="kpi__label">${escapeHtml(t.label)}</span><span class="kpi__value">${counts[t.key]}</span><span class="kpi__go" aria-hidden="true">↗</span></button>`).join('');
   const columns = [...LOAN_COLUMNS, actionsColumn(tab)];
   return `
-    <div class="page-header">
-      <div><h2 class="h6">Emprunts</h2><p class="page-header__meta">${plural(counts.enCours + counts.reserves + counts.retards, 'dossier actif', 'dossiers actifs')} · ${plural(counts.retards, 'retard', 'retards')}</p></div>
-    </div>
+    <div class="kpi-band"><div class="grid-4">${cartes}</div></div>
     <div class="card">
-      <div class="tabs">${tabs}</div>
-      <div data-role="results">${renderTable({ columns, rows, sort, rowHref: (r) => `/materiel/${r.loan.itemId}`, emptyText: 'Aucun emprunt dans cet onglet.' })}</div>
+      <div class="card__header">
+        <h2 class="card__title">Emprunts</h2>
+        <span class="body-sm text-secondary">${plural(counts.enCours + counts.reserves + counts.retards, 'dossier actif', 'dossiers actifs')} · ${plural(counts.retards, 'retard', 'retards')}</span>
+      </div>
+      <div data-role="results">${renderTable({ columns, rows, sort, rowHref: (r) => `/materiel/${r.loan.itemId}`, emptyText: 'Aucun emprunt dans cette sélection.' })}</div>
     </div>`;
 }
 
@@ -140,6 +150,11 @@ export function empruntsView(container, params = {}) {
     container.querySelectorAll('[data-action="refuse"]').forEach((b) => b.addEventListener('click', () => askRefuse(rowOf(b.dataset.loan))));
     container.querySelectorAll('[data-action="extend"]').forEach((b) => b.addEventListener('click', () => askExtend(rowOf(b.dataset.loan))));
     container.querySelectorAll('[data-action="handover"]').forEach((b) => b.addEventListener('click', () => openHandoverModal({ loan: rowOf(b.dataset.loan)?.loan ?? null })));
+    container.querySelectorAll('[data-action="relance"]').forEach((b) => b.addEventListener('click', () => {
+      const row = rowOf(b.dataset.loan);
+      try { const envoi = relanceTeams(row.loan.id, auth.currentUserId()); toast(`Message de relance envoyé à ${envoi.destinataire} sur Teams`, 'success'); }
+      catch (e) { toast(e.message, 'error'); }
+    }));
   };
 
   render();

@@ -26,6 +26,9 @@
 .topbar__title p { font-size: 12px; line-height: 16px; color: var(--text-secondary); }
 .topbar__search { width: 280px; }
 .view { padding: var(--space-3xl); display: flex; flex-direction: column; gap: var(--space-2xl); }
+/* La bande des cartes prolonge la barre supérieure : elle ressort des marges de la vue pour
+   tenir le blanc bord à bord, et le gris de la page reprend dessous. */
+.kpi-band { margin: calc(var(--space-3xl) * -1) calc(var(--space-3xl) * -1) 0; padding: var(--space-2xl) var(--space-3xl); background: var(--bg-surface); }
 
 /* Éléments de page */
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-lg); flex-wrap: wrap; }

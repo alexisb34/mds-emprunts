@@ -13,7 +13,8 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   27). Repéré en documentant la page Bouton du design system. Aucune règle `:focus-visible` sur
   `.btn`, et le kit entier est dans ce cas : ni bouton, ni onglet (`.tab`), ni élément de
   navigation (`.nav-item`) n’en a. Deux règles seulement dessinent un anneau choisi :
-  `.input` / `.select` / `.textarea` et `.kpi--link`.
+  `.input` / `.select` / `.textarea` et `.kpi--link`. Une troisième vise `:focus-visible` sans
+  dessiner d’anneau : `.tooltip`, qui montre son infobulle au clavier comme au survol.
 
   **Ce n’est pas un anneau absent, c’est un anneau non maîtrisé.** Le dépôt ne pose `outline: none`
   nulle part, donc le navigateur affiche le sien et on le voit bien en tabulant — vérifié. Le
@@ -54,8 +55,9 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   dans `js/` (recherche faite sur ces trois dossiers) : une ligne et un en-tête ne reçoivent donc
   jamais le focus, et le tri comme l’ouverture d’une fiche ne s’obtiennent qu’à la souris. Le sens du
   tri n’est dit que par une flèche écrite dans le libellé (` ↑`, ` ↓`). Même défaut, sans l’en-tête,
-  pour les `.list__item[data-href]` (des `<div>`) du tableau de bord et de la maintenance
-  (`js/admin/views/dashboard.js`, `js/admin/views/maintenance.js`). Un test
+  pour les `.list__item[data-href]` (des `<div>`) du tableau de bord
+  (`js/admin/views/dashboard.js`). L’écran Maintenance en posait aussi ; depuis son redessin,
+  son matériel hors service passe par un vrai tableau. Un test
   (`tests/ds-registre.test.mjs`) rejoue la recherche et tombe le jour où l’un de ces manques est
   comblé. Reste à décider dans Figma : un lien dans la première cellule et un bouton dans l’en-tête,
   ou `tabindex="0"` avec Entrée et Espace, et `aria-sort` sur la colonne triée.
@@ -107,30 +109,30 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   | `badge--reserved` | 2,91:1 | `--status-reserved-fg` sur `--status-reserved-bg` | 11 px, gras |
   | `alert--info` | 2,91:1 | `--status-reserved-fg` sur `--brand-secondary-subtle` | 14 px |
   | `badge--hs` | 3,51:1 | `--status-hs-fg` sur `--status-hs-bg` | 11 px, gras |
-  | `kpi` | 3,51:1 | `--text-secondary` sur `--bg-muted` | 14 px et 12 px |
   | `badge--late` | 3,54:1 | `--status-late-fg` sur `--status-late-bg` | 11 px, gras |
   | `alert--error` | 3,54:1 | `--status-late-fg` sur `--status-late-bg` | 14 px |
-  | `kpi--retard` | 3,76:1 | `--text-secondary` sur `--status-late-bg` | 14 px et 12 px |
-  | `kpi--emprunte` | 3,82:1 | `--text-secondary` sur `--status-borrowed-bg` | 14 px et 12 px |
-  | `kpi--salle` | 4,02:1 | `--text-secondary` sur `--status-reserved-bg` | 14 px et 12 px |
-  | `kpi--disponible` | 4,06:1 | `--text-secondary` sur `--status-available-bg` | 14 px et 12 px |
   | `table tr:hover` | 4,13:1 | `--text-secondary` sur `--bg-canvas` (ligne survolée) | 11 px |
   | `btn--danger` | 4,28:1 | `--text-inverse` sur `--feedback-error` | 14 px et 12 px, gras |
   | `toast--error` | 4,28:1 | `--text-inverse` sur `--feedback-error` | 14 px, gras |
 
   `badge--borrowed` (8,23:1) et `table th` (4,55:1) sont conformes. La seconde de justesse : posé
   sur `--bg-canvas` plutôt que dans une carte blanche, l’en-tête de colonne tomberait à 4,13:1.
-  `kpi` est la carte neutre que le kit définit ; le tableau de bord n’en pose aucune, il passe
-  toujours une teinte.
+
+  **Les cartes KPI sont sorties de ce tableau.** Elles y tenaient cinq lignes, de 3,51:1 à 4,06:1,
+  avec `--text-secondary` sur leur fond. La carte a été redessinée depuis : son titre (18 px) et
+  son compte (40 px) sont en `--text-primary` et en gras, et les sept teintes passent, de 8,53:1
+  (`--bg-muted` et `--status-hs-bg`) à 10,01:1 (`--status-maintenance-bg`). `kpi` est la carte
+  neutre que le kit définit ; aucun écran ne la pose, ils passent tous une teinte.
 
   **Trois corrections à trancher dans Figma.** Chaque ton calculé vise 4,8:1, soit 0,3 de marge
   au-dessus du seuil : un repère, pas une limite. On peut l’éclaircir tant que le ratio reste au
   moins à 4,5:1 sur chaque fond où le token sert, pas seulement sur la ligne lue ; le foncer
-  davantage ne fait jamais perdre de contraste. (1) Six lignes, les cinq
-  cartes KPI et la ligne survolée, tiennent à un seul token : `--text-secondary` (`#757678`). Le
-  foncer jusqu’à `#5f6062` les fait toutes passer (4,86:1 sur `--bg-muted`, le fond le plus
-  exigeant, soit 0,36 de marge réelle ; la ligne de `--bg-canvas` affiche 5,72:1 et ne doit pas servir
-  de repère) : la page affiche cette même valeur sur les six lignes. C’est une valeur calculée
+  davantage ne fait jamais perdre de contraste. (1) Une seule ligne tient
+  encore à `--text-secondary` (`#757678`), la ligne survolée d’un tableau — les cartes KPI, qui en
+  tenaient cinq, ont été redessinées. Le foncer jusqu’à `#6a6b6d` la fait passer (4,84:1 sur
+  `--bg-canvas`, le fond le plus exigeant, soit 0,34 de marge réelle ; la ligne de `--bg-canvas`
+  affiche 4,84:1, c’est la seule et elle sert donc de repère) : la page affiche cette valeur sur
+  cette ligne. C’est une valeur calculée
   (même teinte, luminosité abaissée), pas une décision, et elle touche tous les textes discrets
   de l’outil. (2) Pour chaque badge, un texte plus sombre de la même teinte. La maintenance a déjà
   de quoi le faire : `--status-maintenance-text` (6,21:1 sur son fond), que l’alerte
@@ -151,7 +153,7 @@ le sont aussi — un libellé vit souvent dans trois endroits : la vue, un test,
   | Paire | Ratio | Texte sur fond | Taille | Émise par |
   |---|---|---|---|---|
   | `.nav-item__count` | 4,13:1 | `--text-secondary` sur `--bg-canvas` | 11 px | `js/admin/layout.js`, le compteur du menu |
-  | `.page-header__meta` | 4,13:1 | `--text-secondary` sur `--bg-canvas` | 14 px | cinq vues de `js/admin/views/` (matériel, fiche, emprunts, utilisateurs, fiche utilisateur) |
+  | `.page-header__meta` | 4,13:1 | `--text-secondary` sur `--bg-canvas` | 14 px | quatre vues de `js/admin/views/` (matériel, fiche, utilisateurs, fiche utilisateur) |
   | `.input::placeholder` | 1,66:1 | `--text-disabled` sur `--bg-surface` | 14 px | les champs de `js/admin/`, par exemple la recherche de `utilisateurs.js` ; `.textarea::placeholder` a la même règle |
   | `.sidebar__section` | 1,66:1 | `--text-disabled` sur `--bg-surface` | 10 px, gras | `js/admin/layout.js`, l’intitulé « Gestion » |
   | `.field__error` | 4,28:1 | `--feedback-error` sur `--bg-surface` | 11 px | aucun écran : défini par le kit |

@@ -58,7 +58,7 @@
         <p class="body ds-mesure"><strong>Le kit définit deux composants sous le même nom.</strong> Les classes <code>.tabs</code>, <code>.tab</code> et <code>.tab__count</code> existent dans deux feuilles, et l’onglet actif ne s’y écrit pas de la même façon.</p>
         <ul class="ds-liste body">
           <li><strong>Desktop</strong>, dans <code>css/components.css</code>&nbsp;: des onglets <em>soulignés</em>. L’actif est <code>.tab--active</code>, en violet avec un trait violet dessous. C’est le nom de la feuille de base&nbsp;; mais <strong>le seul écran qui l’emploie aujourd’hui est «&nbsp;Emprunts&nbsp;» sur mobile</strong> (<code>js/mobile/views/emprunts.js</code>), qui y ajoute le défilement horizontal de <code>.m-shell .tabs</code>, dans <code>css/mobile.css</code>.</li>
-          <li><strong>Admin</strong>, dans <code>css/admin.css</code>&nbsp;: des onglets <em>en pastilles</em>. L’actif est <code>.is-active</code>, plein violet, texte blanc. Les écrans Emprunts et Maintenance de l’administration l’emploient.</li>
+          <li><strong>Admin</strong>, dans <code>css/admin.css</code>&nbsp;: des onglets <em>en pastilles</em>. L’actif est <code>.is-active</code>, plein violet, texte blanc. <strong>Aucun écran ne l’emploie aujourd’hui</strong>&nbsp;: Emprunts et Maintenance, qui s’en servaient, filtrent désormais par cartes KPI. Le kit le définit.</li>
         </ul>
         <p class="body ds-mesure">Ce qui les rend incompatibles&nbsp;:</p>
         <ul class="ds-liste body">

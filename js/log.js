@@ -3,11 +3,11 @@ import { store } from './store.js';
 import { now } from './rules.js';
 
 export const ACTIONS = {
-  ITEM_CREE: 'item.cree', ITEM_MODIFIE: 'item.modifie', ITEM_ETAT: 'item.etat',
+  ITEM_CREE: 'item.cree', ITEM_MODIFIE: 'item.modifie', ITEM_ETAT: 'item.etat', ITEM_SUPPRIME: 'item.supprime',
   USER_CREE: 'user.cree', USER_MODIFIE: 'user.modifie', USER_DESACTIVE: 'user.desactive', USER_SUPPRIME: 'user.supprime',
   LOAN_EMPRUNT: 'loan.emprunt', LOAN_RETOUR: 'loan.retour', LOAN_RESERVEE: 'loan.reservee',
   LOAN_REMISE: 'loan.remise', LOAN_REFUSEE: 'loan.refusee', LOAN_EXPIREE: 'loan.expiree',
-  LOAN_ANNULEE: 'loan.annulee', LOAN_PROLONGEE: 'loan.prolongee',
+  LOAN_ANNULEE: 'loan.annulee', LOAN_PROLONGEE: 'loan.prolongee', LOAN_RELANCE: 'loan.relance',
   BOOKING_CREEE: 'booking.creee', BOOKING_ANNULEE: 'booking.annulee',
   BOOKING_ENTREE: 'booking.entree', BOOKING_SORTIE: 'booking.sortie',
   MAINT_SIGNALEMENT: 'maintenance.signalement', MAINT_INTERVENTION: 'maintenance.intervention',
@@ -16,11 +16,11 @@ export const ACTIONS = {
 };
 
 export const ACTION_LABELS = {
-  'item.cree': 'Matériel ajouté', 'item.modifie': 'Matériel modifié', 'item.etat': 'Changement d’état',
+  'item.cree': 'Matériel ajouté', 'item.modifie': 'Matériel modifié', 'item.etat': 'Changement d’état', 'item.supprime': 'Matériel supprimé',
   'user.cree': 'Utilisateur ajouté', 'user.modifie': 'Utilisateur modifié', 'user.desactive': 'Utilisateur désactivé', 'user.supprime': 'Utilisateur supprimé',
   'loan.emprunt': 'Emprunt', 'loan.retour': 'Retour', 'loan.reservee': 'Réservation',
   'loan.remise': 'Remise', 'loan.refusee': 'Réservation refusée', 'loan.expiree': 'Réservation expirée',
-  'loan.annulee': 'Réservation annulée', 'loan.prolongee': 'Emprunt prolongé',
+  'loan.annulee': 'Réservation annulée', 'loan.prolongee': 'Emprunt prolongé', 'loan.relance': 'Relance envoyée',
   'booking.creee': 'Salle réservée', 'booking.annulee': 'Réservation de salle annulée',
   'booking.entree': 'État des lieux d’entrée', 'booking.sortie': 'État des lieux de sortie',
   'maintenance.signalement': 'Signalement', 'maintenance.intervention': 'Intervention', 'maintenance.en_cours': 'Intervention en cours', 'maintenance.clos': 'Maintenance close',

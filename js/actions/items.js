@@ -1,7 +1,7 @@
 // js/actions/items.js — mutations métier sur le matériel. Toute écriture passe ici,
 // valide les données, respecte les transitions d’état et écrit le journal.
 import { store } from '../store.js';
-import { ITEM_STATES, ITEM_TRANSITIONS, ITEM_CODE_RE, CIRCUITS, CATEGORIES, LABELS, assertTransition } from '../models.js';
+import { ITEM_STATES, ITEM_TRANSITIONS, LOAN_STATES, CIRCUITS, CATEGORIES, LABELS, assertTransition } from '../models.js';
 import { logAction, ACTIONS, logForItem } from '../log.js';
 import { sortByDateDesc } from '../rules.js';
 
@@ -15,11 +15,14 @@ export function slugify(s) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-// Les codes ne sont jamais réutilisés : le matériel n’est jamais supprimé (HS reste dans l’inventaire).
+// Les codes ne sont jamais réutilisés. Supprimer un matériel libère sa place dans l’inventaire,
+// pas son numéro : des étiquettes imprimées le portent encore. Le journal garde chaque code émis,
+// le compteur repart donc du plus grand des deux.
 export function nextItemCode() {
-  const max = store.items.list().reduce((m, i) => {
-    const n = Number((ITEM_CODE_RE.exec(i.code) || [])[1] || 0);
-    return n > m ? n : m;
+  const textes = [...store.items.list().map((i) => i.code), ...store.log.list().map((e) => e.detail)];
+  const max = textes.reduce((plusGrand, texte) => {
+    for (const [, n] of String(texte).matchAll(/MDS-(\d{4})/g)) plusGrand = Math.max(plusGrand, Number(n));
+    return plusGrand;
   }, 0);
   return `MDS-${String(max + 1).padStart(4, '0')}`;
 }
@@ -96,6 +99,22 @@ export function setItemState(id, etat, auteurId, detail = '') {
     detail: `${item.nom} : ${LABELS.itemState[item.etat]} → ${LABELS.itemState[etat]}${suffix}`,
   });
   return updated;
+}
+
+// Sortir d’inventaire, pas désactiver : réservé au matériel hors service, quand il part à la
+// benne. Ses interventions partent avec lui — elles n’ont plus d’objet — ; les emprunts passés
+// restent, les vues les affichent sans leur objet, et le journal garde le code.
+export function deleteItem(id, auteurId) {
+  const item = requireItem(id);
+  if (item.etat !== ITEM_STATES.HS) throw new Error(`${item.nom} n’est pas hors service : seul un matériel hors service se supprime.`);
+  const ouverts = store.loans.list((l) => l.itemId === id && [LOAN_STATES.RESERVEE, LOAN_STATES.EN_COURS].includes(l.statut)).length;
+  if (ouverts) throw new Error(`${item.nom} a ${ouverts} emprunt(s) ou réservation(s) en cours : clôturez-les d’abord.`);
+  return store.transaction(() => {
+    for (const event of store.maintenance.list((m) => m.itemId === id)) store.maintenance.remove(event.id);
+    store.items.remove(id);
+    logAction({ auteurId, action: ACTIONS.ITEM_SUPPRIME, itemId: id, detail: `${item.nom} (${item.code})` });
+    return item;
+  });
 }
 
 export function manualTransitions(item) {

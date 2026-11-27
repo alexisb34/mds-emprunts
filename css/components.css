@@ -29,6 +29,7 @@
 .btn--danger:hover:not(:disabled) { background: var(--feedback-error-hover); }
 .btn--sm { height: var(--size-control-sm); padding: 0 var(--space-lg); font-size: 12px; }
 .btn--icon { width: var(--size-control-md); padding: 0; }
+.btn--sm.btn--icon { width: var(--size-control-sm); }
 .btn--block { width: 100%; }
 
 /* ---- Badges et chips ---- */
@@ -64,14 +65,26 @@
 
 /* ---- KPI ---- */
 /* Aplat pastel, sans ombre ni filet : la teinte classe, le chiffre se lit. */
-.kpi { background: var(--bg-muted); border-radius: var(--radius-xl); padding: var(--space-2xl); display: flex; flex-direction: column; gap: var(--space-sm); }
-.kpi__label { font-size: 14px; font-weight: 400; line-height: 21px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+/* Le titre à gauche, le compte à droite, et le voile blanc en biais du kit : un dégradé suffit
+   là où la maquette pose une forme. Le cadre transparent réserve la place de l’état actif. */
+.kpi {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-lg); min-height: 96px; padding: var(--space-xl) var(--space-2xl);
+  border-radius: var(--radius-lg); text-align: left;
+  background-color: var(--bg-muted);
+  background-image: linear-gradient(108deg, color-mix(in srgb, var(--bg-surface) 55%, transparent) 0%, transparent 62%);
+  border: var(--stroke-thin) solid transparent;
+}
+.kpi__label { font-size: 18px; font-weight: 700; line-height: 24px; color: var(--text-primary); }
 .kpi__value { font-family: var(--font-heading); font-weight: 800; font-size: 40px; line-height: 44px; letter-spacing: -1px; color: var(--text-primary); }
-.kpi__delta { font-size: 12px; line-height: 16px; color: var(--text-secondary); }
-.kpi--disponible { background: var(--status-available-bg); }
-.kpi--emprunte { background: var(--status-borrowed-bg); }
-.kpi--retard { background: var(--status-late-bg); }
-.kpi--salle { background: var(--status-reserved-bg); }
+.kpi__go { position: absolute; top: var(--space-md); right: var(--space-md); width: 22px; height: 22px; border-radius: var(--radius-full); background: var(--bg-surface); display: grid; place-items: center; font-size: 12px; line-height: 1; color: var(--text-primary); }
+.kpi--actif { border-color: var(--brand-primary); }
+.kpi--disponible { background-color: var(--status-available-bg); }
+.kpi--emprunte { background-color: var(--status-borrowed-bg); }
+.kpi--retard { background-color: var(--status-late-bg); }
+.kpi--salle { background-color: var(--status-reserved-bg); }
+.kpi--maintenance { background-color: var(--status-maintenance-bg); }
+.kpi--hs { background-color: var(--status-hs-bg); }
 /* Une carte cliquable le dit : elle se soulève et montre un anneau au clavier. */
 .kpi--link { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
 .kpi--link:hover { transform: translateY(-2px); box-shadow: var(--shadow-floating); }
@@ -85,6 +98,20 @@
 .table tbody tr:hover { background: var(--bg-canvas); }
 .table tr[data-href] { cursor: pointer; }
 .table__actions { display: flex; gap: var(--space-xs); justify-content: flex-end; }
+
+/* Infobulle : le libellé est déjà sur aria-label — `attr(aria-label)` l’affiche à la souris
+   sans le réécrire, et un bouton sans texte visible reste lisible au clavier comme au lecteur. */
+.tooltip { position: relative; }
+.tooltip::after {
+  content: attr(aria-label); position: absolute; bottom: calc(100% + var(--space-xxs)); left: 50%;
+  transform: translateX(-50%); z-index: 1; padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-surface); color: var(--text-primary);
+  border: var(--stroke-thin) solid var(--border-default); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-floating); font-size: 12px; font-weight: 400; line-height: 16px;
+  white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s;
+}
+.tooltip:hover::after, .tooltip:focus-visible::after { opacity: 1; }
+
 
 /* ---- Formulaires ---- */
 .field { display: flex; flex-direction: column; gap: var(--space-xs); }

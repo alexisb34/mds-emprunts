@@ -715,7 +715,9 @@ test('le manque de focus est décrit tel qu’il est : non dessiné, et non supp
     assert.doesNotMatch(css, /outline\s*:\s*(?:none|0)\b/,
       `${nom} pose un outline: none : l’anneau du navigateur disparaît, et la page Bouton ne dit plus vrai`);
   }
-  assert.deepEqual(dessinees.sort(), ['.input:focus, .select:focus, .textarea:focus', '.kpi--link:focus-visible'],
+  // `.tooltip:focus-visible` ne dessine pas d’anneau : elle montre l’infobulle au clavier comme
+  // à la souris. Elle est listée ici parce qu’elle vise `:focus`, pas parce qu’elle comble le manque.
+  assert.deepEqual(dessinees.sort(), ['.input:focus, .select:focus, .textarea:focus', '.kpi--link:focus-visible', '.tooltip:hover::after, .tooltip:focus-visible::after'],
     'les règles de focus du dépôt ont changé : la page Bouton et docs/correctifs-figma.md doivent suivre');
 });
 

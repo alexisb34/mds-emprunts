@@ -222,7 +222,7 @@ test('mesurePaire rend les chiffres que le registre publie, au centième', () =>
   assert.equal(mesurePaire(TOKENS, 'badge--borrowed'), '8,23:1 — conforme');
   assert.equal(mesurePaire(TOKENS, 'table tr:hover'), '4,13:1 — échoue');
   assert.equal(mesurePaire(TOKENS, 'table th'), '4,55:1 — conforme');
-  assert.equal(mesurePaire(TOKENS, 'kpi--retard'), '3,76:1 — échoue');
+  assert.equal(mesurePaire(TOKENS, 'kpi--retard'), '9,14:1 — conforme');
 });
 
 test('mesurePaire refuse une paire que le kit ne publie pas, et se tait quand un token manque', () => {
@@ -324,8 +324,10 @@ test('badge : l’étiquette est un bouton que l’outil pose sans aria-pressed,
   const catalogue = lire('js/mobile/views/catalogue.js');
   assert.match(catalogue, /<button type="button" class="chip/);
   assert.doesNotMatch(catalogue, /aria-pressed/);
-  assert.deepEqual(utilise(/aria-pressed/), [], 'quelqu’un pose aria-pressed : la page doit changer');
+  // Les étiquettes du catalogue n’en posent toujours pas ; les cartes-filtres de l’administration, si.
+  assert.deepEqual(utilise(/aria-pressed/).sort(), ['js/admin/views/emprunts.js', 'js/admin/views/maintenance.js']);
   assert.match(texte(page('badge')), /ne pose pas aria-pressed/);
+  assert.match(texte(page('badge')), /les cartes-filtres des écrans Emprunts et Maintenance le font/);
 });
 
 test('badge : .chips vient de mobile.css, pas de la feuille des composants', () => {
@@ -748,13 +750,14 @@ test('tableau : .table n’a aucun repli pour un écran étroit', () => {
 
 test('kpi : toutes les variantes de carte du CSS sont montrées', () => {
   const variantes = new Set([...COMPONENTS.matchAll(/\.kpi--([\w-]+)/g)].map((m) => m[1]));
-  assert.deepEqual([...variantes].sort(), ['disponible', 'emprunte', 'link', 'retard', 'salle']);
+  assert.deepEqual([...variantes].sort(), ['actif', 'disponible', 'emprunte', 'hs', 'link', 'maintenance', 'retard', 'salle']);
   for (const v of variantes) assert.match(exemple('kpi'), new RegExp(`kpi--${v}\\b`), `kpi--${v} n’est pas montré`);
 });
 
 test('kpi : chaque teinte est le fond du badge de même état', () => {
-  for (const [kpi, statut] of [['disponible', 'available'], ['emprunte', 'borrowed'], ['retard', 'late'], ['salle', 'reserved']]) {
-    assert.match(regle(COMPONENTS, `.kpi--${kpi}`), new RegExp(`background:\\s*var\\(--status-${statut}-bg\\)`));
+  // La carte pose un `background-color` : le `background-image` du voile est sur `.kpi`.
+  for (const [kpi, statut] of [['disponible', 'available'], ['emprunte', 'borrowed'], ['retard', 'late'], ['salle', 'reserved'], ['maintenance', 'maintenance'], ['hs', 'hs']]) {
+    assert.match(regle(COMPONENTS, `.kpi--${kpi}`), new RegExp(`background-color:\\s*var\\(--status-${statut}-bg\\)`));
     assert.match(regle(COMPONENTS, `.badge--${statut}`), new RegExp(`background:\\s*var\\(--status-${statut}-bg\\)`));
   }
   assert.match(texte(page('kpi')), /Chaque teinte est le fond du badge de l’état correspondant/);
@@ -766,7 +769,7 @@ test('kpi : la carte-lien est le gabarit de kpiCard() du tableau de bord, adress
   const lien = demo('kpi', 'lien');
   assert.match(lien, /<a class="kpi kpi--link kpi--retard" href="#\/emprunts\/retards">/);
   assert.ok(dashboard.includes("'/emprunts/retards'"), 'l’adresse de la démonstration n’est pas celle que le tableau de bord écrit');
-  assert.match(lien, /<span class="kpi__label">[^<]+<\/span><span class="kpi__value">[^<]+<\/span><span class="kpi__delta">[^<]+<\/span>/);
+  assert.match(lien, /<span class="kpi__label">[^<]+<\/span><span class="kpi__value">[^<]+<\/span><span class="kpi__go" aria-hidden="true">↗<\/span>/);
 });
 
 test('kpi : kpiCard n’est pas exportée, et la page le dit', () => {
@@ -799,16 +802,19 @@ test('kpi : le soulèvement est de 2 px, ombre flottante, sans garde pour le mou
   assert.match(t, /prefers-reduced-motion/);
 });
 
-test('kpi : .kpi__delta n’a qu’une règle, sans couleur de hausse ni de baisse', () => {
-  assert.equal((COMPONENTS.match(/\.kpi__delta/g) || []).length, 1);
-  assert.match(regle(COMPONENTS, '.kpi__delta'), /color:\s*var\(--text-secondary\)/);
-  assert.match(texte(page('kpi')), /ne colore ni une hausse ni une baisse/);
+test('kpi : .kpi__delta a disparu des feuilles comme des vues, et la page le dit', () => {
+  assert.equal((TOUT_LE_CSS.match(/\.kpi__delta/g) || []).length, 0);
+  assert.deepEqual(utilise(/kpi__delta/), []);
+  assert.match(texte(page('kpi')), /rien ne colore une hausse ou une baisse/);
+  // Ce qui l’a remplacée : la pastille à flèche, posée en absolu dans le coin.
+  assert.match(regle(COMPONENTS, '.kpi__go'), /position:\s*absolute/);
+  assert.match(regle(COMPONENTS, '.kpi__go'), /background:\s*var\(--bg-surface\)/);
 });
 
 test('kpi : la page affiche les cinq paires de carte, celles que le kit publie', () => {
   const html = page('kpi');
   const paires = PAIRES_KIT.filter((p) => p.famille === 'kpi').map((p) => p.nom);
-  assert.deepEqual(paires.sort(), ['kpi', 'kpi--disponible', 'kpi--emprunte', 'kpi--retard', 'kpi--salle']);
+  assert.deepEqual(paires.sort(), ['kpi', 'kpi--disponible', 'kpi--emprunte', 'kpi--hs', 'kpi--maintenance', 'kpi--retard', 'kpi--salle']);
   for (const nom of paires) assert.match(html, new RegExp(`mesurePaire\\(valeurs, '${nom}'\\)`), `${nom} : le script ne le mesure pas`);
 });
 
@@ -816,7 +822,7 @@ test('kpi : le chiffre, en grand et en gras, passe sur chaque teinte, comme la p
   assert.match(regle(COMPONENTS, '.kpi__value'), /color:\s*var\(--text-primary\)/);
   assert.match(regle(COMPONENTS, '.kpi__value'), /font-size:\s*40px/);
   assert.match(regle(COMPONENTS, '.kpi__value'), /font-weight:\s*800/);
-  for (const fond of ['--bg-muted', '--status-available-bg', '--status-borrowed-bg', '--status-late-bg', '--status-reserved-bg']) {
+  for (const fond of ['--bg-muted', '--status-available-bg', '--status-borrowed-bg', '--status-late-bg', '--status-reserved-bg', '--status-maintenance-bg', '--status-hs-bg']) {
     assert.ok(ratioExact(TOKENS['--text-primary'], TOKENS[fond]) >= 4.5, `${fond} : le chiffre ne passe plus`);
   }
   assert.match(texte(page('kpi')), /Le chiffre, lui, est en grand et en gras : il passe/);
@@ -855,13 +861,14 @@ test('navigation : le détecteur de règles d’onglets voit une règle qui chan
   assert.notDeepEqual(reglesOnglets(modifiee), reglesOnglets(lire('css/admin.css')));
 });
 
-test('navigation : .tab--active n’est employé que par l’écran mobile Emprunts, .is-active des onglets que par l’administration', () => {
+test('navigation : .tab--active n’est employé que par l’écran mobile Emprunts, et .is-active par aucun écran', () => {
   assert.deepEqual(utilise(/(?<![\w-])tab--active/), ['js/mobile/views/emprunts.js']);
-  assert.deepEqual(utilise(/class="tab\$\{[^}]*is-active/).sort(), ['js/admin/views/emprunts.js', 'js/admin/views/maintenance.js']);
+  // Les deux écrans d’administration qui s’en servaient filtrent par cartes KPI depuis leur redessin.
+  assert.deepEqual(utilise(/class="tab\$\{[^}]*is-active/), []);
   const t = texte(page('navigation'));
   assert.match(t, /le seul écran qui l’emploie aujourd’hui est « Emprunts » sur mobile/);
   assert.match(t, /js\/mobile\/views\/emprunts\.js/);
-  assert.match(t, /Les écrans Emprunts et Maintenance de l’administration l’emploient/);
+  assert.match(t, /Aucun écran ne l’emploie aujourd’hui/);
 });
 
 test('navigation : les deux versions ne partagent pas leur classe d’état', () => {
@@ -984,13 +991,13 @@ test('navigation : les cadres de la page visent les deux fichiers d’exemple', 
 test('icônes : l’inventaire montre chaque icône de ICONS, à l’identique, avec son nom', () => {
   const inventaire = compact(demo('icones', 'inventaire'));
   const noms = Object.keys(ICONS);
-  assert.equal(noms.length, 10, 'ICONS n’a plus dix icônes : la page doit changer');
+  assert.equal(noms.length, 17, 'ICONS n’a plus dix-sept icônes : la page doit changer');
   for (const nom of noms) assert.ok(inventaire.includes(`<span class="row">${ICONS[nom]}<span class="body-sm">${nom}</span></span>`), `${nom} : l’exemple ne montre pas ICONS.${nom}`);
   assert.equal((inventaire.match(/<svg/g) || []).length, noms.length, 'l’exemple montre une icône qui n’est pas dans ICONS');
-  assert.match(texte(page('icones')), /Dix dessins en ligne/);
+  assert.match(texte(page('icones')), /Dix-sept dessins en ligne/);
 });
 
-test('icônes : le gabarit « modele » est ICONS.check, et les dix partagent le même gabarit', () => {
+test('icônes : le gabarit « modele » est ICONS.check, et les dix-sept partagent le même gabarit', () => {
   assert.equal(compact(demo('icones', 'modele')), ICONS.check);
   for (const [nom, svg] of Object.entries(ICONS)) {
     assert.match(svg, /^<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/, `${nom} : gabarit différent`);
@@ -1014,6 +1021,16 @@ test('icônes : chaque nom de ICONS est nommé sur la page, et chaque usage cit�
   assert.match(scan, /ICONS\.croix, 'Annuler l’emprunt'/);
   assert.match(scan, /ICONS\.scan, 'Scanner un autre objet'/);
   assert.match(scan, /etat === 'done' \? ICONS\.check/);
+  const maintenance = lire('js/admin/views/maintenance.js');
+  assert.match(maintenance, /'Remettre en service', ICONS\.remettre/, 'remettre : l’action du matériel hors service');
+  assert.match(maintenance, /'Supprimer définitivement', ICONS\.corbeille/, 'corbeille : l’action du matériel hors service');
+  const emprunts = lire('js/admin/views/emprunts.js');
+  assert.match(emprunts, /'Envoyer un message automatique sur Teams', ICONS\.message/, 'message : la relance Teams');
+  assert.match(emprunts, /'Prolonger la réservation', ICONS\.prolonger/, 'prolonger : l’action de l’écran Emprunts');
+  assert.match(emprunts, /'Réceptionner', ICONS\.colis/, 'colis : l’action de l’écran Emprunts');
+  const utilisateurs = lire('js/admin/views/utilisateurs.js');
+  assert.match(utilisateurs, /\$\{ICONS\.exporter\}/, 'exporter : le bouton CSV');
+  assert.match(utilisateurs, /\$\{ICONS\.importer\}/, 'importer : le bouton CSV');
 });
 
 test('icônes : le dépôt n’a aucun système d’icônes, comme la page le dit', () => {
@@ -1027,7 +1044,7 @@ test('icônes : le dépôt n’a aucun système d’icônes, comme la page le di
   assert.match(t, /Aucun système d’icônes\. Ni police d’icônes, ni sprite, ni bibliothèque, ni dossier d’icônes/);
 });
 
-test('icônes : les dix dessins sont les seuls <svg> du code, tous dans le module mobile', () => {
+test('icônes : les dix-sept dessins sont les seuls <svg> du code, tous dans le module mobile', () => {
   const avec = SOURCES.filter((s) => /<svg/.test(s.source)).map((s) => s.fichier);
   assert.deepEqual(avec, ['js/mobile/layout.js']);
   assert.doesNotMatch(RACINE_HTML.map((f) => lire(f)).join('\n'), /<svg/);
@@ -1054,15 +1071,16 @@ test('icônes : la loupe a la couleur de --text-secondary, recopiée dans l’im
 
 test('icônes : les caractères et l’emoji cités sont ceux que l’outil écrit', () => {
   const tout = SOURCES.filter((s) => !s.fichier.endsWith('seed.js')).map((s) => s.source).join('\n');
-  for (const g of ['← Matériel', 'Tout voir →', "' ↓' : ' ↑'", '&times;', "'✓'", '✕</div>', 'Aucun retard. 🎉', 'Bonjour ${escapeHtml(user.prenom)} 👋']) assert.ok(tout.includes(g), `« ${g} » n’est plus dans le code`);
+  for (const g of ['← Matériel', 'Tout voir →', "' ↓' : ' ↑'", '&times;', "'✓'", '✕</div>', 'kpi__go" aria-hidden="true">↗', 'Aucun retard. 🎉', 'Bonjour ${escapeHtml(user.prenom)} 👋']) assert.ok(tout.includes(g), `« ${g} » n’est plus dans le code`);
   const glyphes = demo('icones', 'glyphes');
-  for (const g of ['←', '→', '↑', '↓', '×', '✓', '✕', '🎉', '👋']) assert.ok(glyphes.includes(g), `${g} manque à l’exemple`);
+  for (const g of ['←', '→', '↑', '↓', '↗', '×', '✓', '✕', '🎉', '👋']) assert.ok(glyphes.includes(g), `${g} manque à l’exemple`);
   // L'autre sens : aucun caractère-icône du code (flèches, dingbats, croix) ne manque à la page.
   const duCode = [...new Set(tout.replace(/&times;/g, '×').match(/[\u2190-\u21FF\u2700-\u27BF\u00D7]/g))].sort();
-  assert.deepEqual(duCode, ['←', '→', '↑', '↓', '×', '✓', '✕'].sort(), 'le code écrit un caractère-icône que ce test ne connaît pas : la page doit le dire');
+  assert.deepEqual(duCode, ['←', '→', '↑', '↓', '↗', '×', '✓', '✕'].sort(), 'le code écrit un caractère-icône que ce test ne connaît pas : la page doit le dire');
   const prose = texte(page('icones'));
   for (const g of duCode) assert.ok(prose.includes(g), `l’inventaire de la page oublie ${g}, que le code écrit`);
-  assert.deepEqual([...new Set(tout.match(/\p{Extended_Pictographic}/gu))].sort(), ['🎉', '👋'], 'les emoji de l’outil ont changé : la page doit changer');
+  // `↗` est une flèche, déjà comptée plus haut, et Unicode la classe pourtant « pictographique ».
+  assert.deepEqual([...new Set(tout.match(/\p{Extended_Pictographic}/gu))].filter((c) => !duCode.includes(c)).sort(), ['🎉', '👋'], 'les emoji de l’outil ont changé : la page doit changer');
 });
 
 test('icônes : l’exemple « recherche » est un .input--search', () => {

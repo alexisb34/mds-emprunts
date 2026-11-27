@@ -3,9 +3,9 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
-import { ITEM_STATES } from '../js/models.js';
+import { ITEM_STATES, LOAN_STATES } from '../js/models.js';
 import { ACTIONS } from '../js/log.js';
-import { slugify, nextItemCode, validateItem, createItem, updateItem, setItemState, applyItemState, manualTransitions, itemHistory } from '../js/actions/items.js';
+import { slugify, nextItemCode, validateItem, createItem, updateItem, setItemState, applyItemState, manualTransitions, itemHistory, deleteItem } from '../js/actions/items.js';
 
 const PEDAGO = 'user_041';
 const valid = { nom: 'Multiprise', reference: 'multiprise', categorie: 'Bureautique', circuit: 'self', valeurEstimee: 15, localisation: 'Bureau pédago' };
@@ -144,4 +144,37 @@ test('itemHistory : emprunts, maintenance et journal triés par date métier (pa
   const idxEnCours = h2.loans.findIndex((l) => l.id === enCours.id);
   const idxAncien = h2.loans.findIndex((l) => l.id === ancien.id);
   assert.ok(idxEnCours < idxAncien, 'l’emprunt en cours (retiré le 16) doit précéder celui retiré le 10');
+});
+
+test('deleteItem : seul le hors service se supprime, avec ses interventions', () => {
+  const item = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0];
+  assert.throws(() => deleteItem(item.id, PEDAGO), /pas hors service/);
+  store.items.update(item.id, { etat: ITEM_STATES.HS });
+  store.maintenance.create({ itemId: item.id, statut: 'ouvert', description: 'Carte morte', date: new Date().toISOString() });
+  const supprime = deleteItem(item.id, PEDAGO);
+  assert.equal(supprime.id, item.id);
+  assert.equal(store.items.get(item.id), null);
+  assert.deepEqual(store.maintenance.list((m) => m.itemId === item.id), []);
+  const entry = store.log.list().at(-1);
+  assert.equal(entry.action, ACTIONS.ITEM_SUPPRIME);
+  assert.match(entry.detail, new RegExp(item.code));
+});
+
+test('deleteItem : un emprunt en cours bloque, un emprunt rendu laisse faire', () => {
+  const item = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0];
+  store.items.update(item.id, { etat: ITEM_STATES.HS });
+  const loan = store.loans.create({ itemId: item.id, userId: PEDAGO, statut: LOAN_STATES.EN_COURS });
+  assert.throws(() => deleteItem(item.id, PEDAGO), /en cours/);
+  store.loans.update(loan.id, { statut: LOAN_STATES.RETOURNEE });
+  deleteItem(item.id, PEDAGO);
+  // L’emprunt rendu reste : c’est l’historique, les vues l’affichent sans son objet.
+  assert.equal(store.loans.get(loan.id).itemId, item.id);
+});
+
+test('nextItemCode : un code supprimé n’est pas réattribué', () => {
+  const cree = createItem(valid, PEDAGO);
+  assert.equal(cree.code, 'MDS-0045');
+  store.items.update(cree.id, { etat: ITEM_STATES.HS });
+  deleteItem(cree.id, PEDAGO);
+  assert.equal(nextItemCode(), 'MDS-0046', 'une étiquette imprimée porte encore MDS-0045');
 });

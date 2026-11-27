@@ -18,27 +18,43 @@
   </style>
 </head>
 <body>
-  <!-- Les quatre teintes, avec les libellés et les chiffres du tableau de bord. -->
+  <!-- Les quatre teintes du tableau de bord, avec ses libellés et ses chiffres. -->
   <section data-demo="teintes">
     <div class="grid-4">
-      <div class="kpi kpi--disponible"><span class="kpi__label">Matériel disponible</span><span class="kpi__value">128</span><span class="kpi__delta">exemplaires prêts à être empruntés</span></div>
-      <div class="kpi kpi--emprunte"><span class="kpi__label">Emprunts en cours</span><span class="kpi__value">42</span><span class="kpi__delta">2 remises prévues aujourd’hui</span></div>
-      <div class="kpi kpi--retard"><span class="kpi__label">Retards</span><span class="kpi__value">3</span><span class="kpi__delta">à relancer</span></div>
-      <div class="kpi kpi--salle"><span class="kpi__label">Réservations salle à venir</span><span class="kpi__value">17</span><span class="kpi__delta">1 signalement à traiter</span></div>
+      <div class="kpi kpi--disponible"><span class="kpi__label">Matériel disponible</span><span class="kpi__value">128</span><span class="kpi__go" aria-hidden="true">↗</span></div>
+      <div class="kpi kpi--emprunte"><span class="kpi__label">Emprunts en cours</span><span class="kpi__value">42</span><span class="kpi__go" aria-hidden="true">↗</span></div>
+      <div class="kpi kpi--retard"><span class="kpi__label">Retards</span><span class="kpi__value">3</span><span class="kpi__go" aria-hidden="true">↗</span></div>
+      <div class="kpi kpi--salle"><span class="kpi__label">Réservations salle à venir</span><span class="kpi__value">17</span><span class="kpi__go" aria-hidden="true">↗</span></div>
     </div>
   </section>
 
-  <!-- La carte neutre, sans teinte. Le tableau de bord n’en pose aucune. -->
+  <!-- Les deux teintes que seul l’écran Maintenance pose. -->
+  <section data-demo="maintenance">
+    <div class="grid-4">
+      <div class="kpi kpi--maintenance"><span class="kpi__label">En maintenance</span><span class="kpi__value">2</span><span class="kpi__go" aria-hidden="true">↗</span></div>
+      <div class="kpi kpi--hs"><span class="kpi__label">Hors service</span><span class="kpi__value">1</span><span class="kpi__go" aria-hidden="true">↗</span></div>
+    </div>
+  </section>
+
+  <!-- La carte neutre, sans teinte. Aucun écran n’en pose. -->
   <section data-demo="neutre">
     <div class="grid-4">
-      <div class="kpi"><span class="kpi__label">Matériel disponible</span><span class="kpi__value">128</span><span class="kpi__delta">exemplaires prêts à être empruntés</span></div>
+      <div class="kpi"><span class="kpi__label">Matériel disponible</span><span class="kpi__value">128</span><span class="kpi__go" aria-hidden="true">↗</span></div>
     </div>
   </section>
 
   <!-- Une carte qui mène quelque part : un vrai lien, comme celui du tableau de bord. -->
   <section data-demo="lien">
     <div class="grid-4">
-      <a class="kpi kpi--link kpi--retard" href="#/emprunts/retards"><span class="kpi__label">Retards</span><span class="kpi__value">3</span><span class="kpi__delta">à relancer</span></a>
+      <a class="kpi kpi--link kpi--retard" href="#/emprunts/retards"><span class="kpi__label">Retards</span><span class="kpi__value">3</span><span class="kpi__go" aria-hidden="true">↗</span></a>
+    </div>
+  </section>
+
+  <!-- La carte-filtre : un bouton, et celle qui est retenue se cercle. -->
+  <section data-demo="filtre">
+    <div class="grid-4">
+      <button type="button" class="kpi kpi--link kpi--emprunte kpi--actif" aria-pressed="true"><span class="kpi__label">En cours</span><span class="kpi__value">8</span><span class="kpi__go" aria-hidden="true">↗</span></button>
+      <button type="button" class="kpi kpi--link kpi--salle" aria-pressed="false"><span class="kpi__label">Réservés</span><span class="kpi__value">3</span><span class="kpi__go" aria-hidden="true">↗</span></button>
     </div>
   </section>
 

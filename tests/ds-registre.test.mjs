@@ -59,9 +59,10 @@ test('registre : aucun tabindex ni aria-sort dans l’outil, et lignes et en-tê
   assert.doesNotMatch(table, /keydown|keyup|keypress/);
   assert.match(table, /th\[data-sortable\]'\)\.forEach\(\(th\) => th\.addEventListener\('click'/);
   assert.match(table, /tr\[data-href\]'\)\.forEach\(\(tr\) => tr\.addEventListener\('click'/);
-  // Les cartes-lignes du tableau de bord et de la maintenance sont des <div> : même défaut.
+  // Les cartes-lignes du tableau de bord sont des <div> : même défaut. L’écran Maintenance
+  // en posait ; son matériel hors service est passé dans un tableau.
   assert.match(lire('js/admin/views/dashboard.js'), /<div class="list__item" data-href=/);
-  assert.match(lire('js/admin/views/maintenance.js'), /<div class="list__item" data-href=/);
+  assert.doesNotMatch(lire('js/admin/views/maintenance.js'), /<div class="list__item" data-href=/);
   for (const dit of ['tr[data-href]', 'th[data-sortable]', 'aria-sort', 'tabindex', 'js/admin/table.js', '.list__item']) {
     assert.ok(A_FAIRE.includes(dit), `le registre ne dit pas « ${dit} »`);
   }
@@ -116,7 +117,7 @@ test('registre : les cinq paires vérifiées dans les vues, avec leur ratio reca
   const paires = [
     ['.nav-item__count', COMPONENTS, '--text-secondary', '--bg-canvas', 11, ['js/admin/layout.js']],
     ['.sidebar__section', ADMIN, '--text-disabled', '--bg-surface', 10, ['js/admin/layout.js']],
-    ['.page-header__meta', ADMIN, '--text-secondary', '--bg-canvas', 14, ['js/admin/views/emprunts.js', 'js/admin/views/materiel.js', 'js/admin/views/materielFiche.js', 'js/admin/views/utilisateurFiche.js', 'js/admin/views/utilisateurs.js']],
+    ['.page-header__meta', ADMIN, '--text-secondary', '--bg-canvas', 14, ['js/admin/views/materiel.js', 'js/admin/views/materielFiche.js', 'js/admin/views/utilisateurFiche.js', 'js/admin/views/utilisateurs.js']],
     ['.input::placeholder', COMPONENTS, '--text-disabled', '--bg-surface', 14, ['js/admin/views/utilisateurs.js']],
     ['.field__error', COMPONENTS, '--feedback-error', '--bg-surface', 11, []],
   ];

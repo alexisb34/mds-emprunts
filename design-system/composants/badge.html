@@ -51,7 +51,7 @@
           <li><code>badge--available</code>, vert&nbsp;: ce qui est prêt ou terminé. Disponible, Retourné, Clos, Actif.</li>
           <li><code>badge--borrowed</code>, violet&nbsp;: ce qui est en cours chez quelqu’un. Emprunté, En cours.</li>
           <li><code>badge--reserved</code>, turquoise&nbsp;: ce qui est prévu. Réservé, À venir.</li>
-          <li><code>badge--late</code>, rouge&nbsp;: ce qui demande qu’on agisse. En retard, Ouvert.</li>
+          <li><code>badge--late</code>, rouge&nbsp;: ce qui demande qu’on agisse. En retard, À traiter.</li>
           <li><code>badge--maintenance</code>, jaune&nbsp;: ce qui est en réparation. Maintenance.</li>
           <li><code>badge--hs</code>, gris&nbsp;: ce qui est fini sans suite, ou hors jeu. Hors service, Refusé, Annulé, Désactivé.</li>
         </ul>
@@ -130,7 +130,7 @@
         <p class="body ds-mesure">Un badge est un <code>&lt;span&gt;</code> sans rôle&nbsp;: son libellé est lu comme n’importe quel texte. Le point est dessiné par la feuille, il n’est pas dans le balisage. Un badge se lit à côté de ce qu’il qualifie&nbsp;; dans un tableau, c’est l’en-tête de sa colonne qui le nomme.</p>
 
         <h3 class="h6">Étiquette</h3>
-        <p class="body ds-mesure">Une étiquette est un <code>&lt;button&gt;</code>&nbsp;: elle s’atteint au clavier. Mais <strong>son état actif ne tient qu’à la couleur</strong>, et l’écran du catalogue ne pose pas <code>aria-pressed</code>. Une personne qui n’en voit pas la couleur ne sait pas laquelle est choisie. Ajoutez <code>aria-pressed="true"</code> sur l’active, <code>"false"</code> sur les autres.</p>
+        <p class="body ds-mesure">Une étiquette est un <code>&lt;button&gt;</code>&nbsp;: elle s’atteint au clavier. Mais <strong>son état actif ne tient qu’à la couleur</strong>, et l’écran du catalogue ne pose pas <code>aria-pressed</code>. Une personne qui n’en voit pas la couleur ne sait pas laquelle est choisie. Ajoutez <code>aria-pressed="true"</code> sur l’active, <code>"false"</code> sur les autres&nbsp;: les cartes-filtres des écrans Emprunts et Maintenance le font, c’est de là qu’il faut partir.</p>
         <ul class="ds-liste body">
           <li>étiquette au repos, 11&nbsp;px en gras&nbsp;: <strong id="mesure-chip">à mesurer depuis un serveur</strong></li>
           <li>étiquette active&nbsp;: <strong id="mesure-chip-active">à mesurer depuis un serveur</strong></li>

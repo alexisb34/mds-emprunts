@@ -77,7 +77,7 @@ export const LABELS = {
   loanState: { reservee: 'Réservé', en_cours: 'En cours', retournee: 'Retourné', refusee: 'Refusé', expiree: 'Non retiré', annulee: 'Annulé' },
   bookingState: { a_venir: 'À venir', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' },
   maintType: { signalement: 'Signalement', intervention_interne: 'Intervention interne', intervention_externe: 'Intervention externe', remise_en_service: 'Remise en service' },
-  maintState: { ouvert: 'Ouvert', en_cours: 'En cours', clos: 'Clos' },
+  maintState: { ouvert: 'À traiter', en_cours: 'En cours', clos: 'Clos' },
   // Valeurs calculées (pas un statut stocké) affichées via `ui.badge`.
   derived: { en_retard: 'En retard', sortie_non_faite: 'Sortie non faite', actif: 'Actif', desactive: 'Désactivé', horloge_demo: 'Horloge simulée', temps_reel: 'Temps réel' },
 };

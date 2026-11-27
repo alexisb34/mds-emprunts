@@ -29,26 +29,33 @@ test('LOAN_COLUMNS : rendus échappés, badge de retard, actions selon l’ongle
   assert.match(LOAN_COLUMNS[4].render(row), /badge--late/);
 });
 
-test('empruntsHtml : onglets avec compteurs, actions de l’onglet Réservés, état vide', () => {
+test('empruntsHtml : cartes-filtres avec compteurs, actions de la carte Réservés, état vide', () => {
   const rows = sortRows(loanRows('reserves', NOW), { key: 'debut', dir: 'asc' }, LOAN_COLUMNS);
   const counts = { enCours: 8, reserves: 2, retards: 2, historique: 41 };
   const html = empruntsHtml({ tab: 'reserves', rows, counts, sort: { key: 'debut', dir: 'asc' }, date: NOW });
-  // `is-active` est la marque des onglets admin — la pilule pleine, comme sur Maintenance.
-  // `tab--active` ne colorait qu’un soulignement, invisible sous le style pilule : rien ne
-  // distinguait l’onglet choisi.
-  assert.match(html, /tab is-active" data-tab="reserves">Réservés <span class="tab__count">2<\/span>/);
-  assert.doesNotMatch(html, /tab--active/);
+  // Les onglets pilules ont laissé la place aux quatre cartes : la retenue se cercle de violet
+  // et porte aria-pressed, le compteur est le grand chiffre de la carte.
+  assert.match(html, /kpi--salle kpi--actif" data-tab="reserves" aria-pressed="true"/);
+  assert.match(html, /data-tab="reserves"[^>]*>.*?<span class="kpi__value">2<\/span>/);
+  assert.doesNotMatch(html, /class="tabs?"|class="tab /);
+  assert.equal((html.match(/class="kpi kpi--link/g) || []).length, 4);
   assert.match(html, /data-action="handover"/);
   assert.match(html, /data-action="refuse" data-loan="/);
   const vide = empruntsHtml({ tab: 'retards', rows: [], counts: { enCours: 0, reserves: 0, retards: 0, historique: 0 }, sort: null, date: NOW });
   assert.match(vide, /Aucun emprunt/);
 });
 
-test('empruntsHtml : onglet En cours propose réception et prolongation', () => {
+test('empruntsHtml : la carte En cours propose relance, prolongation et réception, en icônes', () => {
   const rows = loanRows('enCours', NOW);
   const html = empruntsHtml({ tab: 'enCours', rows, counts: { enCours: rows.length, reserves: 0, retards: 0, historique: 0 }, sort: null, date: NOW });
   assert.match(html, /data-action="receive" data-loan="/);
   assert.match(html, /data-action="extend" data-loan="/);
+  assert.match(html, /data-action="relance" data-loan="/);
+  assert.match(html, /aria-label="Envoyer un message automatique sur Teams"/);
+  assert.match(html, /aria-label="Prolonger la réservation"/);
+  assert.match(html, /aria-label="Réceptionner"/);
+  assert.match(html, /class="btn btn--ghost btn--sm btn--icon tooltip"/, 'l’infobulle lit l’aria-label');
+  assert.doesNotMatch(html, />Réceptionner</, 'le libellé n’est plus écrit dans le bouton');
 });
 
 test('checklistFormHtml et readChecklistForm', () => {
@@ -99,6 +106,6 @@ test('empruntsView : l’onglet d’arrivée vient de la route', () => {
     const tab = TABS_ADMIN_LOANS.some((t) => t.key === demande) ? demande : 'enCours';
     assert.equal(tab, attendu, `route « ${demande} »`);
     const html = empruntsHtml({ tab, rows: [], counts, sort: null, date: NOW });
-    assert.match(html, new RegExp(`tab is-active" data-tab="${attendu}"`));
+    assert.match(html, new RegExp(`kpi--actif" data-tab="${attendu}"`));
   }
 });

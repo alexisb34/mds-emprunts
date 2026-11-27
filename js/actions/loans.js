@@ -254,6 +254,22 @@ export function cancelLoan(loanId, userId) {
   return releaseReservation(loan, { statut: LOAN_STATES.ANNULEE, action: ACTIONS.LOAN_ANNULEE, auteurId: userId, detail: `${item ? item.nom : loan.itemId} — annulée par l’emprunteur` });
 }
 
+// Relancer l’emprunteur sur Teams. L’école n’a pas ouvert son API : rien ne part, et c’est dit.
+// Ce qui reste vrai, c’est la trace — qui a relancé qui, pour quel objet, et quand.
+// shortcut: envoi simulé, à brancher sur l’API Teams le jour où l’école la fournit.
+export function relanceTeams(loanId, auteurId) {
+  const loan = requireLoan(loanId);
+  if (!ACTIVE.includes(loan.statut)) throw new Error('Seul un emprunt en cours ou une réservation se relance.');
+  const user = store.users.get(loan.userId);
+  const item = store.items.get(loan.itemId);
+  const destinataire = user ? fullName(user) : loan.userId;
+  logAction({
+    auteurId, action: ACTIONS.LOAN_RELANCE, loanId, itemId: loan.itemId, userId: loan.userId,
+    detail: `${item ? item.nom : loan.itemId} — relance Teams à ${destinataire}`,
+  });
+  return { destinataire };
+}
+
 export function extendLoan(loanId, finPrevue, pedagoId) {
   const loan = requireLoan(loanId);
   if (loan.statut !== LOAN_STATES.EN_COURS) throw new Error('Cet emprunt n’est plus en cours.');

@@ -81,7 +81,7 @@ test('dashboardHtml : un signalement sans objet reste lisible et pointe vers la 
   assert.doesNotMatch(html, /data-href="\/materiel\/null"/);
 });
 
-test('dashboardHtml : le widget et la carte parlent de signalements « à traiter », ouverts et en cours confondus', () => {
+test('dashboardHtml : le widget prend les signalements « à traiter », ouverts et en cours confondus', () => {
   const item = db.items[0];
   const base = { itemId: item.id, type: 'signalement', auteurId: db.users[0].id, date: NOW.toISOString(), prestataire: '', cout: 0, loanId: null, bookingId: null };
   const maintenance = [
@@ -93,8 +93,9 @@ test('dashboardHtml : le widget et la carte parlent de signalements « à traite
   const html = dashboardHtml({
     kpis: computeKpis(data, NOW), late: [], due: [], reports: openReports(data), activity: [], users: db.users, date: NOW,
   });
-  assert.match(html, /3 signalements à traiter/);
-  assert.match(html, /Signalements à traiter/);
+  // Les cartes du haut ne portent plus de sous-titre : le compte ne s’écrit nulle part, la
+  // liste montre les trois lignes et le titre dit « à traiter », jamais « ouverts ».
+  assert.match(html, /Maintenance à traiter/);
   assert.doesNotMatch(html, /signalements? ouverts?/i);
   for (const d of ['Premier', 'Deuxième', 'Troisième']) assert.match(html, new RegExp(d));
 });

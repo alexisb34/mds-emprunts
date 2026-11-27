@@ -11,9 +11,10 @@ import { computeKpis, lateLoans, dueTodayReservations, openReports, exitMissingR
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
 
 // Une carte qui compte quelque chose mène à ce qu’elle compte. Un vrai lien, donc : adresse
-// partageable, retour arrière qui fonctionne, et tabulation sans rien à écrire.
-function kpiCard(label, value, extra = '', variant = '', href = '') {
-  const dedans = `<span class="kpi__label">${escapeHtml(label)}</span><span class="kpi__value">${value}</span><span class="kpi__delta">${escapeHtml(extra)}</span>`;
+// partageable, retour arrière qui fonctionne, et tabulation sans rien à écrire. La flèche en
+// pastille dit que c’est cliquable ; elle est décorative, le lien se nomme par son libellé.
+function kpiCard(label, value, variant = '', href = '') {
+  const dedans = `<span class="kpi__label">${escapeHtml(label)}</span><span class="kpi__value">${value}</span><span class="kpi__go" aria-hidden="true">↗</span>`;
   if (!href) return `<div class="kpi ${variant}">${dedans}</div>`;
   return `<a class="kpi kpi--link ${variant}" href="#${escapeHtml(href)}">${dedans}</a>`;
 }
@@ -70,11 +71,13 @@ function activityList(activity, users, date) {
 
 export function dashboardHtml({ kpis, late, due, reports, activity, users, date, exitMissing = [] }) {
   return `
-    <div class="grid-4">
-      ${kpiCard('Matériel disponible', kpis.disponibles, 'exemplaires prêts à être empruntés', 'kpi--disponible', '/materiel/etat/disponible')}
-      ${kpiCard('Emprunts en cours', kpis.enCours, `${plural(kpis.aRemettre, 'remise prévue', 'remises prévues')} aujourd’hui`, 'kpi--emprunte', '/emprunts/enCours')}
-      ${kpiCard('Retards', kpis.retards, kpis.retards ? 'à relancer' : 'tout est rentré', 'kpi--retard', '/emprunts/retards')}
-      ${kpiCard('Réservations salle à venir', kpis.reservationsSalle, `${plural(kpis.signalements, 'signalement à traiter', 'signalements à traiter')}`, 'kpi--salle', '/salle')}
+    <div class="kpi-band">
+      <div class="grid-4">
+        ${kpiCard('Matériel disponible', kpis.disponibles, 'kpi--disponible', '/materiel/etat/disponible')}
+        ${kpiCard('Emprunts en cours', kpis.enCours, 'kpi--emprunte', '/emprunts/enCours')}
+        ${kpiCard('Retards', kpis.retards, 'kpi--retard', '/emprunts/retards')}
+        ${kpiCard('Réservations salle à venir', kpis.reservationsSalle, 'kpi--salle', '/salle')}
+      </div>
     </div>
     <div class="grid-2">
       <div class="stack">
@@ -82,7 +85,7 @@ export function dashboardHtml({ kpis, late, due, reports, activity, users, date,
         <div class="card"><div class="card__header"><h2 class="card__title">À remettre aujourd’hui</h2></div>${dueList(due)}</div>
       </div>
       <div class="stack">
-        <div class="card"><div class="card__header"><h2 class="card__title">Signalements à traiter</h2><a class="body-sm" href="#/maintenance">Tout voir →</a></div>${reportsList(reports)}</div>
+        <div class="card"><div class="card__header"><h2 class="card__title">Maintenance à traiter</h2><a class="body-sm" href="#/maintenance">Tout voir →</a></div>${reportsList(reports)}</div>
         ${exitMissingHtml(exitMissing)}
         <div class="card"><div class="card__header"><h2 class="card__title">Dernières activités</h2></div>${activityList(activity, users, date)}</div>
       </div>

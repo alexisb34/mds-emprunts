@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Carte KPI — Design system MyDigitalSchool</title>
-  <meta name="description" content="La carte KPI de l’outil d’emprunt : ses quatre teintes, la carte qui mène quelque part, l’anneau de focus à reprendre partout, et la dette de contraste.">
+  <meta name="description" content="La carte KPI de l’outil d’emprunt : ses six teintes, la carte qui mène quelque part, la carte-filtre, l’anneau de focus à reprendre partout, et la dette de contraste.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Bricolage+Grotesque:wght@800&amp;display=swap">
@@ -23,12 +23,12 @@
     <main id="contenu" class="ds-article">
       <header class="ds-article__tete">
         <h1 class="ds-titre">Carte KPI</h1>
-        <p class="ds-chapeau ds-mesure">Un chiffre, son libellé, une phrase d’appui, sur un aplat de la couleur de son état. Cliquable, la carte mène à ce qu’elle compte.</p>
+        <p class="ds-chapeau ds-mesure">Un titre, son chiffre et une flèche en pastille, sur un aplat de la couleur de son état. Cliquable, la carte mène à ce qu’elle compte&nbsp;; en bouton, elle filtre le tableau d’en dessous.</p>
       </header>
 
       <section id="a-quoi" class="ds-groupe">
         <h2 class="h5">À quoi ça sert</h2>
-        <p class="body ds-mesure">La carte KPI (<code>.kpi</code>) met un chiffre en avant&nbsp;: combien de matériels sont disponibles, combien d’emprunts sont en retard. Elle a trois parties, un libellé (<code>.kpi__label</code>), le chiffre (<code>.kpi__value</code>) et une phrase d’appui (<code>.kpi__delta</code>). Sa teinte classe, le chiffre se lit.</p>
+        <p class="body ds-mesure">La carte KPI (<code>.kpi</code>) met un chiffre en avant&nbsp;: combien de matériels sont disponibles, combien d’emprunts sont en retard. Elle a trois parties&nbsp;: un titre à gauche (<code>.kpi__label</code>), le chiffre à droite (<code>.kpi__value</code>), et une pastille blanche dans le coin (<code>.kpi__go</code>) qui porte une flèche <code>↗</code>. Sa teinte classe, le chiffre se lit, la flèche dit qu’elle mène quelque part.</p>
       </section>
 
       <section id="exemple" class="ds-groupe">
@@ -40,21 +40,28 @@
       <section id="variantes" class="ds-groupe">
         <h2 class="h5">Les variantes et les états</h2>
 
-        <h3 class="h6">Les quatre teintes</h3>
-        <p class="body ds-mesure">Chaque teinte est le fond du badge de l’état correspondant&nbsp;: une carte et un badge qui disent la même chose ont la même couleur. Aucune ombre, aucun filet.</p>
+        <h3 class="h6">Les six teintes</h3>
+        <p class="body ds-mesure">Chaque teinte est le fond du badge de l’état correspondant&nbsp;: une carte et un badge qui disent la même chose ont la même couleur. Aucune ombre, aucun filet&nbsp;; un voile blanc en biais, posé en dégradé, éclaire le coin haut-gauche.</p>
         <ul class="ds-liste body">
           <li><code>kpi--disponible</code>, vert&nbsp;: le matériel prêt à être emprunté.</li>
           <li><code>kpi--emprunte</code>, violet&nbsp;: les emprunts en cours.</li>
           <li><code>kpi--retard</code>, rose&nbsp;: les retards.</li>
           <li><code>kpi--salle</code>, turquoise&nbsp;: les réservations de la salle photo, qui prennent la couleur de l’état «&nbsp;réservé&nbsp;».</li>
+          <li><code>kpi--maintenance</code>, jaune&nbsp;: les objets en intervention, sur l’écran Maintenance.</li>
+          <li><code>kpi--hs</code>, gris&nbsp;: le matériel hors service, sur le même écran.</li>
         </ul>
-        <p class="body ds-mesure">Sans teinte, la carte est grise (<code>.kpi</code> seule)&nbsp;: <strong>l’outil n’en emploie aucune</strong>, le tableau de bord passe toujours une teinte. Le kit la définit.</p>
+        <div id="cadre-maintenance"></div>
+        <p class="body ds-mesure">Sans teinte, la carte est grise (<code>.kpi</code> seule)&nbsp;: <strong>l’outil n’en emploie aucune</strong>, ses trois écrans à cartes passent toujours une teinte. Le kit la définit.</p>
         <div id="cadre-neutre"></div>
-        <p class="body ds-mesure"><strong><code>kpi--brand</code> et <code>kpi--teal</code> n’existent pas.</strong> Une ancienne planche de vérification du kit, retirée du dépôt, les écrivait&nbsp;: aucune règle ne les définit, la carte s’affiche grise sans erreur. Si vous les croisez dans un extrait copié, remplacez-les&nbsp;; les quatre teintes ci-dessus sont les seules.</p>
+        <p class="body ds-mesure"><strong><code>kpi--brand</code> et <code>kpi--teal</code> n’existent pas.</strong> Une ancienne planche de vérification du kit, retirée du dépôt, les écrivait&nbsp;: aucune règle ne les définit, la carte s’affiche grise sans erreur. Si vous les croisez dans un extrait copié, remplacez-les&nbsp;; les six teintes ci-dessus sont les seules.</p>
 
         <h3 class="h6">La carte qui mène quelque part</h3>
         <p class="body ds-mesure"><code>.kpi--link</code>, posée sur un <code>&lt;a&gt;</code>, rend la carte cliquable. Elle prend le curseur, se soulève de 2&nbsp;px au survol en prenant l’ombre flottante du kit (<code>--shadow-floating</code>), et montre un anneau quand elle a le focus au clavier. Le tableau de bord en fait une règle&nbsp;: une carte qui compte quelque chose mène à ce qu’elle compte, par un vrai lien.</p>
         <div id="cadre-lien"></div>
+
+        <h3 class="h6">La carte qui filtre</h3>
+        <p class="body ds-mesure">Sur Emprunts et sur Maintenance, les cartes ne mènent nulle part&nbsp;: elles filtrent le tableau d’en dessous. Ce sont alors des <code>&lt;button&gt;</code>, pas des liens, elles portent <code>aria-pressed</code>, et celle qui est retenue prend <code>.kpi--actif</code>, un filet de <code>--brand-primary</code>. Le filet occupe la place d’un bord transparent que <code>.kpi</code> réserve&nbsp;: la carte ne bouge pas d’un pixel en devenant active.</p>
+        <div id="cadre-filtre"></div>
 
         <h3 class="h6">L’anneau de focus, et la règle à étendre</h3>
         <p class="body ds-mesure"><code>.kpi--link:focus-visible</code> trace un contour de 2&nbsp;px de <code>--brand-primary</code>, décalé de 2&nbsp;px à l’extérieur. <strong>C’est l’une des deux seules règles de focus que le dépôt dessine</strong>, avec <code>.input:focus</code>, et c’est de celle-ci qu’il faudrait partir&nbsp;: le bouton, l’onglet et l’élément de menu n’en ont aucune, et leur anneau est celui du navigateur. Le manque est en attente dans <code>docs/correctifs-figma.md</code>.</p>
@@ -63,8 +70,8 @@
         <h3 class="h6">Ce qui n’existe pas</h3>
         <ul class="ds-liste body">
           <li><strong>Aucun état de chargement.</strong> Pas de chiffre en attente, pas de squelette.</li>
-          <li><strong>Aucune variation colorée.</strong> <code>.kpi__delta</code> a le nom d’une variation, mais l’outil y écrit une phrase d’appui et la feuille ne colore ni une hausse ni une baisse.</li>
-          <li><strong>Aucune fonction partagée.</strong> Le gabarit d’une carte est <code>kpiCard()</code>, dans <code>js/admin/views/dashboard.js</code>&nbsp;: elle n’est pas exportée, un autre écran réécrirait le balisage.</li>
+          <li><strong>Aucune variation, ni chiffrée ni colorée.</strong> La carte portait une phrase d’appui sous son chiffre jusqu’à son redessin&nbsp;; elle n’en a plus, et rien ne colore une hausse ou une baisse.</li>
+          <li><strong>Aucune fonction partagée.</strong> Le gabarit d’une carte-lien est <code>kpiCard()</code>, dans <code>js/admin/views/dashboard.js</code>&nbsp;: elle n’est pas exportée, et les deux écrans à cartes-filtres réécrivent le balisage chacun de leur côté.</li>
           <li><strong>Aucune règle pour qui a demandé moins de mouvement.</strong> Le soulèvement de 2&nbsp;px ne s’éteint pas.</li>
         </ul>
       </section>
@@ -104,6 +111,8 @@
           <li><code>kpi--emprunte</code>&nbsp;: <strong id="mesure-kpi-emprunte">à mesurer depuis un serveur</strong></li>
           <li><code>kpi--salle</code>&nbsp;: <strong id="mesure-kpi-salle">à mesurer depuis un serveur</strong></li>
           <li><code>kpi--disponible</code>&nbsp;: <strong id="mesure-kpi-disponible">à mesurer depuis un serveur</strong></li>
+          <li><code>kpi--maintenance</code>&nbsp;: <strong id="mesure-kpi-maintenance">à mesurer depuis un serveur</strong></li>
+          <li><code>kpi--hs</code>&nbsp;: <strong id="mesure-kpi-hs">à mesurer depuis un serveur</strong></li>
         </ul>
         <p class="body ds-mesure">Le chiffre, lui, est en grand et en gras&nbsp;: il passe. Un seul token, le texte discret, règle les cinq paires d’un coup&nbsp;; le chapitre <a href="../couleurs.html#dette">Couleurs</a> publie le ton calculé et ce qu’il faudrait décider dans Figma.</p>
 
@@ -132,7 +141,9 @@
     // vise une démonstration qui existe. Les blocs de code sont posés AVANT de brancher, et rien
     // n'est attendu (`await`) entre les deux : les cadres annoncent leur HTML une seule fois.
     document.getElementById('cadre-teintes').outerHTML = cadreHtml({ fichier: 'kpi.html', demo: 'teintes', titre: 'Les quatre cartes KPI du tableau de bord, une par teinte' });
+    document.getElementById('cadre-maintenance').outerHTML = cadreHtml({ fichier: 'kpi.html', demo: 'maintenance', titre: 'Les deux teintes de l’écran Maintenance' });
     document.getElementById('cadre-neutre').outerHTML = cadreHtml({ fichier: 'kpi.html', demo: 'neutre', titre: 'La carte KPI neutre, sans teinte' });
+    document.getElementById('cadre-filtre').outerHTML = cadreHtml({ fichier: 'kpi.html', demo: 'filtre', titre: 'Deux cartes-filtres, la retenue cerclée' });
     document.getElementById('cadre-lien').outerHTML = cadreHtml({ fichier: 'kpi.html', demo: 'lien', titre: 'Une carte KPI qui mène à la liste des retards' });
     document.getElementById('code-teintes').outerHTML = codeHtml({ fichier: 'kpi.html', demo: 'teintes', titre: 'Les quatre cartes KPI, une par teinte' });
     document.getElementById('code-lien').outerHTML = codeHtml({ fichier: 'kpi.html', demo: 'lien', titre: 'Une carte KPI qui mène à la liste des retards' });
@@ -150,6 +161,8 @@
         'mesure-kpi-emprunte': mesurePaire(valeurs, 'kpi--emprunte'),
         'mesure-kpi-salle': mesurePaire(valeurs, 'kpi--salle'),
         'mesure-kpi-disponible': mesurePaire(valeurs, 'kpi--disponible'),
+        'mesure-kpi-maintenance': mesurePaire(valeurs, 'kpi--maintenance'),
+        'mesure-kpi-hs': mesurePaire(valeurs, 'kpi--hs'),
       });
     }
   </script>

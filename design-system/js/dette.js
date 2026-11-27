@@ -47,8 +47,8 @@ export const CIBLE_CONSEIL = SEUIL_TEXTE + MARGE_CONSEIL;
 // ---- Les paires ----
 
 const KPI_ELEMENTS = [
-  { selecteur: '.kpi__label', px: 14, gras: false },
-  { selecteur: '.kpi__delta', px: 12, gras: false },
+  { selecteur: '.kpi__label', px: 18, gras: true },
+  { selecteur: '.kpi__value', px: 40, gras: true },
 ];
 
 // Les badges, du plus faible au meilleur : une dette se lit en commençant par ce qui est pire.
@@ -63,16 +63,17 @@ const badge = (variante, libelle) => ({
   elements: [{ selecteur: '.badge', px: 11, gras: true }],
 });
 
-// Une carte KPI : le texte discret du kit, sur le fond de la carte. La variation et le libellé ont
-// la même couleur et des tailles différentes ; aucune des deux n'est un grand texte.
+// Une carte KPI : le titre et le compte, sur le fond de la carte. Les deux sont en gras et dans
+// le texte principal depuis que la carte a été redessinée ; le compte est un grand texte, le
+// titre ne l'est pas tout à fait, c'est donc lui qui décide du seuil de la paire.
 const kpi = (nom, libelle, fond, echantillon, note) => ({
   nom,
   famille: 'kpi',
   libelle,
-  texte: '--text-secondary',
+  texte: '--text-primary',
   fond,
-  px: 12,
-  gras: false,
+  px: 18,
+  gras: true,
   elements: KPI_ELEMENTS,
   echantillon,
   ...(note ? { note } : {}),
@@ -87,16 +88,20 @@ export const PAIRES_KIT = [
   badge('borrowed', 'Emprunté'),
 
   kpi('kpi', 'Carte neutre', '--bg-muted',
-    { libelle: 'Matériel disponible', variation: 'exemplaires prêts à être empruntés' },
-    'L’outil d’emprunt n’emploie pas cette carte aujourd’hui : son tableau de bord pose toujours une teinte. Le kit la définit.'),
+    { libelle: 'Matériel disponible', variation: '33' },
+    'L’outil d’emprunt n’emploie pas cette carte aujourd’hui : ses trois écrans à cartes posent toujours une teinte. Le kit la définit.'),
   kpi('kpi--retard', 'Carte retards', '--status-late-bg',
-    { libelle: 'Retards', variation: 'à relancer' }),
+    { libelle: 'Retards', variation: '8' }),
   kpi('kpi--emprunte', 'Carte emprunts', '--status-borrowed-bg',
-    { libelle: 'Emprunts en cours', variation: '2 remises prévues aujourd’hui' }),
+    { libelle: 'Emprunts en cours', variation: '10' }),
   kpi('kpi--salle', 'Carte salle', '--status-reserved-bg',
-    { libelle: 'Réservations salle à venir', variation: '1 signalement à traiter' }),
+    { libelle: 'Réservations salle à venir', variation: '3' }),
   kpi('kpi--disponible', 'Carte disponible', '--status-available-bg',
-    { libelle: 'Matériel disponible', variation: 'exemplaires prêts à être empruntés' }),
+    { libelle: 'Matériel disponible', variation: '33' }),
+  kpi('kpi--maintenance', 'Carte maintenance', '--status-maintenance-bg',
+    { libelle: 'En maintenance', variation: '0' }),
+  kpi('kpi--hs', 'Carte hors service', '--status-hs-bg',
+    { libelle: 'Hors service', variation: '1' }),
 
   // Les retours : alertes, bouton de danger, notifications. Du plus faible au meilleur, comme le reste.
   // Les échantillons reprennent des textes que les vues écrivent vraiment (un test les y retrouve).

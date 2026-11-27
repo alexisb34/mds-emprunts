@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import { store } from '../js/store.js';
 import { buildSeed } from '../js/seed.js';
 import { ITEM_STATES, MAINT_STATES, MAINT_TYPES } from '../js/models.js';
-import { maintenanceRows, immobilises, reportIssue } from '../js/actions/maintenance.js';
+import { maintenanceRows, reportIssue } from '../js/actions/maintenance.js';
 import {
-  eventsTableHtml, immobilisesHtml, maintenanceHtml, interventionFormHtml, readInterventionForm, signalementFormHtml, readSignalementForm,
+  eventsTableHtml, horsServiceHtml, maintenanceHtml, CARTES, interventionFormHtml, readInterventionForm, signalementFormHtml, readSignalementForm,
 } from '../js/admin/views/maintenance.js';
 
 const NOW = new Date(2026, 8, 17, 10, 0);
@@ -70,34 +70,55 @@ test('eventsTableHtml : un signalement sans objet reste lisible', () => {
   assert.match(html, new RegExp(`data-close="${ev.id}"`));
 });
 
-test('immobilisesHtml : objets en maintenance et hors service, avec le nombre à traiter', () => {
-  const item = store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0];
-  reportIssue({ itemId: item.id, auteurId: PEDAGO, description: 'Bague grippée' });
-  const html = immobilisesHtml(immobilises());
-  assert.match(html, new RegExp(item.nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(html, /1 à traiter/);
-  assert.match(html, new RegExp(`/materiel/${item.id}`));
+const SANS_FILTRE = { q: '', categorie: '', circuit: '', etat: '' };
+
+test('horsServiceHtml : l’inventaire filtré, ses champs de tri, et les deux actions par ligne', () => {
+  const item = store.items.update(store.items.list((i) => i.etat === ITEM_STATES.DISPONIBLE)[0].id, { etat: ITEM_STATES.HS });
+  const html = horsServiceHtml({ items: [item], filters: SANS_FILTRE, sort: { key: 'code', dir: 'asc' } });
+  assert.match(html, /class="filters"/, 'les champs de tri de l’inventaire sont repris');
+  assert.match(html, /1 produit</);
+  assert.match(html, new RegExp(`data-remettre="${item.id}"`));
+  assert.match(html, new RegExp(`data-supprimer="${item.id}"`));
+  assert.match(html, /aria-label="Remettre en service"/);
+  assert.match(html, /aria-label="Supprimer définitivement"/);
+  assert.match(html, /class="btn btn--ghost btn--sm btn--icon tooltip"/, 'l’infobulle lit l’aria-label');
 });
 
-test('immobilisesHtml : état vide', () => {
-  assert.match(immobilisesHtml([]), /Aucun matériel immobilisé/);
+test('horsServiceHtml : état vide', () => {
+  assert.match(horsServiceHtml({ items: [], filters: SANS_FILTRE, sort: null }), /Aucun matériel hors service/);
 });
 
-test('maintenanceHtml : onglets de statut, compteur et les deux sections', () => {
-  const html = maintenanceHtml({ rows: maintenanceRows(), bloques: immobilises(), filtre: MAINT_STATES.OUVERT });
-  assert.match(html, /data-filtre="tous"/);
-  const onglet = (cle) => html.match(new RegExp(`<button[^>]*data-filtre="${cle}"[^>]*>[\\s\\S]*?</button>`))[0];
-  assert.match(onglet('ouvert'), /is-active/);
-  assert.doesNotMatch(onglet('tous'), /is-active/);
+test('maintenanceHtml : quatre cartes-filtres, la retenue cerclée, et le panneau qui suit', () => {
   const rows = maintenanceRows();
-  const compte = (cle) => Number(onglet(cle).match(/tab__count">(\d+)</)[1]);
+  const hs = store.items.list((i) => i.etat === ITEM_STATES.HS);
+  const ouverts = maintenanceHtml({ rows, hs, filtre: 'ouvert', filters: SANS_FILTRE, sort: null });
+  assert.equal((ouverts.match(/class="kpi kpi--link/g) || []).length, 4);
+  assert.deepEqual(CARTES.map((c) => c.label), ['Signalements', 'En maintenance', 'Clos', 'Hors service']);
+  assert.match(ouverts, /kpi--retard kpi--actif" data-filtre="ouvert" aria-pressed="true"/);
+  assert.match(ouverts, /\+ Ajouter un signalement/);
+  assert.match(ouverts, /\+ Ajouter une maintenance/);
+  assert.doesNotMatch(ouverts, /class="filters"/, 'le panneau des événements n’a pas les champs de l’inventaire');
+  const horsService = maintenanceHtml({ rows, hs, filtre: 'hs', filters: SANS_FILTRE, sort: null });
+  assert.match(horsService, /kpi--hs kpi--actif" data-filtre="hs"/);
+  assert.match(horsService, /class="filters"/);
+  assert.doesNotMatch(horsService, /Ajouter un signalement/, 'le panneau du hors service est un inventaire, pas un journal');
+});
+
+test('maintenanceHtml : chaque carte compte ce qu’elle montre, et il n’y a plus de « Tous »', () => {
+  const rows = maintenanceRows();
+  const hs = store.items.list((i) => i.etat === ITEM_STATES.HS);
+  const html = maintenanceHtml({ rows, hs, filtre: MAINT_STATES.OUVERT, filters: SANS_FILTRE, sort: null });
+  assert.doesNotMatch(html, /data-filtre="tous"/, 'les quatre cartes sont les quatre filtres : aucun fourre-tout');
+  const carte = (cle) => html.match(new RegExp(`<button[^>]*data-filtre="${cle}"[^>]*>[\\s\\S]*?</button>`))[0];
+  assert.match(carte('ouvert'), /kpi--actif/);
+  assert.doesNotMatch(carte('clos'), /kpi--actif/);
+  const compte = (cle) => Number(carte(cle).match(/kpi__value">(\d+)</)[1]);
   assert.equal(compte('clos'), rows.filter((r) => r.event.statut === MAINT_STATES.CLOS).length);
   assert.equal(compte('ouvert'), rows.filter((r) => r.event.statut === MAINT_STATES.OUVERT).length);
-  assert.equal(compte('tous'), rows.length);
+  assert.equal(compte('hs'), hs.length, 'la dernière carte compte des objets, pas des événements');
   assert.notEqual(compte('clos'), compte('ouvert'), 'les compteurs ne sont pas tous égaux');
-  assert.match(html, /Matériel immobilisé/);
   assert.match(html, /data-action="new-intervention"/);
-  assert.match(html, /data-action="new-signalement"[^>]*>Signaler une panne</, 'spec §5.4 : un signalement peut être créé à la main');
+  assert.match(html, /data-action="new-signalement"[^>]*>\+ Ajouter un signalement</, 'spec §5.4 : un signalement peut être créé à la main');
 });
 
 test('interventionFormHtml : type, prestataire, coût, description', () => {
@@ -134,8 +155,12 @@ function stubRoot(values) {
 
 test('readInterventionForm : rogne les textes et normalise la virgule décimale du coût', () => {
   const lu = (cout) => readInterventionForm(stubRoot({ itemId: 'item_001', type: 'intervention_externe', prestataire: '  Objectif Service ', cout, description: '  Révision de la bague  ' }));
-  assert.deepEqual(lu(' 120,50 '), { itemId: 'item_001', type: 'intervention_externe', prestataire: 'Objectif Service', cout: '120.50', description: 'Révision de la bague' });
+  assert.deepEqual(lu(' 120,50 '), { itemId: 'item_001', type: 'intervention_externe', prestataire: 'Objectif Service', cout: '120.50', facture: '', sansFacture: false, description: 'Révision de la bague' });
   assert.equal(lu('').cout, '');
+  // La case cochée l’emporte sur le champ : ce qui y avait été tapé ne part pas avec elle.
+  const avecFacture = readInterventionForm(stubRoot({ itemId: 'item_001', type: 'intervention_externe', prestataire: 'X', cout: '0', facture: ' FA-2026-0142 ', description: 'D' }));
+  assert.equal(avecFacture.facture, 'FA-2026-0142');
+  assert.equal(avecFacture.sansFacture, false);
   assert.equal(lu('12o').cout, '12o', 'une saisie invalide n’est pas devinée : createIntervention la refuse');
   assert.equal(lu('12.5').cout, '12.5');
 });

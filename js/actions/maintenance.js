@@ -85,7 +85,7 @@ export function reportIssue({ itemId, auteurId, description, loanId = null, book
   });
 }
 
-export function createIntervention({ itemId, type, prestataire = '', cout = 0, description, pedagoId }) {
+export function createIntervention({ itemId, type, prestataire = '', cout = 0, facture = '', sansFacture = false, description, pedagoId }) {
   const item = requireItem(itemId);
   const texte = cleanDescription(description);
   if (type !== MAINT_TYPES.INTERNE && type !== MAINT_TYPES.EXTERNE) throw new Error('Type d’intervention inconnu.');
@@ -95,11 +95,14 @@ export function createIntervention({ itemId, type, prestataire = '', cout = 0, d
   const montant = cout === '' || cout == null ? 0 : Number(cout);
   if (!Number.isFinite(montant)) throw new Error('Le coût doit être un nombre.');
   if (montant < 0) throw new Error('Le coût ne peut pas être négatif.');
+  // La case cochée l’emporte sur le champ : « sans facture » est une réponse, pas un oubli.
+  const numeroFacture = sansFacture ? '' : String(facture || '').trim();
   const date = now();
   return store.transaction(() => {
     const event = store.maintenance.create({
       itemId, type, auteurId: pedagoId, date: date.toISOString(), statut: MAINT_STATES.OUVERT,
       description: texte, prestataire: type === MAINT_TYPES.EXTERNE ? fournisseur : '', cout: montant,
+      facture: numeroFacture, sansFacture: !!sansFacture,
       loanId: null, bookingId: null,
     });
     immobiliser(itemId);

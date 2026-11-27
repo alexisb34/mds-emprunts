@@ -297,12 +297,17 @@ function detteHtml(valeurs) {
   // Le ton unique de --text-secondary : sa marge réelle est celle du fond le plus exigeant, pas celle de la ligne qu'on lit.
   const secondaires = PAIRES_KIT.filter((p) => p.texte === '--text-secondary' && jugerPaire(p, valeurs).echoue);
   const exigeant = Math.round(ratioExact(s.tonSecondaire, valeurs[s.fondExigeant]) * 100) / 100;
-  const facile = secondaires.map((p) => ({ fond: p.fond, r: Math.round(ratioExact(s.tonSecondaire, valeurs[p.fond]) * 100) / 100 })).reduce((a, b) => (b.r > a.r ? b : a));
+  const facile = secondaires.map((p) => ({ fond: p.fond, r: Math.round(ratioExact(s.tonSecondaire, valeurs[p.fond]) * 100) / 100 })).reduce((a, b) => (b.r > a.r ? b : a), { fond: s.fondExigeant, r: exigeant });
+  // Tant qu'il reste plusieurs lignes sur ce token, la plus facile est nommée : c'est celle
+  // qu'on surveille à tort. Quand il n'en reste qu'une, la phrase n'a plus d'objet.
+  const phraseFacile = secondaires.length > 1 ? `, alors que la ligne en ${code(facile.fond)} en affiche ${fmtRatio(facile.r)}:1` : ', et c’est la seule ligne de ce token qui échoue encore';
 
   const phraseBadges = `${majuscule(enLettres(compte(badges)))} des ${enLettres(badges.length)} badges ne passent pas.${bConformes.length === 1 ? ` Seul le badge «&nbsp;${echapper(bConformes[0])}&nbsp;» passe.` : ''}`;
-  const phraseCartes = compte(cartes) === cartes.length
-    ? `Les ${enLettres(cartes.length)} cartes ne passent pas, la carte neutre comprise.`
-    : `${majuscule(enLettres(compte(cartes)))} des ${enLettres(cartes.length)} cartes ne passent pas.`;
+  const phraseCartes = compte(cartes) === 0
+    ? `Les ${enLettres(cartes.length)} cartes passent, la carte neutre comprise.`
+    : (compte(cartes) === cartes.length
+      ? `Les ${enLettres(cartes.length)} cartes ne passent pas, la carte neutre comprise.`
+      : `${majuscule(enLettres(compte(cartes)))} des ${enLettres(cartes.length)} cartes ne passent pas.`);
 
   return `<section class="ds-bande cl-ch" id="dette" aria-labelledby="titre-dette">
   <div class="ds-section dt-dette">
@@ -310,7 +315,7 @@ function detteHtml(valeurs) {
       <h2 class="ds-titre" id="titre-dette">La dette de contraste, au <time datetime="${DATE_CONSTAT.iso}">${DATE_CONSTAT.texte}</time></h2>
       <p class="ds-chapeau">${s.echouent} des ${s.mesurees} paires mesurées sont sous le seuil de lisibilité. Les voici telles quelles, avec ce qu’il faudrait faire&nbsp;: ne les reprenez pas dans un nouvel écran.</p>
       <p class="body">Tous ces textes font moins de ${petit}&nbsp;px, la taille à partir de laquelle WCAG 2.1 tolère un contraste plus faible pour un texte gras. Le seuil est donc ${seuil}:1, niveau AA.</p>
-      <p class="body" id="dette-marge">Chaque ton proposé plus bas vise ${dec(CIBLE_CONSEIL)}:1, soit ${dec(MARGE_CONSEIL)} de marge au-dessus du seuil de ${seuil}:1. C’est un repère, pas une limite&nbsp;: on peut l’éclaircir, pour retrouver la teinte voulue, tant que le ratio reste au moins à ${seuil}:1 sur chaque fond où le token sert, pas seulement sur la ligne qu’on lit&nbsp;; le foncer davantage ne fait jamais perdre de contraste. Pour ${code('--text-secondary')}, le fond le plus exigeant est ${code(s.fondExigeant)}&nbsp;: le ton proposé y donne ${fmtRatio(exigeant)}:1, soit ${fmtRatio(exigeant - SEUIL)} de marge réelle, alors que la ligne en ${code(facile.fond)} en affiche ${fmtRatio(facile.r)}:1.</p>
+      <p class="body" id="dette-marge">Chaque ton proposé plus bas vise ${dec(CIBLE_CONSEIL)}:1, soit ${dec(MARGE_CONSEIL)} de marge au-dessus du seuil de ${seuil}:1. C’est un repère, pas une limite&nbsp;: on peut l’éclaircir, pour retrouver la teinte voulue, tant que le ratio reste au moins à ${seuil}:1 sur chaque fond où le token sert, pas seulement sur la ligne qu’on lit&nbsp;; le foncer davantage ne fait jamais perdre de contraste. Pour ${code('--text-secondary')}, le fond le plus exigeant est ${code(s.fondExigeant)}&nbsp;: le ton proposé y donne ${fmtRatio(exigeant)}:1, soit ${fmtRatio(exigeant - SEUIL)} de marge réelle${phraseFacile}.</p>
     </div>
     <aside class="ds-message dt-decision">
       <h3 class="h6">Pourquoi elles sont publiées</h3>
@@ -349,7 +354,7 @@ function detteHtml(valeurs) {
     <div class="dt-bloc" id="dette-kpi">
       <div class="ds-mesure lg-tete">
         <h3 class="h5" id="titre-dette-kpi">Les cartes KPI</h3>
-        <p class="body">Le libellé d’une carte (${cartes[0].elements[0].px}&nbsp;px) et sa variation (${cartes[0].elements[1].px}&nbsp;px) sont en ${code('--text-secondary')}, un gris moyen, posé sur le fond de la carte&nbsp;: un gris clair ou un pastel, jamais assez contrasté. ${phraseCartes}</p>
+        <p class="body">Le titre d’une carte (${cartes[0].elements[0].px}&nbsp;px) et son compte (${cartes[0].elements[1].px}&nbsp;px) sont en ${code('--text-primary')} et en gras, posés sur le fond de la carte&nbsp;: un gris clair ou un pastel. La carte a été redessinée depuis le constat&nbsp;; elle portait alors ${code('--text-secondary')}, et ces lignes échouaient toutes. ${phraseCartes}</p>
       </div>
       ${tableauDetteHtml(cartes, valeurs, { titreId: 'titre-dette-kpi' })}
     </div>

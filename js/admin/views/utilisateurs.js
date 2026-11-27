@@ -8,6 +8,7 @@ import { ROLES, PROMOS, LABELS } from '../../models.js';
 import { escapeHtml, badge, avatar, fullName, openModal, toast } from '../../ui.js';
 import { createUser, deleteUser, userStats } from '../../actions/users.js';
 import { setTopbar } from '../layout.js';
+import { ICONS } from '../../mobile/layout.js';
 import { sortRows, toggleSort, renderTable, bindTable } from '../table.js';
 import { toCsv, parseCsv } from '../csv.js';
 
@@ -61,8 +62,8 @@ export function utilisateursHtml({ rows, total, filters, sort }) {
         <label class="toggle"><input type="checkbox" name="actifs"${filters.actifs ? ' checked' : ''}><span class="toggle__track"></span> Comptes actifs uniquement</label>
       </div>
       <div class="toolbar">
-        <button type="button" class="btn btn--secondary btn--sm" data-action="export-csv">Exporter en CSV</button>
-        <button type="button" class="btn btn--secondary btn--sm" data-action="import-csv">Importer un CSV</button>
+        <button type="button" class="btn btn--secondary btn--sm" data-action="export-csv">${ICONS.exporter}<span>Exporter en CSV</span></button>
+        <button type="button" class="btn btn--secondary btn--sm" data-action="import-csv">${ICONS.importer}<span>Importer un CSV</span></button>
         <button type="button" class="btn btn--danger btn--sm" data-action="delete-selected" disabled>Supprimer la sélection (0)</button>
         <input type="file" accept=".csv,text/csv" data-role="csv-file" hidden>
       </div>
